@@ -1,0 +1,1785 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <POU Name="PRG_MACHINE" Id="{4e095629-a33c-43c2-b165-05af09822f13}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM PRG_MACHINE
+(*************************************************************************************************)
+(*  FILENAME:    PRG_MACHINE.EXP                                                                 *)
+(*  PROJECT:     CALMAR PUPLC                                                                    *)
+(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2016)            *)
+(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
+(*  VERSION:     <version>                                                                       *)
+(*************************************************************************************************)
+(*  DESCRIPTION:                                                                   <description> *)
+(*    Controls the machine functionalities.                                                      *)
+(*     - System command: sleep/wake up, emergency stop, air ok.                                  *)
+(*    Messaging: - fb_Msg[1] := `eCMa_EMERGENCY_STOP_ACTIVE`                                     *)
+(*               - fb_Msg[2] := `eCMa_MACHINE_DISABLED`                                          *)
+(*               - fb_Msg[3] := `eCMa_MACHINE_COMM_ERR`                                          *)
+(*               - fb_Msg[4] := `eCMa_SLEEP_MODE_ACTIVE`                                         *)
+(*               - fb_Msg[5] := `eCMa_TEMPERATURE_MONITORING`                                    *)
+(*               - fb_Msg[6] := `eCMa_STOR_TANKS_DISABLED`                                       *)
+(*               - fb_Msg[7] := `eCMa_INK_WC_STATE_ERROR`                                        *)
+(*               - fb_Msg[8] := `eCMa_PRINT_WC_STATE_ERROR`                                      *)
+(*               - fb_Msg[9] := `eCMa_MACHINE_WC_STATE_ERROR`                                    *)
+(*               - fb_Msg[10]:= `eCMa_TCPIP_COMM_ERROR`                                          *)
+(*               - fb_Msg[11]:= `eCIk_CLEANER_CONTAINER_LEVEL_EMPTY`                             *)
+(*               - fb_Msg[12]:= `eCIk_REFUSE_CONTAINER_LEVEL_FULL`                               *)
+(*               - fb_Msg[13]:= `eCMa_AXIS_ERROR_X_PNEUMATIC`                                    *)
+(*               - fb_Msg[14]:= `eCMa_WATCH_CIRCUIT_BREAKER`                                     *)
+(*               - fb_Msg[15]:= `eCMa_WATCH_FUSE_PH1`                                            *)
+(*               - fb_Msg[16]:= `eCMa_WATCH_FUSE_HEATER1`                                        *)
+(*               - fb_Msg[17]:= `eCMa_WATCH_CABINET_TEMP`                                        *)
+(*               - fb_Msg[18]:= `eCMa_WATCH_SEPARATOR_NIVEAU`                                    *)
+(*               - fb_Msg[19]:= `eCMa_AXIS_SAFETY_ACCEPTANCE`                                    *)
+(*               - fb_Msg[20]:= `eCMa_DRIFT_CONTR_ERROR`                                         *)
+(*               - fb_Msg[21]:= `eCIk_CLEAN_START_MISSING`                                       *)
+(*               - fb_Msg[22]:= `eCMa_RECIPE_LOADED`                                             *)
+(*               - fb_Msg[23]:= `eCMa_AXIS_ERROR_Z_PNEUMATIC`                                    *)
+(*               - fb_Msg[24]:= `eCMa_CLEANER_TANK_INFO`                                         *)
+(*               - fb_Msg[25]:= `eCMa_MAX_SPEED_EXCEEDED`                                        *)
+(*               - fb_Msg[26]:= `eCMa_IMAGE_DEPTH_INCORRECT`                                     *)
+(*               - fb_Msg[27]:= `eCMa_EXHAUST_SYSTEM_WARNING`                                    *)
+(*               - fb_Msg[28]:= `eCMa_EXHAUST_SYSTEM_ERROR`                                      *)
+(*               - fb_Msg[29]:= `eCMa_EXHAUST_SYSTEM_MALFUNCTION`                                *)
+(*               - fb_Msg[30]:= `eCMa_CLEANER_TANK_FILLING`                                      *)
+(*               - fb_Msg[31]:= `eCMa_SEPARATOR_LEVEL_REACHED`                                   *)
+(*                                                                                </description> *)
+(*************************************************************************************************)
+
+VAR_INPUT
+  bIKp_CircuitBreakerM1_Ok          AT %I*  : BOOL;   (*monitoring input*)
+  bIKp_CircuitBreakerM2_Ok          AT %I*  : BOOL;   (*monitoring input*)
+  bIKp_PowerSupply1M1_Ok            AT %I*  : BOOL;   (*monitoring input*)
+  bIKp_PowerSupply2M1_Ok            AT %I*  : BOOL;   (*monitoring input*)
+  bIKp_PowerSupply3M1_Ok            AT %I*  : BOOL;   (*monitoring input*)
+  bIKp_PowerSupply1M2_Ok            AT %I*  : BOOL;   (*monitoring input*)
+  bIKp_PowerSupply2M2_Ok            AT %I*  : BOOL;   (*monitoring input*)
+  bIKp_PowerSupply3M2_Ok            AT %I*  : BOOL;   (*monitoring input*)
+  bIKp_SefetyRelayOk                AT %I*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*monitoring input*)
+  bIKp_SafetyCoverOK                AT %I*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*monitoring input*)
+  bIKp_SafetyDoorsOK                AT %I*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*monitoring input*)
+
+  bIKp_CabinetTemp_Ok               AT %I*  : BOOL;   (*monitoring input*)
+  bIKp_SeparatorNiveau_Ok           AT %I*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*-BX66: monitoring input*)
+  
+  (*Beckhoff EAP interface*)
+  InEAP_WatchdogCycleIndex          AT %I*  : INT;    (*Watchdog: check CycleIndex*)
+  InEAP_OperatingMode               AT %I*  : BYTE;   (*Operating mode*)
+  IbEAP_ShutDownActive              AT %I*  : BOOL;   (*Master is shutting down*)                          (*not used yet*)
+  IbEAP_Engaged                     AT %I*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*DEM engaged*)
+  IbEAP_PrintEnabled                AT %I*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Print enabled*)
+  IbEAP_EStop                       AT %I*  : BOOL;   (*Emergency stop*)
+  IbEAP_StandbyActive               AT %I*  : BOOL;   (*Standby active*)
+  IbEAP_MessageReset                AT %I*  : BOOL;   (*Message reset*)       (*used in PRG_System*)
+  IbEAP_PinningClosed               AT %I*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Pinning shutter closed*)
+  IbEAP_CleaningStart               AT %I*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Start cleaning*)           (*not used yet*)
+  InEAP_SubstrateThickness          AT %I*  : DINT;   (*Substrate thickness [µm]*)
+  InEAP_SubstrateWidth              AT %I*  : DINT;   (*Substrate width [µm]*)                             (*not used yet*)
+  InEAP_FormatLength                AT %I*  : DINT;   (*Format length [µm]*)
+  InEAP_WebStretchFactor            AT %I*  : DINT;   (*Web stretch factor [0/00]*)
+  InEAP_LateralRegister             AT %I*  : DINT;   (*Lateral register [µm]*)
+  IbEAP_SpliceDetected              AT %I*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Splice detected*)
+  InEAP_Module2ToModule3            AT %I*  : DINT;   (*Distance between Module 2 and 3 [µm]*)
+  IbEAP_TargetSpeedReached          AT %I*  : BOOL;   (*Target speed reached*)
+  InEAP_NeutralFibreFactor          AT %I*  : DINT;   (*Neutral fibre factor [%]*)
+  IbEAP_PrintMarksExist             AT %I*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Print marks exist*)
+  InEAP_TargetSpeed                 AT %I*  : DINT;   (*Neutral fibre factor [m/min]*)
+  IbEAP_PanelLEDs                   AT %I*  : ARRAY[1..nC_MOTRONIC_PANEL_LEDS] OF BOOL;           (*Motronic panel LEDs*)
+
+  (*Interfaces from other PRG*)
+  fI_PrintingPosition                       : REAL;   (*Printing position [mm]*)
+  bI_RecipeValuesLoadedInk                  : BOOL;
+  bI_RecipeValuesLoadedPrint                : BOOL;
+  bI_PrintActive                            : BOOL;   (*Printing active*)
+  //bI_MachineStopped                         : BOOL;   (*Machine stopped*)
+  sI_JobInkConsumption                      : ST_JOB_INK_CONSUMPTION; (*Job ink consumption information*)
+  iI_Res_Ph                                 : INT;    (*[dpi] resolution printhead native*)
+  iI_Res_SubPix                             : INT;    (*[-] resolution subpixel*)
+  bI_PrintUnitStart                         : BOOL;   (*Printing unit start*)
+  bI_PrintUnitStop                          : BOOL;   (*Printing unit stop*)
+  lI_PrintedCopies                          : UDINT;  (*Printed copies*)
+  bI_VacuumOk                               : BOOL;
+  bI_DriftContrSupErr                       : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Drift controller supervision*)
+  bI_DriftContrError                        : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Drift controller error*)
+  bI_CommandPrintlineExec                   : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Printline is executing*)  
+END_VAR
+
+VAR_OUTPUT
+  bOKp_ResetFuse                    AT %Q*  : BOOL;   (*Reset WAGO Epsitron fuse*)
+  ObPrinterReady                    AT %Q*  : BOOL;   (*Printer ready*)
+
+  bO_SeparatorPumpDrainage          AT %Q*  : ARRAY[1..iCMa_NB_Cp] OF BOOL;   (* Enable separator pump for tank drainage (-MX196)*)
+
+  bO_InitOk                                 : BOOL := FALSE;  (*Init Ok*)
+
+  bO_WEUReady                               : ARRAY[1..iCPr_NB_PM] OF BOOL;  (*WEU ready*)
+
+  (*Beckhoff EAP interface*)
+  OnEAP_OperatingMode               AT %Q*  : BYTE;   (*Operating mode*)
+  ObEAP_EngagingAllowed             AT %Q*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*DEM engaging allowed*)
+  ObEAP_EngagingActive              AT %Q*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*DEM engaging active*)
+  ObEAP_ShutdownReady               AT %Q*  : BOOL;   (*Shutdown ready*)
+  ObEAP_StandbyReady                AT %Q*  : BOOL;   (*Standby ready*)
+  ObEAP_PrintPosition               AT %Q*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Printing position*)
+  ObEAP_MismatchLength              AT %Q*  : BOOL;   (*Mismatch length*)                               (*not used yet*)
+  ObEAP_CleaningAllowed             AT %Q*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Cleaning allowed*)      (*not used yet*)
+  ObEAP_CleaningActive              AT %Q*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Cleaning active*)
+(*ToDo!!!*)   ObEAP_PrintReady                  AT %Q*  : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Ready to print*)
+  OnEAP_VarnishQuantity             AT %Q*  : ARRAY[1..iCPr_NB_PM] OF DINT;   (*Varnish quantity [g/m^2]*)
+  OnEAP_MaxWebSpeed                 AT %Q*  : DINT;   (*Max web speed [m/min]*)
+  ObEAP_WarnungActive               AT %Q*  : BOOL;   (*Warning active*)
+  ObEAP_ErrorActive                 AT %Q*  : BOOL;   (*Error active*)
+  ObEAP_EStop                       AT %Q*  : BOOL;   (*Emergency stop / Fast stop*)
+  OnEAP_PrintMarkPosBits            AT %Q*  : ARRAY[1..iCPr_NB_PM] OF WORD;   (*Print mark position (bit coded)*)
+                                                                              (*Bit 0: no mark*)
+                                                                              (*Bit 1: mark on drive side*)
+                                                                              (*Bit 2: mark in center range*)
+                                                                              (*Bit 3: mark on control side*)
+  OnEAP_MasterSpeed                 AT %Q*  : ARRAY[1..iCPr_NB_PM] OF LREAL;  (*FB_POSITION_MASTER[x].fO_Master_Speed [m/s]*)
+  ObPanelLEDs                       AT %Q*  : ARRAY[1..nC_MOTRONIC_PANEL_LEDS] OF BOOL;    (*Motronic panel LEDs*)
+
+  (*Interfaces to other PRG*)
+  bO_PrintUnitInPrintPosition               : ARRAY[1..iCPr_NB_PM] OF BOOL;    (*Print unit in print position*)
+  bO_PrintUnitHigherWaitPosition            : ARRAY[1..iCPr_NB_PM] OF BOOL;    (*Print unit higher wait position*)
+  bO_CleanPumpRequest                       : ARRAY[1..iCMa_NB_Cp] OF BOOL;    (* Request Cleaner Pump on*)
+  sO_SystemCmd                              : ST_SYSTEM_CMD;
+  bO_TotalWcState                           : BOOL := FALSE;   (*Monitoring: WcStates from all terminals*)
+  bO_ErrorMsgActive                         : BOOL;   (*Error message at PUC active*)
+  bO_WarningMsgActive                       : BOOL;   (*Warning message at PUC active*)
+  bO_F70M1FuseOk                            : BOOL;   (*F70 M1 fuse ok*)
+  bO_F90M1FuseOk                            : BOOL;   (*F90 M1 fuse ok*)
+  bO_F122M1FuseOk                           : BOOL;   (*F122 M1 fuse ok*)
+  bO_F160M1FuseOk                           : BOOL;   (*F160 M1 fuse ok*)
+  bO_F70M2FuseOk                            : BOOL;   (*F70 M2 fuse ok*)
+  bO_F90M2FuseOk                            : BOOL;   (*F90 M2 fuse ok*)
+  bO_F122M2FuseOk                           : BOOL;   (*F122 M2 fuse ok*)
+  bO_F160M2FuseOk                           : BOOL;   (*F160 M2 fuse ok*)
+END_VAR
+
+VAR
+  iL_Counter                                : INT;    (*local iteration counter - default*)
+
+  tskL_ActTaskInfo                          : PlcTaskSystemInfo;  (*CycleTime in multiple of 100ns*)
+  Fb_GetCurTskIndx                          : GETCURTASKINDEX;
+  lL_TaskCycleTime                          : REAL;  (*task cycle time [s]*)
+
+  (* FB to store the generated block ID's *)
+  bL_ExecuteBlockIdSave                     : BOOL;
+  fb_BlkIdSave                              : FB_BLK_ID_SAVE;
+
+  iL_Sel_BlkType                            : INT  := 1;          (*used for module information visualisation*)
+
+  fb_SystemCommand                          : FB_SYSTEM_CMD;
+
+
+  (*FAF: new cleaning station*)
+  fB_Machine                                : FB_MachineState;
+  
+  fb_CleanProcess                           : ARRAY[1..iCMa_NB_Cp] OF FB_CleaningProcess;
+  fb_CleaningCU                             : ARRAY[1..iCMa_NB_Cp] OF FB_CleaningMotorAxisCU;
+  fb_CleaningCH                             : ARRAY[1..iCMa_NB_Cp] OF FB_CleaningMotorAxisCH;
+  fb_CleaningPU                             : ARRAY[1..iCMa_NB_Cp] OF FB_CleaningMotorAxisPU;
+  fb_CleaningValvePump                      : ARRAY[1..iCMa_NB_Cp] OF FB_Cleaning_ValvePump;
+  fb_MotionInterlock                        : ARRAY[1..iCMa_NB_Cp] OF FB_MOTION_INTERLOCK;
+
+  (*Purge from machine*)
+  fb_RFTrigPurgeBusy                        : ARRAY[1..iCMa_NB_Cp] OF RF_TRIG;
+  fb_RFTrigCleanAfterPurge                  : ARRAY[1..iCMa_NB_Cp] OF RF_TRIG;
+  fb_RTrigPurge                             : ARRAY[1..iCMa_NB_Cp] OF R_TRIG;
+  fb_TonPurgeRequestTimeout                 : ARRAY[1..iCMa_NB_Cp] OF TON;
+
+  fb_InterfaceMachineInk                    : ARRAY[1..iCPr_NB_PM] OF FB_IMachineInk;
+  iMachineInk                               : ARRAY[1..iCPr_NB_PM] OF I_MachineInk;
+
+  fb_MotionInkInterface                     : ARRAY[1..iCPr_NB_PM] OF FB_MOTION_TO_INKSYSTEM_IF;
+
+  //fb_CU_EL7201                              : ARRAY[1..iCMa_NB_Cp] OF FB_EL7201_AXIS_CTRL;
+  //fb_CH_EL7201                              : ARRAY[1..iCMa_NB_Cp] OF FB_EL7201_AXIS_CTRL;
+  //fb_PU_EL7201                              : ARRAY[1..iCMa_NB_Cp] OF FB_EL7201_001_AXIS_CTRL;
+  //lLCU_OffsetEncoder                        : ARRAY[1..iCMa_NB_Cp] OF DINT := [0,0];
+  //lLCH_OffsetEncoder                        : ARRAY[1..iCMa_NB_Cp] OF DINT := [0,0];
+  //lLPU_OffsetEncoder                        : ARRAY[1..iCMa_NB_Cp] OF DINT := [0,0];
+  fb_RFTrigManualMoveCU                     : ARRAY[1..iCMa_NB_Cp] OF RF_TRIG;
+  fb_RFTrigManualMoveCH                     : ARRAY[1..iCMa_NB_Cp] OF RF_TRIG;
+  fb_RFTrigManualMovePU                     : ARRAY[1..iCMa_NB_Cp] OF RF_TRIG;
+  sL_CU_CleanDevStatus                      : ARRAY[1..iCMa_NB_Cp] OF ST_CLEANING_DEV_STATUS;
+  sL_CH_CleanDevStatus                      : ARRAY[1..iCMa_NB_Cp] OF ST_CLEANING_DEV_STATUS;
+  sL_PU_CleanDevStatus                      : ARRAY[1..iCMa_NB_Cp] OF ST_CLEANING_DEV_STATUS;
+
+  sADS_CleanProcess                         : ARRAY[1..iCMa_NB_Cp] OF ST_ADS_CLEAN_PROCESS;
+  sADS_CleanAxis                            : ARRAY[1..iCMa_NB_Ca] OF ST_ADS_CLEAN_AXIS;
+  sADS_Machine                              : ARRAY[1..iCMa_NB_Ma] OF ST_ADS_MACHINE;
+  sC_Ads_Info                               : ST_ADS_INFO;
+  sMappingInfo                              : T_MapInfo;        // Block mapping configuration
+  ISystemBase                               : I_SystemBase;     // reference to system base
+  pModuleDef                                : POINTER TO FB_ModuleDef;    // Module definition in system
+
+  bL_SafetyOk                               : ARRAY[1..iCPr_NB_PM] OF BOOL;
+  bL_ResetAxis                              : BOOL;
+  bL_MemEstop                               : BOOL := FALSE;
+  bL_MemMachineOn                           : BOOL := FALSE;
+
+  (*Inputs from VISU*)
+  nPrintModuleIdx                           : INT := 1;   (*PrintModule actual selection*)      
+  fL_CuCappPurgPosition                     : REAL;  (*CU: capping/purge position [mm]*)
+  fL_CuCleanRowPosition1                    : REAL;  (*CU: clean position 1 [mm]*)
+  fL_CuCleanRowPosition2                    : REAL;  (*CU: clean position 2 [mm]*)
+  fL_CuStopPosition                         : REAL;  (*CU: position ID for the lower limit [mm]*)
+  fL_CuPlaceSpeed                           : REAL;  (*CU: speed for placement mouvement [mm/s]*)
+  fL_CuWorkSpeed                            : REAL;  (*CU: speed for work mouvement [mm/s]*)
+  fL_CuServiceSpeed                         : REAL;  (*CU: speed for maintenance operations [mm/s]*)
+  fL_ChPositionP1                           : REAL;  (*CH: position P1 [mm]*)
+  fL_ChPositionP2                           : REAL;  (*CH: position P2 [mm]*)
+  fL_ChStopPosition                         : REAL;  (*CH: position ID for the lower limit [mm]*)
+  fL_ChPlaceSpeed                           : REAL;  (*CH: speed for placement mouvement [mm/s]*)
+  fL_ChWorkSpeed                            : REAL;  (*CH: speed for work mouvement [mm/s]*)
+  fL_ChServiceSpeed                         : REAL;  (*CH: speed for maintenance operations [mm/s]*)
+  fL_PuWaitingPosition                      : REAL;  (*PU: waiting position (Production Mode) [mm]*)
+  fL_PuServicePosition                      : REAL;  (*PU: service position (Service Mode) [mm]*)
+  fL_PuCleanPosition1                       : REAL;  (*PU: cleaning station moving position (Service Mode) [mm]*)
+  fL_PuCleanPosition2                       : REAL;  (*PU: cleaning position (Service Mode) [mm]*)
+  fL_PuStopPosition                         : REAL;  (*PU: position ID for the lower limit [mm]*)
+  //fL_PuSetPositionValue                     : REAL;  (*PU: set position value [mm]*)
+  fL_PuPlaceSpeed                           : REAL;  (*PU: speed for placement mouvement [mm/s]*)
+  fL_PuWorkSpeed                            : REAL;  (*PU: speed for work mouvement [mm/s]*)
+  fL_PuServiceSpeed                         : REAL;  (*PU: speed for maintenance operations [mm/s]*)
+  wIDp_CleanerPumpLeadTime                  : WORD;  (*CH: lead time cleaner pump [ms]*)
+
+  (*Initiation*)
+  bL_RemVar_Init                            : BOOL;
+  bL_DummyReadInput                         : BOOL;
+  iL_DummyReadInput                         : INT;
+  lL_DummyReadInput                         : DINT;
+
+  fb_TonCheckMachineCom                     : TON;
+  iL_MemWatchdogCycleIndex                  : INT;    (*Watchdog: check CycleIndex*)
+  bL_WatchdogError                          : BOOL;
+
+  (*Machine IOs*)
+  bL_IO_MachineReady                        : BOOL;
+  bL_IO_MachineHoming                       : BOOL;
+  bL_IO_Engaged                             : ARRAY[1..iCPr_NB_PM] OF BOOL;
+  bL_IO_EStopOK                             : BOOL;
+  bL_IO_StandbyActive                       : BOOL;
+  bL_IO_PinningClosed                       : BOOL;
+  lL_IO_SubstrateThickness                  : DINT;   (*Substrate thickness [µm]*)
+  lL_IO_SubstrateWidth                      : DINT;   (*Substrate width [µm]*)
+  lL_IO_FormatLength                        : DINT;   (*Format length [µm]*)
+  fb_TonSeparatorLevel                      : ARRAY[1..iCMa_NB_Cp] OF TON;
+
+  bL_ProductionMode                         : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Production mode, not service mode*)
+
+  bL_SleepVisu                              : BOOL;
+  bL_WakeUpVisu                             : BOOL;
+  fb_RTrigSleepVisu                         : R_TRIG;
+  fb_RTrigWakeUpVisu                        : R_TRIG;
+  fb_RTrigShutdownActive                    : R_TRIG;
+  fb_FTrigShutdownActive                    : F_TRIG;
+  fb_RTrigOpModeHoming                      : R_TRIG;
+  fb_RTrigEngaged                           : ARRAY[1..iCPr_NB_PM] OF R_TRIG;
+  fb_FTrigEngaged                           : ARRAY[1..iCPr_NB_PM] OF F_TRIG;
+  fb_TonSleepToMachine                      : TON;
+
+  fb_CappingCommandAfterEStop               : FB_CappingCommand;
+  fb_CappingCommandAfterError               : ARRAY[1..iCPr_NB_PM] OF FB_CappingCommand;
+  fb_CappingCommandAfterEngaged             : ARRAY[1..iCPr_NB_PM] OF FB_CappingCommand;
+  fb_CappingCommandAfterShutdown            : ARRAY[1..iCPr_NB_PM] OF FB_CappingCommand;
+  fb_CappingCommandAfterCleaning            : ARRAY[1..iCPr_NB_PM] OF FB_CappingCommand;
+  _bCappingCommandAfterCleaning             : ARRAY[1..iCPr_NB_PM] OF BOOL;
+
+  fb_TonAxisReady                           : ARRAY[1..iCPr_NB_PM] OF TON;
+  fb_TonAxisReadyRelease                    : ARRAY[1..iCPr_NB_PM] OF TON;
+  fb_RTrigCleaningFromMachine               : ARRAY[1..iCPr_NB_PM] OF R_TRIG;
+  bL_CleaningCommandFromMachine             : ARRAY[1..iCPr_NB_PM] OF BOOL;
+	fb_TofCleaningActive                      : ARRAY[1..iCPr_NB_PM] OF TOF;
+
+  lL_MaxPrintSpeedMin                       : DINT;                     (*Minimum of max print speed [m/min]*)
+  bL_MaxPrintSpeedExceeded                  : BOOL;                     (*Max print speed exceeded*)
+  fb_MavMasterSpeed                         : FB_FILTER_MAV;            (*Moving average filter*)
+
+  fb_TofPrintSystemOk                       : TOF;
+
+  sC_Config_M                               : ST_CONFIG_M;
+
+  (*Separator pump for tank drainage*)
+  fb_TofSeparatorPump                       : ARRAY[1..iCMa_NB_Cp] OF TOF;
+
+  bL_ManualVacuumBin                        : ARRAY[1..iCMa_NB_Cp] OF BOOL := [FALSE,FALSE];
+  fb_RTrigManualVacuumBin                   : ARRAY[1..iCMa_NB_Cp] OF R_TRIG;
+  fb_FTrigManualVacuumBin                   : ARRAY[1..iCMa_NB_Cp] OF F_TRIG;
+  fb_RTrigPurgeVacuumBin                    : ARRAY[1..iCMa_NB_Cp] OF R_TRIG;
+  fb_FTrigPurgeVacuumBin                    : ARRAY[1..iCMa_NB_Cp] OF F_TRIG;
+  fb_FTrigSeparatorNiveau                   : ARRAY[1..iCMa_NB_Cp] OF F_TRIG;
+
+  (*Compare sheet length with Image depth.*)
+  lL_SubstrateLenPx                         : DINT;       (*Length of substrate [Px]*)
+  lL_ImageDepthPx                           : DINT;       (*Image depth [Px]*)
+  lL_ToleranceLenPx                         : DINT := 5;  (*Tolerance for compare sheet length with image depth [Px]*)
+  bL_MismatchLength                         : BOOL;       (*Mismatch between length of substrate and image depth*)
+
+  (*Messages*)
+  fb_MsgQueueMachine                        : ARRAY [1..iCMa_NB_Ma] OF FB_MSG_QUEUE;
+  fb_MachineMsgHandler                      : ARRAY [1..iCMa_NB_Ma] OF FB_MSG_HANDLER;
+  sL_MsgConfigMachine                       : ARRAY [1..iCMa_NB_Ma] OF ST_MSG_CONFIG;
+  fb_MachineMsg                             : ARRAY [1..iCMa_NB_Ma, 1..iCMa_NB_MSG] OF FB_MESSAGE;
+
+  fb_TpResetFuse                            : TP;
+
+  (*Epsitron fuse control*)
+  fb_EpsitronFuseControlF70M1               : FB_EpsitronFuseControl := ( aI_Name         := 'F70: M2.1 print heads'
+                                                                        , aI_NameChannel1 := '-CB1.1, -AB1.1'
+                                                                        , aI_NameChannel2 := '-AB1.3, -AB1.5'
+                                                                        , aI_NameChannel3 := '-CB1.2, -AB1.2'
+                                                                        , aI_NameChannel4 := '-AB1.4, -AB1.6'
+                                                                        );
+  fb_EpsitronFuseControlF90M1               : FB_EpsitronFuseControl := ( aI_Name         := 'F90: M2.2 print heads'
+                                                                        , aI_NameChannel1 := '-CB2.1, -AB2.1'
+                                                                        , aI_NameChannel2 := '-AB2.3, -AB2.5'
+                                                                        , aI_NameChannel3 := '-CB2.2, -AB2.2'
+                                                                        , aI_NameChannel4 := '-AB2.4, -AB2.6'
+                                                                        );
+  fb_EpsitronFuseControlF122M1              : FB_EpsitronFuseControl := ( aI_Name         := 'F122: M2 heaters'
+                                                                        , aI_NameChannel1 := '-VT1: bottom, front'
+                                                                        , aI_NameChannel2 := '-VT1: top'
+                                                                        , aI_NameChannel3 := '-VT2: bottom, front'
+                                                                        , aI_NameChannel4 := '-VT2: top'
+                                                                        );
+  fb_EpsitronFuseControlF160M1              : FB_EpsitronFuseControl := ( aI_Name         := 'F160: M2 24 general'
+                                                                        , aI_NameChannel1 := 'UPS / CPU'
+                                                                        , aI_NameChannel2 := 'General supply'
+                                                                        , aI_NameChannel3 := 'Bus terminals, etc'
+                                                                        , aI_NameChannel4 := '-MX61 pump separator'
+                                                                        );
+  fb_EpsitronFuseControlF70M2               : FB_EpsitronFuseControl := ( aI_Name         := 'F70: M3.1 print heads'
+                                                                        , aI_NameChannel1 := '-CB1.1, -AB1.1'
+                                                                        , aI_NameChannel2 := '-AB1.3, -AB1.5'
+                                                                        , aI_NameChannel3 := '-CB1.2, -AB1.2'
+                                                                        , aI_NameChannel4 := '-AB1.4, -AB1.6'
+                                                                        );
+  fb_EpsitronFuseControlF90M2               : FB_EpsitronFuseControl := ( aI_Name         := 'F90: M3.2 print heads'
+                                                                        , aI_NameChannel1 := '-CB2.1, -AB2.1'
+                                                                        , aI_NameChannel2 := '-AB2.3, -AB2.5'
+                                                                        , aI_NameChannel3 := '-CB2.2, -AB2.2'
+                                                                        , aI_NameChannel4 := '-AB2.4, -AB2.6'
+                                                                        );
+  fb_EpsitronFuseControlF122M2              : FB_EpsitronFuseControl := ( aI_Name         := 'F122: M3 heaters'
+                                                                        , aI_NameChannel1 := '-VT1: bottom, front'
+                                                                        , aI_NameChannel2 := '-VT1: top'
+                                                                        , aI_NameChannel3 := '-VT2: bottom, front'
+                                                                        , aI_NameChannel4 := '-VT2: top'
+                                                                        );
+  fb_EpsitronFuseControlF160M2              : FB_EpsitronFuseControl := ( aI_Name         := 'F160: M3 24 general'
+                                                                        , aI_NameChannel1 := 'UPS / CPU'
+                                                                        , aI_NameChannel2 := 'General supply'
+                                                                        , aI_NameChannel3 := 'Bus terminals, etc'
+                                                                        , aI_NameChannel4 := '-MX61 pump separator'
+                                                                        );
+
+  (*Exhaust system*)
+  fb_ExhaustSystem                          :  ARRAY [1..iCPr_NB_PM] OF FB_ExhaustSystemPrint;
+  
+
+(* ADS Mappping *)
+(*************************************************************************************************)
+  iL_I                                      : INT;                (*instance counter*)
+  iL_I2                                     : INT;                (*second instance counter for double loops*)
+  sL_pI                                     : POINTER TO ST_MAP_BLK;  (*pointer to module mapping instance*)
+  iL_Ctr                                    : INT;                (*counter value*)
+  pL_Ctr                                    : POINTER TO INT;      (*pointer to mapping array index*)
+  iL_ActElmt                                : INT;                (*actual array element*)
+  aL_Name                                   : STRING;              (*Block string creation*)
+  iL_NumModules                             : INT;                (*number of different block types*)
+  cL_Module                                 : BYTE;                (*this module number*)
+
+  FB_GEN_BLOCK_MAPPING                      : FB_GEN_BLOCK_MAPPING;   (*generation of block mappings in this module*)
+  Fb_RegToAry                               : FB_REG_TO_ARY;      (**)
+
+  sL_MOD_MAP                                : ARRAY [1..iCMa_NB_BLOCK_TYPES] OF ST_MAP_MODBLKARY;  (*array conataining all modules with their mapping informations*)
+  sL_ModBlkAry                              : ST_MAP_MODBLKARY;
+
+  sL_BLK_MA                                 : ARRAY [1..iCMa_NB_Ma] OF ST_MAP_BLK;      (*Machine*)
+  sL_BLK_CP                                 : ARRAY [1..iCMa_NB_Cp] OF ST_MAP_BLK;      (*Cleaning process controller*)
+  sL_BLK_AX                                 : ARRAY [1..iCMa_NB_Ca] OF ST_MAP_BLK;      (*array of all cleaning axes*)
+
+  (*Recipe read/write*)
+  pFbRecipeMngr                             : POINTER TO FB_RECIPE_READ_WRITE;
+  bL_RecipeValuesLoadedMachine              : BOOL;
+
+  (*Simulation variables*)
+  bL_SimMachineReady                        : BOOL := FALSE;
+  bL_SimInputs                              : BOOL := FALSE;
+END_VAR
+
+VAR CONSTANT
+(*GENERAL*)
+(*************************************************************************************************)
+  fC_TOLERANCE_PRINT_POSITION               : REAL := 0.001;       (*Tolerance for print position [m]*)
+
+  cC_INIT                                   : BYTE := 16#00;      (*Operating mode: init*)
+  cC_INITIALISED                            : BYTE := 16#00;      (*Operating mode: initialised*)
+  cC_HOMING                                 : BYTE := 16#01;      (*Operating mode: homing*)
+  cC_BASIC_HALT                             : BYTE := 16#02;      (*Operating mode: basic halt*)
+
+  tC_DELAY_CAPPING_COMMAND                  : TIME := T#500MS;    (*Delay for automatic generated capping commands*)
+  tC_RELEASE_CAPPING_COMMAND                : TIME := T#2S;       (*Release for automatic generated capping commands*)
+
+  nC_MOTRONIC_PANEL_LEDS                    : INT  := 13;         (*Number Motronic panel LEDs*)
+END_VAR
+
+VAR PERSISTENT
+  tR_TimeSeparatorPump                      : TIME := T#2M;   (*Separator pump for tank drainage*)
+
+  tR_CleanerActivationAfterChange           : TIME := T#30S;
+  lR_CleanerActivationAfterChange           : DINT := 30;          (*[%]*)
+  bR_VaccumPumpActivationAfterCleanerChange : BOOL;
+
+  fR_MaxPrintSpeedMinTolerance              : LREAL := 1.0;                    (*Max print speed tolerance check [m/min]*)
+
+  tR_TimeSeparatorLevelCheck                : TIME := T#20S;   (*SeparatorLevel check*)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(* --------------------------------------------------------------------------------------------------------------- *)
+(* Init                                                                                                            *)
+(* --------------------------------------------------------------------------------------------------------------- *)
+IF NOT bO_InitOk THEN
+  Init();
+  
+  RETURN;
+END_IF
+
+(* --------------------------------------------------------------------------------------------------------------- *)
+(* Execute module                                                                                                  *)
+(* --------------------------------------------------------------------------------------------------------------- *)
+(*Dummy read unusd inputs*)
+
+
+(* Call ACTIONS *)
+(*************************************************************************************************)
+(*handle remanent variables*)
+RemVar();
+
+(*Epsitron fuse control*)
+EpsitronFuseControl();
+
+(*Exhaust system*)
+fb_ExhaustSystem[1](bI_PrintActive := bI_PrintActive);  (*PrintModule 1*)
+fb_ExhaustSystem[2](bI_PrintActive := bI_PrintActive);  (*PrintModule 2*)
+
+(*Call simulation*)
+IF bL_SimInputs THEN Simulate(); END_IF
+
+
+(*-------------------------------------------------------------------------------------------------------------------*)
+(* Infos from and to other tasks                                                                                     *)
+(*-------------------------------------------------------------------------------------------------------------------*)
+(*Ink infos are communicated via iMachineInk*)
+FOR iL_Counter := 1 TO iCPr_NB_PM DO
+  fb_TonSeparatorLevel[iL_Counter](IN := NOT bIKp_SeparatorNiveau_Ok[iL_Counter], PT := tR_TimeSeparatorLevelCheck);  (*ToDo*)
+  iMachineInk[iL_Counter]                    := fb_InterfaceMachineInk[iL_Counter];
+  iMachineInk[iL_Counter].pSeparatorNiveauOk := NOT fb_TonSeparatorLevel[iL_Counter].Q;
+  iMachineInk[iL_Counter].pInCappingPos      :=     fb_CleaningCU[iL_Counter].pInPosCappingClean
+                                                AND (   fb_CleaningPU[iL_Counter].pInPosClean1
+                                                     OR fb_CleaningPU[iL_Counter].pInPosClean2);
+  iMachineInk[iL_Counter].pPurgeAllowed      :=     iMachineInk[iL_Counter].pSeparatorNiveauOk
+                                                AND iMachineInk[iL_Counter].pInCappingPos;
+  iMachineInk[iL_Counter].pEngaged           := bL_IO_Engaged[iL_Counter];
+  iMachineInk[iL_Counter].pReceiptMessage    := fb_MsgQueueMachine[1].bO_ReceiptMessage;
+END_FOR
+
+//bI_MachineStopped        := PRG_PRINT.bL_MachineStopped[ePr_PU_UNIT_1];
+fI_PrintingPosition      := PRG_PRINT.sAdsSheetAlignment[ePr_PU_UNIT_1].sI_HeadGap.fI_Val;
+bI_PrintActive           := PRG_PRINT.FB_PU[ePr_PU_UNIT_1].sO_UnitStatus.bPrinting;
+sI_JobInkConsumption     := PRG_PRINT.sAdsPrintUnit[ePr_PU_UNIT_1].sI_JobInkConsumption;
+iI_Res_Ph                := PRG_PRINT.iL_ResolutionPhPx [ePr_PU_UNIT_1];
+iI_Res_SubPix            := PRG_PRINT.iL_ResolutionSubPx[ePr_PU_UNIT_1];
+bI_PrintUnitStart        := PRG_PRINT.sAdsPrintUnit[ePr_PU_UNIT_1].sI_Start.bI_Command;
+bI_PrintUnitStop         := PRG_PRINT.sAdsPrintUnit[ePr_PU_UNIT_1].sI_Stop.bI_Command;
+lI_PrintedCopies         := PRG_PRINT.sAdsPrintUnit[ePr_PU_UNIT_1].lO_PrintedCopies;
+bI_VacuumOk              := PRG_INK.bO_VacuumOk;
+
+bO_ErrorMsgActive        := sADS_Machine[1].bI_ErrorMsgActive;
+bO_WarningMsgActive      := sADS_Machine[1].bI_WarningMsgActive;
+
+FOR iL_Counter := 1 TO iCPr_NB_PM DO
+  bI_DriftContrSupErr    [iL_Counter] := PRG_PRINT.fB_DriftControl[iL_Counter].bO_SupervisionContrErr;
+  bI_DriftContrError     [iL_Counter] := PRG_PRINT.fB_DriftControl[iL_Counter].bO_ContrErr;
+  bI_CommandPrintlineExec[iL_Counter] := PRG_INK.bO_CommandPrintlineExec[iL_Counter];
+  bO_CleanPumpRequest    [iL_Counter] := fb_CleaningValvePump[iL_Counter].bO_CleanerPump;
+END_FOR
+
+
+(*-------------------------------------------------------------------------------------------------------------------*)
+(* Check max print speed                                                                                             *)
+(*-------------------------------------------------------------------------------------------------------------------*)
+(*Search minimum of all PG*)
+lL_MaxPrintSpeedMin := 0;
+FOR iL_Counter := 1 TO iCPr_NB_PG DO
+  IF     PRG_PRINT.sAdsPrintGroup[iL_Counter].bI_Enable
+     AND PRG_PRINT.sAdsPrintModule[iCPr_MAP_PG_PM[iL_Counter]].bI_Enable
+     AND IbEAP_Engaged[iCPr_MAP_PG_PM[iL_Counter]]
+  THEN
+    IF lL_MaxPrintSpeedMin = 0 THEN lL_MaxPrintSpeedMin := PRG_PRINT.sAdsPrintGroup[iL_Counter].sI_MaxPrintSpeed.lI_Val; END_IF  (*Init with first enabled PG*)
+
+    lL_MaxPrintSpeedMin := MIN( lL_MaxPrintSpeedMin    (*Max. speed [m/min]*)
+                              , PRG_PRINT.sAdsPrintGroup[iL_Counter].sI_MaxPrintSpeed.lI_Val);
+  END_IF
+END_FOR
+(*check overspeed*)
+(*Filter on Master_Speed to straighten variation*)
+fb_MavMasterSpeed(fI_Input := PRG_PRINT.Fb_Ref_Master[1].fO_Master_Speed, iI_NbInputs := 32);  (*max iI_NbInputs = 32!*)
+IF lL_MaxPrintSpeedMin > 0 THEN
+  bL_MaxPrintSpeedExceeded := ((DINT_TO_LREAL(lL_MaxPrintSpeedMin) + fR_MaxPrintSpeedMinTolerance) / 60) < fb_MavMasterSpeed.fO_OutputMav;
+ELSE
+  bL_MaxPrintSpeedExceeded := FALSE;
+END_IF
+    
+(*-------------------------------------------------------------------------------------------------------------------*)
+(*System command: sleep/wake up, emergency stop                                                                      *)
+(*-------------------------------------------------------------------------------------------------------------------*)
+(*Sleep and WakeUp from machine*)
+IF fb_RTrigShutdownActive.Q THEN
+  sADS_Machine[1].sI_Sleep.bI_Command  := TRUE;
+END_IF
+IF fb_FTrigShutdownActive.Q THEN
+  sADS_Machine[1].sI_WakeUp.bI_Command := TRUE;
+END_IF
+IF fb_RTrigOpModeHoming.Q THEN
+  sADS_Machine[1].sI_WakeUp.bI_Command := TRUE;
+END_IF
+(*Sleep and WakeUp from Visu*)
+fb_RTrigSleepVisu (CLK := bL_SleepVisu);
+fb_RTrigWakeUpVisu(CLK := bL_WakeUpVisu);
+IF fb_RTrigSleepVisu.Q THEN
+  sADS_Machine[1].sI_Sleep.bI_Command  := TRUE;
+END_IF
+IF fb_RTrigWakeUpVisu.Q THEN
+  sADS_Machine[1].sI_WakeUp.bI_Command := TRUE;
+END_IF
+
+(*---input---*)
+fb_SystemCommand.pI_sAdsMachine := ADR(sADS_Machine[1]);
+fb_SystemCommand.bI_SleepCanEx  := ObEAP_ShutdownReady AND NOT fb_SystemCommand.sO_SystemCmd.bSleep;
+fb_SystemCommand.bI_WakeUpCanEx := fb_SystemCommand.sO_SystemCmd.bSleep;
+fb_SystemCommand.bI_EStop       := NOT bL_IO_EStopOK;
+(*---call---*)
+fb_SystemCommand();
+(*---output---*)
+sO_SystemCmd                    := fb_SystemCommand.sO_SystemCmd;
+sO_SystemCmd.bSleep             := sO_SystemCmd.bSleep;
+
+(*Clear Sleep and WakeUp from machine*)
+IF fb_RTrigShutdownActive.Q THEN
+  sADS_Machine[1].sI_Sleep.bI_Command  := FALSE;
+END_IF
+IF fb_FTrigShutdownActive.Q THEN
+  sADS_Machine[1].sI_WakeUp.bI_Command := FALSE;
+END_IF
+IF fb_RTrigOpModeHoming.Q THEN
+  sADS_Machine[1].sI_WakeUp.bI_Command := FALSE;
+END_IF
+(*Sleep and WakeUp from Visu*)
+IF fb_RTrigSleepVisu.Q THEN
+  sADS_Machine[1].sI_Sleep.bI_Command  := FALSE;
+END_IF
+IF fb_RTrigWakeUpVisu.Q THEN
+  sADS_Machine[1].sI_WakeUp.bI_Command := FALSE;
+END_IF
+
+(*new library: new code*)
+PRG_SYSTEMBASE.fbSleep.mSetSleep(bSleep := sO_SystemCmd.bSleep);
+
+
+(*outputs*)
+bL_IO_EStopOK                    := NOT PRG_SYSTEMBASE.fbEmergency.EStop AND NOT IbEAP_EStop; 
+FOR iL_Counter := 1 TO iCPr_NB_PM DO
+  bL_SafetyOk[iL_Counter]        :=     bL_IO_EStopOK                    (*Safety ok for movement*)
+                                    AND bIKp_SefetyRelayOk[iL_Counter]
+                                    AND NOT bIKp_SafetyCoverOK[iL_Counter]
+                                    AND NOT bIKp_SafetyDoorsOK[iL_Counter]
+                                    AND (   IbEAP_PinningClosed[iL_Counter]
+                                         OR bO_PrintUnitInPrintPosition[iL_Counter]
+                                         OR (    fb_CleaningCU[iL_Counter].pInPosCappingClean
+                                             AND fb_CleaningPU[iL_Counter].pInPosClean2));
+END_FOR
+
+sADS_Machine[1].bO_EmergencyStop := NOT bL_IO_EStopOK;             (*Emergency stop*)
+sADS_Machine[1].bO_MachineReady  := TRUE;                          (*Machine is switched on*)
+sADS_Machine[1].bO_PrinterReady  := ObPrinterReady;
+
+fB_Machine.bI_SafetyOk     := bL_SafetyOk[1] AND bL_SafetyOk[2];
+fB_Machine.bI_MachineReady := bL_IO_EStopOK AND (InEAP_OperatingMode >= cC_HOMING);
+
+
+(*-------------------------------------------------------------------------------------------------------------------*)
+(* Machine interface over Beckhoff EAP                                                                               *)
+(*-------------------------------------------------------------------------------------------------------------------*)
+(*Watchdog: check machine communication*)
+fb_TonCheckMachineCom(IN := NOT fb_TonCheckMachineCom.Q, PT := T#1S);
+IF fb_TonCheckMachineCom.Q THEN
+  IF InEAP_WatchdogCycleIndex = iL_MemWatchdogCycleIndex THEN
+    bL_WatchdogError := TRUE;
+  ELSE
+    bL_WatchdogError := FALSE;
+  END_IF
+
+  iL_MemWatchdogCycleIndex := InEAP_WatchdogCycleIndex;
+END_IF
+
+(*inputs*)
+bL_IO_MachineReady               := (InEAP_OperatingMode >= cC_BASIC_HALT);
+bL_IO_MachineHoming              := (InEAP_OperatingMode >= cC_HOMING);
+fb_RTrigOpModeHoming(CLK := bL_IO_MachineHoming);
+
+FOR iL_Counter := 1 TO iCPr_NB_PM DO
+  (*Do prevent an abort of the axis if the engage will be toggled.*)
+  fb_TonAxisReady[iL_Counter]( IN :=     sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bO_Ready
+                                     AND sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bO_Ready
+                                     AND sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bO_Ready
+                             , PT := T#2S);
+  (*Safety release: accept Engaged signal from Gallus if a ready signal misses for 30s.*)
+  (*
+  fb_TonAxisReadyRelease[iL_Counter]( IN := NOT (    sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bO_Ready
+                                                 AND sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bO_Ready
+                                                 AND sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bO_Ready)
+                                    , PT := T#30S); *)
+  IF fb_TonAxisReady[iL_Counter].Q (* OR fb_TonAxisReadyRelease[iL_Counter].Q *) THEN
+    bL_IO_Engaged[iL_Counter] := IbEAP_Engaged[iL_Counter];
+  END_IF
+
+  // TEST
+  bL_IO_Engaged[iL_Counter] := IbEAP_Engaged[iL_Counter];
+END_FOR
+fb_RTrigShutdownActive(CLK := IbEAP_StandbyActive AND ObEAP_ShutdownReady);
+fb_FTrigShutdownActive(CLK := IbEAP_StandbyActive);
+
+(*outputs*)
+OnEAP_OperatingMode   := cC_INIT;         (*Operating mode*)
+IF     (   NOT fb_CleaningCU[1].bL_RefKnown
+        OR NOT fb_CleaningCU[2].bL_RefKnown
+        OR NOT fb_CleaningCH[1].bL_RefKnown
+        OR NOT fb_CleaningCH[2].bL_RefKnown
+        OR NOT fb_CleaningPU[1].bL_RefKnown
+        OR NOT fb_CleaningPU[2].bL_RefKnown)
+   AND (InEAP_OperatingMode >= cC_HOMING)
+THEN
+  OnEAP_OperatingMode := cC_HOMING;       (*Operating mode*)
+END_IF
+IF     fb_CleaningCU[1].bL_RefKnown
+   AND fb_CleaningCU[2].bL_RefKnown
+   AND fb_CleaningCH[1].bL_RefKnown
+   AND fb_CleaningCH[2].bL_RefKnown
+   AND fb_CleaningPU[1].bL_RefKnown
+   AND fb_CleaningPU[2].bL_RefKnown
+THEN
+  OnEAP_OperatingMode := cC_BASIC_HALT;   (*Operating mode*)
+END_IF
+FOR iL_Counter := 1 TO iCPr_NB_PM DO
+  ObEAP_EngagingAllowed [iL_Counter] :=     NOT sO_SystemCmd.bSleep
+                                        AND NOT iMachineInk[iL_Counter].pCleanExec
+                                        AND NOT iMachineInk[iL_Counter].pPurgeBusy;
+                                     (* AND NOT fb_Cleaning_Process.bO_MaintenanceActive*)
+  ObEAP_EngagingActive  [iL_Counter] := IbEAP_Engaged[iL_Counter] AND NOT bO_PrintUnitHigherWaitPosition[iL_Counter];
+  ObEAP_PrintPosition   [iL_Counter] := bO_PrintUnitInPrintPosition[iL_Counter];
+  ObEAP_CleaningAllowed [iL_Counter] := ObEAP_ShutdownReady AND NOT fb_CleanProcess[iL_Counter].bI_CleanLocked;
+  ObEAP_CleaningActive  [iL_Counter] := fb_TofCleaningActive[iL_Counter].Q;
+  ObEAP_PrintReady      [iL_Counter] := bO_WEUReady[iL_Counter];
+  OnEAP_VarnishQuantity [iL_Counter] := PRG_PRINT.sAdsPrintGroup[iCPr_MAP_PM_PG[iL_Counter]].sI_InkQuantity.lI_Val;
+  IF IbEAP_PrintMarksExist[iL_Counter] THEN
+    OnEAP_PrintMarkPosBits[iL_Counter] := PRG_PRINT.Fb_PaperPosDetect[iL_Counter].nO_PrintMarkPosBits;
+  ELSE
+    OnEAP_PrintMarkPosBits[iL_Counter] := 1; (*mark missing*) 
+  END_IF
+  OnEAP_MasterSpeed     [iL_Counter] := PRG_PRINT.Fb_Ref_Master[iL_Counter].fO_Master_Speed;
+END_FOR
+(*Axis drive must be completed before the info 'ShutdownReady' goes to the machine.*)
+fb_TonSleepToMachine( IN :=     fb_CleaningCU[1].pInPosCappingClean AND fb_CleaningCU[2].pInPosCappingClean         (*Cleaning position*)
+                            AND fb_CleaningPU[1].pInPosClean2       AND fb_CleaningPU[2].pInPosClean2
+                    , PT := T#1S);
+ObEAP_ShutdownReady  := fb_TonSleepToMachine.Q;
+ObEAP_StandbyReady   := sO_SystemCmd.bSleep AND ObEAP_ShutdownReady;
+ObEAP_MismatchLength := bL_MismatchLength;
+OnEAP_MaxWebSpeed    := lL_MaxPrintSpeedMin;
+ObEAP_WarnungActive  := sADS_Machine[1].bI_WarningMsgActive;
+ObEAP_ErrorActive    := sADS_Machine[1].bI_ErrorMsgActive;
+ObEAP_EStop          :=    bIKp_SafetyCoverOK[1]
+                        OR bIKp_SafetyCoverOK[2]
+                        OR bIKp_SafetyDoorsOK[1]
+                        OR bIKp_SafetyDoorsOK[2];
+FOR iL_Counter := 1 TO nC_MOTRONIC_PANEL_LEDS DO
+  ObPanelLEDs[iL_Counter] := IbEAP_PanelLEDs[iL_Counter];
+END_FOR
+
+                       
+(*-------------------------------------------------------------------------------------------------------------------*)
+(* Check if image depth is different than format length                                                              *)
+(*-------------------------------------------------------------------------------------------------------------------*)
+lL_SubstrateLenPx := (F_MeterToSubPixel( fPosMeter  := DINT_TO_REAL(InEAP_FormatLength) * 0.000_001  (*[µm] => [m]*)
+                                       , fResoSubPx := PRG_PRINT.iL_ResolutionPhPx[ePr_PU_UNIT_1] * 1 (*Result should be in pixels*) ));
+lL_ImageDepthPx   := (F_MeterToSubPixel( fPosMeter  := UDINT_TO_REAL(PRG_PRINT.sAdsPrintUnit[ePr_PU_UNIT_1].sI_JobSettings.lI_ImageDepth) * 0.000_001  (*[µm] => [m]*)
+                                       , fResoSubPx := PRG_PRINT.iL_ResolutionPhPx[ePr_PU_UNIT_1] * 1 (*Result should be in pixels*) ));
+bL_MismatchLength :=    (lL_ImageDepthPx > (lL_SubstrateLenPx + lL_ToleranceLenPx))
+                     OR (lL_ImageDepthPx < (lL_SubstrateLenPx - lL_ToleranceLenPx));
+(*Reset error if*)
+IF    PRG_PRINT.FB_PU[ePr_PU_UNIT_1].sO_PcFlags.bQueueEmpty                    (*no job loaded*)
+   OR PRG_PRINT.sAdsPrintUnit[ePr_PU_UNIT_1].sI_JobSettings.lI_ImageDepth = 0  (*job setting invalid*)
+   OR NOT PRG_PRINT.sAdsPrintUnit[ePr_PU_UNIT_1].bO_Ready                      (*job not started*)
+   OR InEAP_FormatLength = 0                                                   (*0 length from machine*)
+THEN
+  bL_MismatchLength := FALSE;
+END_IF
+
+
+FOR iL_Counter := 1 TO iCPr_NB_PM DO
+  (*Switch production / service mode*)
+  fb_RTrigEngaged[iL_Counter](CLK := bL_IO_Engaged[iL_Counter]);
+  IF fb_RTrigEngaged[iL_Counter].Q AND bL_IO_EStopOK THEN
+    bL_ProductionMode[iL_Counter] := TRUE;
+  END_IF
+  fb_FTrigEngaged[iL_Counter](CLK := bL_IO_Engaged[iL_Counter]);
+  IF fb_FTrigEngaged[iL_Counter].Q THEN
+    bL_ProductionMode[iL_Counter] := FALSE;
+  END_IF
+  IF     bL_IO_Engaged[iL_Counter]
+     AND bL_IO_EStopOK
+     AND NOT PRG_PRINT.bL_MachineStopped[ePr_PU_UNIT_1]
+  THEN
+    bL_ProductionMode[iL_Counter] := TRUE;
+  END_IF
+(*not needed here  
+  IF NOT bL_IO_EStopOK THEN
+    bL_ProductionMode[iL_Counter] := FALSE;
+  END_IF
+*)
+END_FOR
+
+
+IF NOT ObEAP_ShutdownReady THEN              (*Capping position*)
+  (*Drive in capping after release of EStop*)
+  fb_CappingCommandAfterEStop( IbTrigger := bL_IO_EStopOK
+                             , IbReset   := FALSE (*only internal reset*));
+
+  FOR iL_Counter := 1 TO iCPr_NB_PM DO
+    (*Drive in capping after release of axis error*)
+    fb_CappingCommandAfterError   [iL_Counter]( IbTrigger :=     NOT sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bO_Error
+                                                             AND NOT sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bO_Error
+                                              , IbReset   := FALSE (*only internal reset*));
+    (*Drive in capping after release of engaged*)
+    fb_CappingCommandAfterEngaged [iL_Counter]( IbTrigger := NOT bL_IO_Engaged[iL_Counter]
+                                              , IbReset   := bL_IO_Engaged[iL_Counter]);
+    (*Drive in capping after shutdown received*)
+    fb_CappingCommandAfterShutdown[iL_Counter]( IbTrigger := IbEAP_StandbyActive AND NOT bL_ProductionMode[iL_Counter]
+                                              , IbReset   := NOT IbEAP_StandbyActive);
+    (*Drive in capping after cleaning*)
+    (*Not used, is done in state machine
+    IF     (fb_CleanProcess[iL_Counter].sL_CurrentState^.sL_StateName = fb_CleanProcess[iL_Counter].fB_StateCleaning.pName)
+       AND (fb_CleanProcess[iL_Counter].sL_CurrentState^.iL_State >= 3 (*cL_DONE*)) 
+    THEN
+      _bCappingCommandAfterCleaning[iL_Counter] := TRUE;
+    END_IF
+    fb_CappingCommandAfterCleaning[iL_Counter]( IbTrigger := _bCappingCommandAfterCleaning[iL_Counter]
+                                              , IbReset   := FALSE (*only internal reset*));
+    IF fb_CappingCommandAfterCleaning[iL_Counter].fb_TonReset.Q THEN 
+      _bCappingCommandAfterCleaning[iL_Counter] := FALSE;
+		END_IF
+    *)
+  END_FOR
+END_IF
+
+
+FOR iL_Counter := 1 TO iCPr_NB_PM DO
+  (*Cleaning from Machine*)
+  fb_RTrigCleaningFromMachine[iL_Counter](CLK := IbEAP_CleaningStart[iL_Counter]);
+  IF fb_RTrigCleaningFromMachine[iL_Counter].Q THEN
+    bL_CleaningCommandFromMachine[iL_Counter] := TRUE;
+  END_IF
+  IF fb_CleanProcess[iL_Counter].fB_StateCleaning.bL_DevOpActive OR NOT IbEAP_CleaningStart[iL_Counter] THEN
+    bL_CleaningCommandFromMachine[iL_Counter] := FALSE;
+  END_IF
+END_FOR
+
+
+(*-------------------------------------------------------------------------------------------------------------------*)
+(* Interface to Substrate Transport PLC                                                                              *)
+(*-------------------------------------------------------------------------------------------------------------------*)
+ObPrinterReady :=     PRG_PRINT.bO_PrintSystemOk
+                  AND PRG_INK.bO_InkSystemOk;
+
+fb_TofPrintSystemOk(IN := PRG_PRINT.bO_PrintSystemOk, PT := T#10S); (*Delay for changing lay down amount without forcing basis machine to stop*)
+FOR iL_Counter := 1 TO iCPr_NB_PM DO
+  bO_WEUReady[iL_Counter] :=     PRG_PRINT.bO_PrintSystemOk  (*timer not needed here: fb_TofPrintSystemOk.Q*)
+                             AND PRG_INK.bO_InkSystemOk
+                             AND NOT bL_MaxPrintSpeedExceeded
+                             AND NOT bL_MismatchLength
+                             AND NOT bI_DriftContrSupErr[iL_Counter]
+                             AND NOT bI_DriftContrError[iL_Counter]
+             // not existing AND fb_ExhaustSystem[iL_Counter].bO_FUReady
+                             AND NOT fb_ExhaustSystem[iL_Counter].bO_VacuumErrorLevel
+                             AND NOT sO_SystemCmd.bSleep;
+                             
+  IF bL_SimMachineReady THEN
+    bO_WEUReady[iL_Counter] := TRUE;
+  END_IF                             
+END_FOR
+
+
+FOR iL_Counter := 1 TO iCMa_NB_Cp DO
+  (*-------------------------------------------------------------------------------------------------------------------*)
+  (* Motion Interlock                                                                                                   *)
+  (*-------------------------------------------------------------------------------------------------------------------*)
+  fb_MotionInterlock[iL_Counter].bIPU_PositionUnknown  := NOT fb_CleaningPU[iL_Counter].bL_RefKnown;
+  fb_MotionInterlock[iL_Counter].bICU_PositionUnknown  := NOT fb_CleaningCU[iL_Counter].bL_RefKnown;
+  fb_MotionInterlock[iL_Counter].fIPU_Position         := fb_CleaningPU[iL_Counter].fB_Axis.fO_ActualPosition;
+  fb_MotionInterlock[iL_Counter].fICU_Position         := fB_CleaningCU[iL_Counter].fB_Axis.fO_ActualPosition;
+  fb_MotionInterlock[iL_Counter].fCCU_CleaningPosition := fB_CleaningCU[iL_Counter].fI_PositionCappingClean / 1000;
+  fb_MotionInterlock[iL_Counter].fCCU_SafePosition[2]  := fB_CleaningCU[iL_Counter].fI_PositionCappingClean / 1000;
+  fb_MotionInterlock[iL_Counter].fCPU_SafePosition[1]  := fB_CleaningPU[iL_Counter].fI_PositionClean2 / 1000;
+  fb_MotionInterlock[iL_Counter].fCPU_SafePosition[2]  := fB_CleaningPU[iL_Counter].fI_PositionClean1 / 1000;
+
+  fb_MotionInterlock[iL_Counter]();
+
+  
+  (* --------------------------------------------------------------------------------------------------------------- *)
+  (* Devices                                                                                                         *)
+  (* --------------------------------------------------------------------------------------------------------------- *)
+  fb_CleaningCU[iL_Counter]( bI_SafeToMove     := fb_MotionInterlock[iL_Counter].bOCU_MoveAuth);
+  fb_CleaningCH[iL_Counter]( bI_SafeToMove     := fb_MotionInterlock[iL_Counter].bOCH_MoveAuth);
+  fb_CleaningPU[iL_Counter]( bI_SafeToMove     := fb_MotionInterlock[iL_Counter].bOPU_MoveAuth
+                           , fI_SheetThickness := DINT_TO_REAL(InEAP_SubstrateThickness) / 1000);
+  fb_CleaningPU[iL_Counter].pPositionPrint := fI_PrintingPosition;
+
+  IF sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bI_FaultAck OR bL_ResetAxis THEN fb_CleaningCU[iL_Counter].mAckError(); END_IF
+  IF sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bI_FaultAck OR bL_ResetAxis THEN fb_CleaningCH[iL_Counter].mAckError(); END_IF
+  IF sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bI_FaultAck OR bL_ResetAxis THEN fb_CleaningPU[iL_Counter].mAckError(); END_IF
+
+  
+  (*Manually empty cleaning tub*)
+  fb_RTrigManualVacuumBin[iL_Counter](CLK := bL_ManualVacuumBin[iL_Counter]);
+  fb_RTrigPurgeVacuumBin [iL_Counter](CLK := iMachineInk[iL_Counter].pPurgeBusy);
+  IF     (   fb_RTrigManualVacuumBin[iL_Counter].Q
+          OR fb_RTrigPurgeVacuumBin [iL_Counter].Q)
+     AND bIKp_SeparatorNiveau_Ok[iL_Counter]
+  THEN
+    fb_CleaningValvePump[iL_Counter].pManuEmptyTub := TRUE;
+  END_IF
+  fb_FTrigManualVacuumBin[iL_Counter](CLK := bL_ManualVacuumBin[iL_Counter]);
+  fb_FTrigPurgeVacuumBin [iL_Counter](CLK := iMachineInk[iL_Counter].pPurgeBusy);
+  fb_FTrigSeparatorNiveau[iL_Counter](CLK := bIKp_SeparatorNiveau_Ok[iL_Counter]);
+  IF     (   fb_FTrigManualVacuumBin[iL_Counter].Q 
+          OR fb_FTrigPurgeVacuumBin [iL_Counter].Q
+          OR fb_FTrigSeparatorNiveau[iL_Counter].Q)
+     AND fb_CleaningValvePump[iL_Counter].pManuEmptyTub
+  THEN
+    fb_CleaningValvePump[iL_Counter].pManuEmptyTub := FALSE;
+    bL_ManualVacuumBin[iL_Counter]                 := FALSE;
+  END_IF
+
+
+  (*Separator pump for tank drainage*)
+  fb_TofSeparatorPump[iL_Counter]( IN := bL_IO_EStopOK AND NOT bIKp_SeparatorNiveau_Ok[iL_Counter]
+                                 , PT := tR_TimeSeparatorPump);
+  bO_SeparatorPumpDrainage[iL_Counter] := fb_TofSeparatorPump[iL_Counter].Q OR (iMachineInk[iL_Counter].pPurgeBusy AND NOT PRG_INK.bO_TankRefuseLevelFull);
+END_FOR
+
+
+(* --------------------------------------------------------------------------------------------------------------- *)
+(* Process                                                                                                         *)
+(* --------------------------------------------------------------------------------------------------------------- *)
+FOR iL_Counter := 1 TO iCMa_NB_Cp DO
+  IF bL_ResetAxis THEN sADS_CleanProcess[iL_Counter].bI_AcknowledgeError := TRUE; END_IF
+
+  fb_CleanProcess[iL_Counter].pI_ADS            := ADR(sADS_CleanProcess[iL_Counter]);
+  fb_CleanProcess[iL_Counter].bI_UsrService     := NOT bL_ProductionMode[iL_Counter];
+  fb_CleanProcess[iL_Counter].bI_UsrAbort       := NOT bL_IO_EStopOK;
+  (*HOA: not programmed yet!! fb_CleanProcess[iL_Counter].bI_MachineReady   := bL_IO_MachineReady AND bL_IO_EStop;*)
+  fb_CleanProcess[iL_Counter].bI_CappingCommand :=    iMachineInk[iL_Counter].pCappingCommand
+                                                   OR fb_CappingCommandAfterEStop.ObCappingCommand
+                                                   OR fb_CappingCommandAfterError   [iL_Counter].ObCappingCommand
+                                                   OR fb_CappingCommandAfterEngaged [iL_Counter].ObCappingCommand
+                                                   OR fb_CappingCommandAfterShutdown[iL_Counter].ObCappingCommand
+                                                   OR fb_CappingCommandAfterCleaning[iL_Counter].ObCappingCommand;
+  fb_CleanProcess[iL_Counter].bI_PurgeCommand   := bL_CleaningCommandFromMachine[iL_Counter];
+  fb_CleanProcess[iL_Counter].bI_CleanCommand   :=    iMachineInk[iL_Counter].pCleanCommand
+                                                   OR fb_RFTrigCleanAfterPurge[iL_Counter].RT;
+  fb_CleanProcess[iL_Counter].bI_CleanLocked    :=    NOT iMachineInk[iL_Counter].pSeparatorNiveauOk
+                                                   OR iMachineInk[iL_Counter].pCleanerAirBubbleDetected;
+  (*User settings from ADS*)
+  fb_CleanProcess[iL_Counter].bI_UsrAutoMode        := sADS_CleanProcess[iL_Counter].bI_AutoMode;
+  fb_CleanProcess[iL_Counter].bI_UsrCleanAfterCapp  := sADS_CleanProcess[iL_Counter].bI_CleanAfterCapp;  (*not used yet*)
+  fb_CleanProcess[iL_Counter].bI_UsrCleanAfterPurge := sADS_CleanProcess[iL_Counter].bI_CleanAfterPurge OR bL_CleaningCommandFromMachine[iL_Counter];
+  fb_CleanProcess[iL_Counter].bI_UsrPurgeAfterCapp  := sADS_CleanProcess[iL_Counter].bI_PurgeAfterCapp;  (*not used yet*)
+  
+  fb_CleanProcess[iL_Counter]();
+  
+  iMachineInk[iL_Counter].pCleanExec := fb_CleanProcess[iL_Counter].fB_StateCleaning.bL_DevOpActive;
+  fb_TofCleaningActive[iL_Counter](IN := iMachineInk[iL_Counter].pCleanExec, PT := T#2S);
+
+  (*Cleaning after Purge from CleanProcess if bI_UsrCleanAfterPurge is set.*)
+  fb_RFTrigPurgeBusy      [iL_Counter](CLK := sADS_CleanProcess[iL_Counter].bO_PurgeExec AND iMachineInk[iL_Counter].pPurgeBusy);
+  fb_RFTrigCleanAfterPurge[iL_Counter](CLK := fb_RFTrigPurgeBusy[iL_Counter].FT AND fb_CleanProcess[iL_Counter].bI_UsrCleanAfterPurge);
+  
+  (*Purge from machine*)
+  fb_TonPurgeRequestTimeout[iL_Counter](IN := sADS_CleanProcess[iL_Counter].bO_PurgeExec, PT := T#30S);  (*Timeout if command can not executed.*)
+  IF fb_TonPurgeRequestTimeout[iL_Counter].Q OR fb_RFTrigPurgeBusy[iL_Counter].FT THEN
+    sADS_CleanProcess[iL_Counter].bO_PurgeExec := FALSE;
+    iMachineInk[iL_Counter].pPurgeRequest      := FALSE;
+  END_IF
+  fb_RTrigPurge[iL_Counter](CLK := sADS_CleanProcess[iL_Counter].bO_PurgeExec AND fB_CleaningCU[iL_Counter].pInPosCappingClean);
+  IF fb_RTrigPurge[iL_Counter].Q THEN
+    iMachineInk[iL_Counter].pPurgeRequest := TRUE;
+  END_IF
+  
+  (*Reset CanEx if VarnishChange is active*)
+  IF bI_CommandPrintlineExec[iL_Counter] THEN
+    sADS_CleanProcess[iL_Counter].bO_PurgeCanEx        := FALSE;
+    sADS_CleanProcess[iL_Counter].bO_StartCappingCanEx := FALSE;
+    sADS_CleanProcess[iL_Counter].bO_StopCappingCanEx  := FALSE;
+    sADS_CleanProcess[iL_Counter].bO_CleanCanEx        := FALSE;
+    sADS_CleanProcess[iL_Counter].bO_MaintenanceCanEx  := FALSE;
+	END_IF
+  (*Reset CanEx if separator niveau is reached*)
+  IF NOT iMachineInk[iL_Counter].pSeparatorNiveauOk THEN
+    sADS_CleanProcess[iL_Counter].bO_PurgeCanEx        := FALSE;
+	END_IF
+END_FOR
+
+
+(*-------------------------------------------------------------------------------------------------------------------*)
+(* Motion -> InkSystem Interface                                                                                     *)
+(*-------------------------------------------------------------------------------------------------------------------*)
+FOR iL_Counter := 1 TO iCMa_NB_Cp DO
+  //fb_MotionInkInterface.sI_CleanDevCmd := fb_Cleaning_Process.sO_CleanDevCmd[4];
+  fb_MotionInkInterface[iL_Counter].bI_CleanPumpOn := iMachineInk[iL_Counter].pCleanPumpRequest;
+  fb_MotionInkInterface[iL_Counter].bI_PurgeBusy   := iMachineInk[iL_Counter].pPurgeBusy;
+  
+  fb_MotionInkInterface[iL_Counter]();
+  
+  iMachineInk[iL_Counter].pCleanPumpEnable := fb_MotionInkInterface[iL_Counter].bO_EnableCleanerPump;
+
+  sADS_CleanAxis[iCPr_MAP_Cp_InkInterface[iL_Counter]].bO_Busy  := fb_MotionInkInterface[iL_Counter].sO_CleanDevStatus.bBusy;
+  sADS_CleanAxis[iCPr_MAP_Cp_InkInterface[iL_Counter]].bO_Ready := fb_MotionInkInterface[iL_Counter].sO_CleanDevStatus.bReady;
+  sADS_CleanAxis[iCPr_MAP_Cp_InkInterface[iL_Counter]].bO_Error := FALSE;
+END_FOR
+
+
+(*-------------------------------------------------------------------------------------------------------------------*)
+(* Axes control                                                                                                      *)
+(*-------------------------------------------------------------------------------------------------------------------*)
+FOR iL_Counter := 1 TO iCMa_NB_Cp DO
+  (*-------------------------------------------------------------------------------------------------------------------*)
+  (* CLEAN UNIT MOTION CONTROL                                                                                         *)
+  (*-------------------------------------------------------------------------------------------------------------------*)
+  (*Manuell move in hand mode (NOT bI_UsrAutoMode)*)
+  fb_RFTrigManualMoveCU[iL_Counter](CLK := sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bI_ManualMove);
+  IF     NOT fb_CleanProcess[iL_Counter].bI_UsrAutoMode 
+     AND fb_CleanProcess[iL_Counter].bI_UsrService
+     AND bL_SafetyOk[iL_Counter]
+  THEN
+    sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bO_ManualMoveCanEx := TRUE;
+  
+    IF sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bI_ManualMove OR fb_RFTrigManualMoveCU[iL_Counter].FT THEN
+      fB_CleaningCU[iL_Counter].mManuellMove( bI_Do                  := sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bI_ManualMove
+                                            , fI_TargetPosition      := SEL( sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bI_ManualMove
+                                                                           , (fb_CleaningCU[iL_Counter].fB_Axis.fO_ActualPosition * 1000)
+                                                                           , sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].fI_ManualTargetPos)
+                                            , fL_ManualMoveTolerance := fb_CleaningCU[iL_Counter].fB_Axis.fI_Tolerance);
+    END_IF
+  ELSE
+    sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bO_ManualMoveCanEx := FALSE;
+    sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bI_ManualMove      := FALSE;
+  
+    IF fb_RFTrigManualMoveCU[iL_Counter].FT THEN
+      fB_CleaningCU[iL_Counter].mManuellMove( bI_Do                  := FALSE
+                                            , fI_TargetPosition      := (fb_CleaningCU[iL_Counter].fB_Axis.fO_ActualPosition * 1000)
+                                            , fL_ManualMoveTolerance := fb_CleaningCU[iL_Counter].fB_Axis.fI_Tolerance);
+    END_IF
+  END_IF
+  (*Rest command if move is done*)
+  IF fB_CleaningCU[iL_Counter].bL_Ready OR fB_CleaningCU[iL_Counter].bL_Error THEN
+    sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bI_ManualMove := FALSE;
+	END_IF
+  
+  sL_CU_CleanDevStatus[iL_Counter] := fB_CleaningCU[iL_Counter].sStatus;
+  
+  (*ADS Feedback*)
+  sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].sO_AxisPosition.fO_Val := fB_CleaningCU[iL_Counter].fB_Axis.fO_ActualPosition * 1000;
+  sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bO_Busy                := sL_CU_CleanDevStatus[iL_Counter].bBusy;
+  sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bO_Ready               := sL_CU_CleanDevStatus[iL_Counter].bReady;
+  sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].wO_ErrorCode           := fB_CleaningCU[iL_Counter].wL_ErrorCode;
+  sADS_CleanAxis[iCPr_MAP_Cp_CuAxis[iL_Counter]].bO_Error               := sL_CU_CleanDevStatus[iL_Counter].bError;
+
+  
+  (*-------------------------------------------------------------------------------------------------------------------*)
+  (* CLEAN HEAD MOTION CONTROL                                                                                         *)
+  (*-------------------------------------------------------------------------------------------------------------------*)
+  (*Manuell move in hand mode (NOT bI_UsrAutoMode)*)
+  fb_RFTrigManualMoveCH[iL_Counter](CLK := sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bI_ManualMove);
+  IF     NOT fb_CleanProcess[iL_Counter].bI_UsrAutoMode 
+     AND fb_CleanProcess[iL_Counter].bI_UsrService
+     AND bL_SafetyOk[iL_Counter]
+     AND fb_CleaningCU[iL_Counter].pInPosCappingClean
+  THEN
+    sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bO_ManualMoveCanEx := TRUE;
+  
+    IF sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bI_ManualMove OR fb_RFTrigManualMoveCH[iL_Counter].FT THEN
+      fB_CleaningCH[iL_Counter].mManuellMove( bI_Do                  := sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bI_ManualMove
+                                            , fI_TargetPosition      := SEL( sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bI_ManualMove
+                                                                           , (fb_CleaningCH[iL_Counter].fB_Axis.fO_ActualPosition * 1000)
+                                                                           , sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].fI_ManualTargetPos)
+                                            , fL_ManualMoveTolerance := fb_CleaningCH[iL_Counter].fB_Axis.fI_Tolerance);
+    END_IF
+  ELSE
+    sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bO_ManualMoveCanEx := FALSE;
+    sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bI_ManualMove      := FALSE;
+  
+    IF fb_RFTrigManualMoveCH[iL_Counter].FT THEN
+      fB_CleaningCH[iL_Counter].mManuellMove( bI_Do                  := FALSE
+                                            , fI_TargetPosition      := (fb_CleaningCH[iL_Counter].fB_Axis.fO_ActualPosition * 1000)
+                                            , fL_ManualMoveTolerance := fb_CleaningCH[iL_Counter].fB_Axis.fI_Tolerance);
+    END_IF
+  END_IF
+  (*Rest command if move is done*)
+  IF fB_CleaningCH[iL_Counter].bL_Ready OR fB_CleaningCH[iL_Counter].bL_Error THEN
+    sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bI_ManualMove := FALSE;
+	END_IF
+
+  sL_CH_CleanDevStatus[iL_Counter] := fB_CleaningCH[iL_Counter].sStatus;
+  
+  (*ADS Feedback*)
+  sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].sO_AxisPosition.fO_Val := fB_CleaningCH[iL_Counter].fB_Axis.fO_ActualPosition * 1000;
+  sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bO_Busy                := sL_CH_CleanDevStatus[iL_Counter].bBusy;
+  sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bO_Ready               := sL_CH_CleanDevStatus[iL_Counter].bReady;
+  sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].wO_ErrorCode           := fB_CleaningCH[iL_Counter].wL_ErrorCode;
+  sADS_CleanAxis[iCPr_MAP_Cp_ChAxis[iL_Counter]].bO_Error               := sL_CH_CleanDevStatus[iL_Counter].bError;
+
+
+  (*-------------------------------------------------------------------------------------------------------------------*)
+  (* PRINT UNIT MOTION CONTROL                                                                                         *)
+  (*-------------------------------------------------------------------------------------------------------------------*)
+  (*Manuell move in hand mode (NOT bI_UsrAutoMode)*)
+  fb_RFTrigManualMovePU[iL_Counter](CLK := sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bI_ManualMove);
+  IF     NOT fb_CleanProcess[iL_Counter].bI_UsrAutoMode
+     AND fb_CleanProcess[iL_Counter].bI_UsrService
+     AND bL_SafetyOk[iL_Counter]
+  THEN
+    sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bO_ManualMoveCanEx := TRUE;
+  
+    IF sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bI_ManualMove OR fb_RFTrigManualMovePU[iL_Counter].FT THEN
+      fb_CleaningPU[iL_Counter].mManuellMove( bI_Do                  := sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bI_ManualMove
+                                            , fI_TargetPosition      := SEL( sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bI_ManualMove
+                                                                           , (fb_CleaningPU[iL_Counter].fB_Axis.fO_ActualPosition * 1000)
+                                                                           , sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].fI_ManualTargetPos)
+                                            , fL_ManualMoveTolerance := fb_CleaningPU[iL_Counter].fB_Axis.fI_Tolerance);
+    END_IF
+  ELSE
+    sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bO_ManualMoveCanEx := FALSE;
+    sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bI_ManualMove      := FALSE;
+  
+    IF fb_RFTrigManualMovePU[iL_Counter].FT THEN
+      fb_CleaningPU[iL_Counter].mManuellMove( bI_Do                  := FALSE
+                                            , fI_TargetPosition      := (fb_CleaningPU[iL_Counter].fB_Axis.fO_ActualPosition * 1000)
+                                            , fL_ManualMoveTolerance := fb_CleaningPU[iL_Counter].fB_Axis.fI_Tolerance);
+    END_IF
+  END_IF
+  (*Rest command if move is done*)
+  IF fb_CleaningPU[iL_Counter].bL_Ready OR fb_CleaningPU[iL_Counter].bL_Error THEN
+    sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bI_ManualMove := FALSE;
+	END_IF
+
+  (*Move to print position in production*)
+  IF     bL_ProductionMode[iL_Counter]
+     AND bL_IO_Engaged[iL_Counter]
+     AND bL_SafetyOk[iL_Counter]
+     AND fb_CleanProcess[iL_Counter].bI_UsrAutoMode
+  THEN
+    fb_CleaningPU[iL_Counter].mPrintPos( bI_PrintEnabled  := IbEAP_PrintEnabled[iL_Counter]
+                                       , bI_PrintFinsihed := TRUE  (*ToDo: if PrintEnable is disabled, the print is to be finished first: b_PrintFinished[iL_Counter] OR IbEAP_SpliceDetected[iL_Counter]*)  );
+  END_IF
+  
+  sL_PU_CleanDevStatus[iL_Counter] := fb_CleaningPU[iL_Counter].sStatus;
+  
+  (*ADS Feedback*)
+  sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].sO_AxisPosition.fO_Val := fb_CleaningPU[iL_Counter].fB_Axis.fO_ActualPosition * 1000;
+  sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bO_Busy                := sL_PU_CleanDevStatus[iL_Counter].bBusy;
+  sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bO_Ready               := sL_PU_CleanDevStatus[iL_Counter].bReady;
+  sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].wO_ErrorCode           := fb_CleaningPU[iL_Counter].wL_ErrorCode;
+  sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].bO_Error               := sL_PU_CleanDevStatus[iL_Counter].bError;
+
+  (*Check if print unit is in print position*)
+  bO_PrintUnitInPrintPosition   [iL_Counter] := fb_CleaningPU[iL_Counter].pInPosPrint;
+  (*Check if print unit is higher than wait position*)
+  bO_PrintUnitHigherWaitPosition[iL_Counter] := fb_CleaningPU[iL_Counter].pHigherPosWait;
+END_FOR
+
+
+(*-------------------------------------------------------------------------------------------------------------------*)
+
+(*Fault Reset Generation*)
+bL_ResetAxis    :=    (bL_IO_EStopOK AND NOT bL_MemEstop) 
+                   OR ((InEAP_OperatingMode >= cC_HOMING) AND NOT bL_MemMachineOn); 
+bL_MemEstop     := bL_IO_EStopOK;
+bL_MemMachineOn := (InEAP_OperatingMode >= cC_HOMING);
+
+
+(*Machine messages*)
+fb_MachineMsgHandler[1]();  (*Call to check for blocked access*)
+
+fb_MachineMsg[1, 1](bI_Status := sADS_Machine[1].bO_EmergencyStop);
+fb_MachineMsg[1, 2](bI_Status := NOT sADS_Machine[1].bO_MachineReady);
+fb_MachineMsg[1, 3](bI_Event  := bL_WatchdogError);
+fb_MachineMsg[1, 4](bI_Status := sO_SystemCmd.bSleep);
+fb_MachineMsg[1, 5](bI_Status := NOT PRG_INK.bO_TemperatureOk OR NOT PRG_PRINT.bO_TemperatureOk);
+fb_MachineMsg[1, 6](bI_Status := NOT PRG_INK.bO_InkStorageTankOk);
+fb_MachineMsg[1, 7](bI_Status := PRG_INK.bO_TotalWcState);
+fb_MachineMsg[1, 8](bI_Status := PRG_PRINT.bO_TotalWcState);
+fb_MachineMsg[1, 9](bI_Status := bO_TotalWcState);
+fb_MachineMsg[1,10](bI_Status := FALSE);
+fb_MachineMsg[1,11](bI_Status := PRG_INK.bO_TankCleanerLevelEmpty);
+fb_MachineMsg[1,12](bI_Status := PRG_INK.bO_TankRefuseLevelFull);
+fb_MachineMsg[1,13](bI_Status := FALSE);
+fb_MachineMsg[1,14](bI_Status :=    NOT bIKp_CircuitBreakerM1_Ok
+                                 OR NOT bIKp_CircuitBreakerM2_Ok
+                                 OR NOT bIKp_PowerSupply1M1_Ok
+                                 OR NOT bIKp_PowerSupply2M1_Ok
+                                 OR NOT bIKp_PowerSupply3M1_Ok
+                                 OR NOT bIKp_PowerSupply1M2_Ok
+                                 OR NOT bIKp_PowerSupply2M2_Ok
+                                 OR NOT bIKp_PowerSupply3M2_Ok);
+fb_MachineMsg[1,15](bI_Status := FALSE);
+fb_MachineMsg[1,16](bI_Status := FALSE);
+fb_MachineMsg[1,17](bI_Status := FALSE);    //NOT bIKp_CabinetTemp_Ok);
+fb_MachineMsg[1,18](bI_Status := NOT iMachineInk[1].pSeparatorNiveauOk OR NOT iMachineInk[2].pSeparatorNiveauOk);
+fb_MachineMsg[1,19](bI_Status := FALSE);
+fb_MachineMsg[1,20](bI_Status := FALSE);
+fb_MachineMsg[1,21](bI_Status := FALSE);  (*bO_CleanAborted*)
+fb_MachineMsg[1,22](bI_Status := bL_RecipeValuesLoadedMachine OR bI_RecipeValuesLoadedInk OR bI_RecipeValuesLoadedPrint);
+fb_MachineMsg[1,23](bI_Status := FALSE);
+fb_MachineMsg[1,24](bI_Status := FALSE);
+fb_MachineMsg[1,25](bI_Status := bL_MaxPrintSpeedExceeded);
+fb_MachineMsg[1,26](bI_Status := bL_MismatchLength);
+fb_MachineMsg[1,27](bI_Status := FALSE);
+fb_MachineMsg[1,28](bI_Status := FALSE);
+fb_MachineMsg[1,29](bI_Status := FALSE);
+fb_MachineMsg[1,30](bI_Status := FALSE);
+fb_MachineMsg[1,31](bI_Status := fb_TonSeparatorLevel[1].Q OR fb_TonSeparatorLevel[2].Q);
+
+fb_MsgQueueMachine[1]();
+
+(*Reset fuses with message from GUI.*)
+fb_TpResetFuse(IN := fb_MsgQueueMachine[1].bO_ReceiptMessage, PT := T#1S);
+bOKp_ResetFuse := fb_TpResetFuse.Q;
+
+IF fb_MsgQueueMachine[1].bO_ReceiptMessage THEN
+  bL_RecipeValuesLoadedMachine := FALSE;
+  bI_RecipeValuesLoadedInk     := FALSE;
+  bI_RecipeValuesLoadedPrint   := FALSE;
+
+  iMachineInk[1].pCleanerAirBubbleDetected := FALSE;
+  iMachineInk[2].pCleanerAirBubbleDetected := FALSE;
+
+  fb_ExhaustSystem[1].mAckError();
+  fb_ExhaustSystem[2].mAckError();
+END_IF
+
+
+(*WcState: 0 = Data valid, 1 = Data invalid*)
+bO_TotalWcState := FALSE;
+
+(********************************* END OF PRG ****************************************************)]]></ST>
+    </Implementation>
+    <Action Name="EpsitronFuseControl" Id="{bb765a1a-1f9e-4848-b82e-1e9a8ea9dd5c}">
+      <Implementation>
+        <ST><![CDATA[(*F70 M1*)
+fb_EpsitronFuseControlF70M1();
+bO_F70M1FuseOk  := NOT (   (fb_EpsitronFuseControlF70M1.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF70M1.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF70M1.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF70M1.iO_Channel4Status = 3));
+(*F90 M1*)
+fb_EpsitronFuseControlF90M1();
+bO_F90M1FuseOk  := NOT (   (fb_EpsitronFuseControlF90M1.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF90M1.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF90M1.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF90M1.iO_Channel4Status = 3));
+(*F122 M1*)
+fb_EpsitronFuseControlF122M1();
+bO_F122M1FuseOk := NOT (   (fb_EpsitronFuseControlF122M1.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF122M1.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF122M1.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF122M1.iO_Channel4Status = 3));
+(*F160 M1*)
+fb_EpsitronFuseControlF160M1();
+bO_F160M1FuseOk := NOT (   (fb_EpsitronFuseControlF160M1.iO_Channel1Status = 3)
+                      OR (fb_EpsitronFuseControlF160M1.iO_Channel2Status = 3)
+                      OR (fb_EpsitronFuseControlF160M1.iO_Channel3Status = 3)
+                      OR (fb_EpsitronFuseControlF160M1.iO_Channel4Status = 3));
+(*F70 M2*)
+fb_EpsitronFuseControlF70M2();
+bO_F70M2FuseOk  := NOT (   (fb_EpsitronFuseControlF70M2.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF70M2.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF70M2.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF70M2.iO_Channel4Status = 3));
+(*F90 M2*)
+fb_EpsitronFuseControlF90M2();
+bO_F90M2FuseOk  := NOT (   (fb_EpsitronFuseControlF90M2.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF90M2.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF90M2.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF90M2.iO_Channel4Status = 3));
+(*F122 M2*)
+fb_EpsitronFuseControlF122M2();
+bO_F122M2FuseOk := NOT (   (fb_EpsitronFuseControlF122M2.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF122M2.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF122M2.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF122M2.iO_Channel4Status = 3));
+(*F160 M2*)
+fb_EpsitronFuseControlF160M2();
+bO_F160M2FuseOk := NOT (   (fb_EpsitronFuseControlF160M2.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF160M2.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF160M2.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF160M2.iO_Channel4Status = 3));
+                      
+                      
+(*Acknowledge error*)
+IF fb_MsgQueueMachine[1].bO_ReceiptMessage THEN
+  fb_EpsitronFuseControlF70M1 .mAckError();
+  fb_EpsitronFuseControlF90M1 .mAckError();
+  fb_EpsitronFuseControlF122M1.mAckError();
+  fb_EpsitronFuseControlF160M1.mAckError();
+  fb_EpsitronFuseControlF70M2 .mAckError();
+  fb_EpsitronFuseControlF90M2 .mAckError();
+  fb_EpsitronFuseControlF122M2.mAckError();
+  fb_EpsitronFuseControlF160M2.mAckError();
+END_IF
+]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="Init" Id="{f71dbef1-9bad-434d-a8b1-1cc85b784922}">
+      <Implementation>
+        <ST><![CDATA[(*************************************************************************************************)
+(*GENERAL*)
+(*************************************************************************************************)
+
+(*Get Task cycle information*)
+Fb_GetCurTskIndx();
+tskL_ActTaskInfo := _TaskInfo[FB_GetCurTskIndx.index];
+lL_TaskCycleTime := UDINT_TO_REAL(tskL_ActTaskInfo.CycleTime) / 10_000_000.0;
+
+
+(*Machine messaging*)
+sL_MsgConfigMachine[1].bI_Enable                  := TRUE;
+sL_MsgConfigMachine[1].pI_FbMsgHandler            := ADR(fb_MachineMsgHandler[1]);
+
+fb_MachineMsgHandler[1].pI_MsgQueue               := ADR(fb_MsgQueueMachine[1]);
+
+fb_MsgQueueMachine[1].pI_MsgInterface             := ADR(sADS_Machine[1].sO_Message);
+fb_MsgQueueMachine[1].cI_MaxElement               := 5;
+
+FOR iL_Counter := 1 TO iCMa_NB_MSG DO
+  fb_MachineMsg[1, iL_Counter].pI_MsgConfig       := ADR(sL_MsgConfigMachine[1]);
+  fb_MachineMsg[1, iL_Counter].iI_MsgLocation     := 1;
+END_FOR;
+
+fb_MachineMsg[1, 1].iI_MsgNumber                  := eCMa_EMERGENCY_STOP_ACTIVE;
+fb_MachineMsg[1, 2].iI_MsgNumber                  := eCMa_MACHINE_DISABLED;
+fb_MachineMsg[1, 3].iI_MsgNumber                  := eCMa_MACHINE_COMM_ERR;
+fb_MachineMsg[1, 4].iI_MsgNumber                  := eCMa_SLEEP_MODE_ACTIVE;
+fb_MachineMsg[1, 5].iI_MsgNumber                  := eCMa_TEMPERATURE_MONITORING;
+fb_MachineMsg[1, 6].iI_MsgNumber                  := eCMa_STOR_TANKS_DISABLED;
+fb_MachineMsg[1, 7].iI_MsgNumber                  := eCMa_INK_WC_STATE_ERROR;
+fb_MachineMsg[1, 8].iI_MsgNumber                  := eCMa_PRINT_WC_STATE_ERROR;
+fb_MachineMsg[1, 9].iI_MsgNumber                  := eCMa_MACHINE_WC_STATE_ERROR;
+fb_MachineMsg[1,10].iI_MsgNumber                  := eCMa_TCPIP_COMM_ERROR;
+fb_MachineMsg[1,11].iI_MsgNumber                  := eCIk_CLEANER_CONTAINER_LEVEL_EMPTY;
+fb_MachineMsg[1,12].iI_MsgNumber                  := eCIk_REFUSE_CONTAINER_LEVEL_FULL;
+fb_MachineMsg[1,13].iI_MsgNumber                  := eCMa_AXIS_ERROR_X_PNEUMATIC;
+fb_MachineMsg[1,14].iI_MsgNumber                  := eCMa_WATCH_CIRCUIT_BREAKER;
+fb_MachineMsg[1,15].iI_MsgNumber                  := eCMa_COVER_INLET;
+fb_MachineMsg[1,16].iI_MsgNumber                  := eCMa_COVER_OUTLET;
+fb_MachineMsg[1,17].iI_MsgNumber                  := eCMa_WATCH_CABINET_TEMP;
+fb_MachineMsg[1,18].iI_MsgNumber                  := eCMa_WATCH_SEPARATOR_NIVEAU;
+fb_MachineMsg[1,19].iI_MsgNumber                  := eCMa_AXIS_SAFETY_ACCEPTANCE;
+fb_MachineMsg[1,20].iI_MsgNumber                  := eCMa_DRIFT_CONTR_ERROR;
+fb_MachineMsg[1,21].iI_MsgNumber                  := eCIk_CLEAN_START_MISSING;
+fb_MachineMsg[1,22].iI_MsgNumber                  := eCMa_RECIPE_LOADED;
+fb_MachineMsg[1,23].iI_MsgNumber                  := eCMa_AXIS_ERROR_Z_PNEUMATIC;
+fb_MachineMsg[1,24].iI_MsgNumber                  := eCMa_CLEANER_TANK_INFO;
+fb_MachineMsg[1,25].iI_MsgNumber                  := eCMa_MAX_SPEED_EXCEEDED;
+fb_MachineMsg[1,26].iI_MsgNumber                  := eCMa_IMAGE_DEPTH_INCORRECT;
+fb_MachineMsg[1,27].iI_MsgNumber                  := eCMa_EXHAUST_SYSTEM_WARNING;
+fb_MachineMsg[1,28].iI_MsgNumber                  := eCMa_EXHAUST_SYSTEM_ERROR;
+fb_MachineMsg[1,29].iI_MsgNumber                  := eCMa_EXHAUST_SYSTEM_MALFUNCTION;
+fb_MachineMsg[1,30].iI_MsgNumber                  := eCMa_CLEANER_TANK_FILLING;
+fb_MachineMsg[1,31].iI_MsgNumber                  := eCMa_SEPARATOR_LEVEL_REACHED;
+
+
+
+(*************************************************************************************************)
+(*Function Blocks Init*)
+(*************************************************************************************************)
+(*Cleaning station*)
+//Link reference to machine base
+//X: clean unit
+//Y: clean head
+//Z: print unit
+FOR iL_Counter := 1 TO iCMa_NB_Cp DO
+  fb_CleanProcess     [iL_Counter].I_MachineStatus := fb_Machine;
+  fb_CleaningCU       [iL_Counter].I_MachineStatus := fb_Machine;
+  fb_CleaningPU       [iL_Counter].I_MachineStatus := fb_Machine;
+  fb_CleaningCH       [iL_Counter].I_MachineStatus := fb_Machine;
+  fb_CleaningValvePump[iL_Counter].I_MachineStatus := fb_Machine;
+  
+  //Init blocks
+  fb_CleanProcess[iL_Counter].pC_MsgInterface := ADR(sADS_CleanProcess[iL_Counter].sO_Message);
+  fb_CleanProcess[iL_Counter].iC_BlockId      := eMa_BLK_CLEANPROC;
+  
+  fb_CleanProcess     [iL_Counter].mInit();
+  fb_CleaningCU       [iL_Counter].mInit();
+  fb_CleaningPU       [iL_Counter].mInit();
+  fb_CleaningCH       [iL_Counter].mInit();
+  fb_CleaningValvePump[iL_Counter].mInit();
+  
+  //Register cleaning devices
+  fb_CleanProcess[iL_Counter].mRegisterDevice(fb_CleaningCU[iL_Counter]);
+  fb_CleanProcess[iL_Counter].mRegisterDevice(fb_CleaningPU[iL_Counter]);
+  fb_CleanProcess[iL_Counter].mRegisterDevice(fb_CleaningCH[iL_Counter]);
+  fb_CleanProcess[iL_Counter].mRegisterDevice(fb_CleaningValvePump[iL_Counter]);
+
+  fb_MotionInterlock[iL_Counter].fCCU_SafePosition[1]      := 0.005;
+  fb_MotionInterlock[iL_Counter].fCCU_SafePosition[2]      := 0.584;
+  fb_MotionInterlock[iL_Counter].fCCU_SafePosition[3]      := 0.586;
+  fb_MotionInterlock[iL_Counter].fCPU_SafePosition[1]      := 0.160;
+  fb_MotionInterlock[iL_Counter].fCPU_SafePosition[2]      := 0.165;
+  fb_MotionInterlock[iL_Counter].fCCU_CleaningPosition     := 0.584;
+  fb_MotionInterlock[iL_Counter].fCCU_Tolerance            := 0.002;
+  fb_MotionInterlock[iL_Counter].fCPU_Tolerance            := 0.0005;
+END_FOR;
+
+
+(*Module 1*)
+sADS_CleanProcess[1].aO_Name                  := 'Clean Process M2';
+sADS_CleanProcess[1].bO_AxisProcessMovingVisible := FALSE;
+//Clean unit
+sADS_CleanAxis[1].aO_Name                     := 'M2: CU-Axis [mm]';
+sADS_CleanAxis[1].sO_AxisPosition.fC_Min      := 0;    (*Value is used for display of axes at PUC*)
+sADS_CleanAxis[1].sO_AxisPosition.fC_Max      := 586.0;
+fb_CleaningCU[1].pC_MsgInterface              := ADR(sADS_CleanAxis[1].sO_Message);
+fb_CleaningCU[1].iC_BlockId                   := eMa_BLK_CLEANAXIS;
+fb_CleaningCU[1].fB_Axis.fI_Tolerance         := 0.001;
+fb_CleaningCU[1].fB_Axis.fI_PosControllerGain := 5;
+fb_CleaningCU[1].fB_Axis.fI_Axis_Scaling      := (0.1512 * 1/10);
+fb_CleaningCU[1].fB_Axis.fI_SetPositionValue  := -0.01;				(*Reference sensor is at -10mm*)
+fb_CleaningCU[1].fB_Axis.fI_EncoderScaling    := 1048576			(*262.144 * 4*);
+
+//Clean head
+sADS_CleanAxis[2].aO_Name                     := 'M2: CH-Axis [mm]';
+sADS_CleanAxis[2].sO_AxisPosition.fC_Min      := -1;
+sADS_CleanAxis[2].sO_AxisPosition.fC_Max      := 400.0;
+fb_CleaningCH[1].pC_MsgInterface              := ADR(sADS_CleanAxis[2].sO_Message);
+fb_CleaningCH[1].iC_BlockId                   := eMa_BLK_CLEANAXIS;
+fb_CleaningCH[1].fB_Axis.fI_Tolerance         := 0.001;
+fb_CleaningCH[1].fB_Axis.fI_PosControllerGain := 5;
+fb_CleaningCH[1].fB_Axis.fI_Axis_Scaling      := (0.010 * 1/10);
+fb_CleaningCH[1].fB_Axis.fI_SetPositionValue  := -0.001;      (*Reference sensor is at -1mm*)
+fb_CleaningCH[1].fB_Axis.fI_EncoderScaling    := 1048576			(*262.144 * 4*);
+
+//Print unit
+sADS_CleanAxis[3].aO_Name                     := 'M2: PU-Axis [mm]';
+sADS_CleanAxis[3].sO_AxisPosition.fC_Min      := 0.5;  (********(Köbi) Korrektur 0.5 statt 1 *)
+sADS_CleanAxis[3].sO_AxisPosition.fC_Max      := 250;
+fb_CleaningPU[1].pC_MsgInterface              := ADR(sADS_CleanAxis[3].sO_Message);
+fb_CleaningPU[1].iC_BlockId                   := eMa_BLK_CLEANAXIS;
+fb_CleaningPU[1].fB_Axis.fI_Tolerance         := 0.0001;
+fb_CleaningPU[1].fB_Axis.fI_PosControllerGain := 10;
+fb_CleaningPU[1].fB_Axis.fI_Axis_Scaling      := 0.001; (******(Köbi) Korrektur Ration 0.001 statt ...*) //0.016 / 50 * 3;	(*Steigung Spindel / Übersetzung * Winkelgetriebe*)
+fb_CleaningPU[1].fB_Axis.fI_SetPositionValue  := 0.010;           (*Calibrate manually at 10mm*)
+fb_CleaningPU[1].fB_Axis.fI_EncoderScaling    := 1048576			(*65536*);
+
+//Ink interface
+sADS_CleanAxis[4].sO_AxisPosition.fC_Min      := 0;     (*Dummy*)
+sADS_CleanAxis[4].sO_AxisPosition.fC_Max      := 1000;  (*Dummy*)
+
+
+(*Module 2*)
+sADS_CleanProcess[2].aO_Name                  := 'Clean Process M3';
+sADS_CleanProcess[2].bO_AxisProcessMovingVisible := FALSE;
+//Clean unit
+sADS_CleanAxis[5].aO_Name                     := 'M3: CU-Axis [mm]';
+sADS_CleanAxis[5].sO_AxisPosition.fC_Min      := 0;    (*Value is used for display of axes at PUC*)
+sADS_CleanAxis[5].sO_AxisPosition.fC_Max      := 586.0;
+fb_CleaningCU[2].pC_MsgInterface              := ADR(sADS_CleanAxis[5].sO_Message);
+fb_CleaningCU[2].iC_BlockId                   := eMa_BLK_CLEANAXIS;
+fb_CleaningCU[2].fB_Axis.fI_Tolerance         := 0.001;
+fb_CleaningCU[2].fB_Axis.fI_PosControllerGain := 5;
+fb_CleaningCU[2].fB_Axis.fI_Axis_Scaling      := (0.1512 * 1/10);
+fb_CleaningCU[2].fB_Axis.fI_SetPositionValue  := -0.01;				(*Reference sensor is at -10mm*)
+fb_CleaningCU[2].fB_Axis.fI_EncoderScaling    := 1048576			(*262.144 * 4*);
+
+//Clean head
+sADS_CleanAxis[6].aO_Name                     := 'M3: CH-Axis [mm]';
+sADS_CleanAxis[6].sO_AxisPosition.fC_Min      := -1;
+sADS_CleanAxis[6].sO_AxisPosition.fC_Max      := 400.0;
+fb_CleaningCH[2].pC_MsgInterface              := ADR(sADS_CleanAxis[6].sO_Message);
+fb_CleaningCH[2].iC_BlockId                   := eMa_BLK_CLEANAXIS;
+fb_CleaningCH[2].fB_Axis.fI_Tolerance         := 0.001;
+fb_CleaningCH[2].fB_Axis.fI_PosControllerGain := 5;
+fb_CleaningCH[2].fB_Axis.fI_Axis_Scaling      := (0.010 * 1/10);
+fb_CleaningCH[2].fB_Axis.fI_SetPositionValue  := -0.001;      (*Reference sensor is at -1mm*)
+fb_CleaningCH[2].fB_Axis.fI_EncoderScaling    := 1048576			(*262.144 * 4*);
+
+//Print unit
+sADS_CleanAxis[7].aO_Name                     := 'M3: PU-Axis [mm]';
+sADS_CleanAxis[7].sO_AxisPosition.fC_Min      := 0.5;  (********(Köbi) Korrektur 0.5 statt 1 *)
+sADS_CleanAxis[7].sO_AxisPosition.fC_Max      := 250;
+fb_CleaningPU[2].pC_MsgInterface              := ADR(sADS_CleanAxis[7].sO_Message);
+fb_CleaningPU[2].iC_BlockId                   := eMa_BLK_CLEANAXIS;
+fb_CleaningPU[2].fB_Axis.fI_Tolerance         := 0.0001;
+fb_CleaningPU[2].fB_Axis.fI_PosControllerGain := 10;
+fb_CleaningPU[2].fB_Axis.fI_Axis_Scaling      := 0.001; (******(Köbi) Korrektur Ration 0.001 statt ...*) //0.016 / 50 * 3;	(*Steigung Spindel / Übersetzung * Winkelgetriebe*)
+fb_CleaningPU[2].fB_Axis.fI_SetPositionValue  := 0.010;            (*Calibrate manually at 10mm*)
+fb_CleaningPU[2].fB_Axis.fI_EncoderScaling    := 1048576			(*65536*);
+
+//Ink interface
+sADS_CleanAxis[8].sO_AxisPosition.fC_Min      := 0;     (*Dummy*)
+sADS_CleanAxis[8].sO_AxisPosition.fC_Max      := 1000;  (*Dummy*)
+
+
+
+
+(*************************************************************************************************)
+(*ADS blocks mapping*)
+(*************************************************************************************************)
+
+// Get system reference
+ISystemBase := PRG_SYSTEMBASE.getSystemBaseInterface();
+IF ISystemBase = 0 THEN RETURN; END_IF
+// Wait until system(base) is booted
+IF ISystemBase.bBooting THEN RETURN; END_IF
+
+// Build mapping information for ADS
+Mapping();
+
+// Register module to system
+pModuleDef := ISystemBase.regModule(
+  pAdsInfo:=ADR(sC_Ads_Info),
+  pMapInfo:=ADR(sMappingInfo)
+);
+IF pModuleDef = 0 THEN RETURN; END_IF
+
+
+(*Recipe read/write*)
+(*************************************************************************************************)
+pFbRecipeMngr := PRG_SYSTEMBASE.fbRecipeAutoMngmt.register(
+  aI_RecipePath           := CONCAT(aC_PlcConfigPath, aC_PlcRecipeSubPath),
+  aI_RecipeDefinitionName := sC_Ads_Info.aType  (*is set in Mapping*)
+);
+
+(* -- BlockId saving ----------------------------------------------------------------------------*)
+PRG_SYSTEMBASE.fbBlockIdSave.registerModule(
+  aI_StoragePath := CONCAT(aC_PlcConfigPath, aC_PlcBlockIdSubPath),
+  pI_Ads_Info    := ADR(sC_Ads_Info)
+);
+
+
+bL_RemVar_Init := TRUE;    (* Write variables by remanent variables *)
+RemVar();
+
+// init finished
+bO_InitOk :=  TRUE;
+
+(********************************* END OF ACTION *************************************************)]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="Mapping" Id="{46231496-d102-4bb5-ac59-99c2e745575c}">
+      <Implementation>
+        <ST><![CDATA[(*************************************************************************************************)
+(*ADS blocks mapping definition*)
+(*************************************************************************************************)
+(*mapping of each block with his parents, type and index*)
+(*Cleaning process -> root*)
+sL_BLK_CP[1].iPMaps[1]	:=	FC_ADD_MAP(eSys_BLK_ROOT, 1);
+sL_BLK_CP[2].iPMaps[1]	:=	FC_ADD_MAP(eSys_BLK_ROOT, 1);
+
+(*Axis -> Cleaning process*)
+sL_BLK_AX[1].iPMaps[1]	:=	FC_ADD_MAP(eMa_BLK_CLEANPROC, 1);
+sL_BLK_AX[2].iPMaps[1]	:=	FC_ADD_MAP(eMa_BLK_CLEANPROC, 1);
+sL_BLK_AX[3].iPMaps[1]	:=	FC_ADD_MAP(eMa_BLK_CLEANPROC, 1);
+sL_BLK_AX[5].iPMaps[1]	:=	FC_ADD_MAP(eMa_BLK_CLEANPROC, 2);
+sL_BLK_AX[6].iPMaps[1]	:=	FC_ADD_MAP(eMa_BLK_CLEANPROC, 2);
+sL_BLK_AX[7].iPMaps[1]	:=	FC_ADD_MAP(eMa_BLK_CLEANPROC, 2);
+
+(*Machine -> root*)
+sL_BLK_MA[1].iPMaps[1]	:=	FC_ADD_MAP(eSys_BLK_ROOT, 1);
+
+
+(*************************************************************************************************)
+(*ADS blocks configuration & information*)
+(*************************************************************************************************)
+sC_Ads_Info.bReady   := FALSE;
+sC_Ads_Info.aType    := 'PRG_MACHINE';
+sC_Ads_Info.iVersion := 010000;			(*1.0.0*)
+sC_Ads_Info.iType    := eMOD_MACHINE;
+
+sMappingInfo.init(lModId:=TO_UINT(eMOD_MACHINE)); 
+sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eMa_BLK_MACHINE)  , aAdsBlockName := 'sADS_Machine'     , iAdsBlockVersion:= INT_TO_UINT(sADS_Machine     [1].iO_Version), iNbrBlocks := SIZEOF(sL_BLK_MA) / SIZEOF(sL_BLK_MA[1]), pBlockArray := ADR(sL_BLK_MA));
+sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eMa_BLK_CLEANPROC), aAdsBlockName := 'sADS_CleanProcess', iAdsBlockVersion:= INT_TO_UINT(sADS_CleanProcess[1].iO_Version), iNbrBlocks := SIZEOF(sL_BLK_CP) / SIZEOF(sL_BLK_CP[1]), pBlockArray := ADR(sL_BLK_CP));
+sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eMa_BLK_CLEANAXIS), aAdsBlockName := 'sADS_CleanAxis'   , iAdsBlockVersion:= INT_TO_UINT(sADS_CleanAxis   [1].iO_Version), iNbrBlocks := SIZEOF(sL_BLK_AX) / SIZEOF(sL_BLK_AX[1]), pBlockArray := ADR(sL_BLK_AX));
+sMappingInfo.bReady := TRUE;
+
+
+(*
+(*init FBs*)
+Fb_RegToAry.iI_ActElem := 0;
+Fb_RegToAry.sI_Parent  := FC_CREATE_ARYPTR(ADR(sL_MOD_MAP), SIZEOF(sL_MOD_MAP)/SIZEOF(sL_MOD_MAP[1]), SIZEOF(sL_MOD_MAP[1]));
+
+
+cL_Module := INT_TO_BYTE(eMOD_MACHINE);
+
+sL_ModBlkAry := FC_ADD_MODBLK(eMa_BLK_MACHINE, cL_Module,'sADS_Machine', sADS_Machine[1].iO_Version, SIZEOF(sL_BLK_MA)/SIZEOF(sL_BLK_MA[1]), ADR(sL_BLK_MA));
+Fb_RegToAry.bI_Add     := TRUE;
+Fb_RegToAry.pI_AddpAry := ADR(sL_ModBlkAry);
+Fb_RegToAry();
+
+
+iL_NumModules := Fb_RegToAry.iI_ActElem;  	(*remember number of module arrays, to use later*)
+
+
+(*************************************************************************************************)
+(*ADS Blocks generation*)
+
+FB_GEN_BLOCK_MAPPING( iL_NumBlockTypes  := iL_NumModules
+                    , iL_AdsIdBase      := eBLOCK_MACHINE
+                    , sC_Ads_Info       := ADR(sC_Ads_Info)
+                    , sL_MOD_MAP        := ADR(sL_MOD_MAP)
+                    , iI_Config         := 0
+                    );
+
+bL_ExecuteBlockIdSave := TRUE;
+*)
+
+(********************************* END OF ACTION *************************************************)]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="RemVar" Id="{04fcc6a2-d6b5-4665-a28c-3f565e0958fa}">
+      <Implementation>
+        <ST><![CDATA[(*************************************************************************************************)
+(********************************* READING REMANENT VARIABLES ************************************)
+(*************************************************************************************************)
+IF bL_RemVar_Init THEN
+
+  (*load initial values if pattern was invalid*)
+  IF sR_RemVar_M.aL_Pattern <> 16#ABCD THEN
+
+    lL_ToleranceLenPx              := 5;      (*[px]*)
+
+    (*Recipe: load and write*)
+    IF pFbRecipeMngr <> 0 THEN
+      pFbRecipeMngr^.mWriteRecipe('');
+      bL_RecipeValuesLoadedMachine := TRUE;
+    END_IF
+
+  ELSE
+
+    sR_RemVar_M.aL_Pattern := sR_RemVar_M.aL_Pattern;  (*TODO remove dummy code*)
+
+    lL_ToleranceLenPx      := sR_RemVar_M.lR_ToleranceLenPx;
+
+  END_IF
+
+
+  bL_RemVar_Init := FALSE;
+
+(*************************************************************************************************)
+(********************************* WRITING REMANENT VARIABLES ************************************)
+(*************************************************************************************************)
+ELSE
+
+(*GENERAL*)
+(*************************************************************************************************)
+  sR_RemVar_M.aL_Pattern := 16#ABCD;
+
+
+  sR_RemVar_M.lR_ToleranceLenPx    := lL_ToleranceLenPx;
+END_IF;]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="Simulate" Id="{e7a5f0ee-588d-4b14-8443-ba1cccc8f235}">
+      <Implementation>
+        <ST><![CDATA[bIKp_SeparatorNiveau_Ok[1] := TRUE;
+bIKp_SeparatorNiveau_Ok[2] := TRUE;
+(*
+fb_CleaningPU[1].fI_PositionService := 210;
+fb_CleaningPU[2].fI_PositionService := 210;
+fb_CleaningPU[1].fI_PositionWait    := 55;
+fb_CleaningPU[2].fI_PositionWait    := 55;
+fb_CleaningPU[1].fI_PositionPrint   := 1;
+fb_CleaningPU[2].fI_PositionPrint   := 1;
+*)
+
+]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="PRG_MACHINE">
+      <LineId Id="83840" Count="38" />
+      <LineId Id="85877" Count="2" />
+      <LineId Id="83879" Count="0" />
+      <LineId Id="85880" Count="0" />
+      <LineId Id="83883" Count="20" />
+      <LineId Id="86318" Count="0" />
+      <LineId Id="83904" Count="20" />
+      <LineId Id="85862" Count="5" />
+      <LineId Id="83930" Count="152" />
+      <LineId Id="85868" Count="4" />
+      <LineId Id="84993" Count="0" />
+      <LineId Id="84083" Count="14" />
+      <LineId Id="85873" Count="2" />
+      <LineId Id="84098" Count="143" />
+      <LineId Id="84245" Count="4" />
+      <LineId Id="84251" Count="9" />
+      <LineId Id="85424" Count="0" />
+      <LineId Id="84262" Count="8" />
+      <LineId Id="85876" Count="0" />
+      <LineId Id="84272" Count="48" />
+      <LineId Id="86320" Count="2" />
+      <LineId Id="86325" Count="4" />
+      <LineId Id="86324" Count="0" />
+      <LineId Id="86766" Count="2" />
+      <LineId Id="86773" Count="0" />
+      <LineId Id="84321" Count="243" />
+      <LineId Id="75881" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_MACHINE.EpsitronFuseControl">
+      <LineId Id="2" Count="5" />
+      <LineId Id="9" Count="5" />
+      <LineId Id="35" Count="11" />
+      <LineId Id="109" Count="23" />
+      <LineId Id="1" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="26" Count="5" />
+      <LineId Id="134" Count="0" />
+      <LineId Id="32" Count="1" />
+      <LineId Id="18" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_MACHINE.Init">
+      <LineId Id="373" Count="7" />
+      <LineId Id="518" Count="1" />
+      <LineId Id="383" Count="35" />
+      <LineId Id="514" Count="0" />
+      <LineId Id="537" Count="0" />
+      <LineId Id="517" Count="0" />
+      <LineId Id="538" Count="4" />
+      <LineId Id="712" Count="0" />
+      <LineId Id="419" Count="5" />
+      <LineId Id="570" Count="4" />
+      <LineId Id="623" Count="0" />
+      <LineId Id="620" Count="0" />
+      <LineId Id="576" Count="7" />
+      <LineId Id="586" Count="0" />
+      <LineId Id="619" Count="0" />
+      <LineId Id="588" Count="9" />
+      <LineId Id="689" Count="6" />
+      <LineId Id="697" Count="1" />
+      <LineId Id="624" Count="0" />
+      <LineId Id="598" Count="0" />
+      <LineId Id="600" Count="0" />
+      <LineId Id="643" Count="0" />
+      <LineId Id="684" Count="0" />
+      <LineId Id="710" Count="0" />
+      <LineId Id="645" Count="0" />
+      <LineId Id="601" Count="2" />
+      <LineId Id="674" Count="1" />
+      <LineId Id="713" Count="0" />
+      <LineId Id="715" Count="0" />
+      <LineId Id="649" Count="0" />
+      <LineId Id="716" Count="0" />
+      <LineId Id="742" Count="0" />
+      <LineId Id="604" Count="0" />
+      <LineId Id="646" Count="0" />
+      <LineId Id="605" Count="2" />
+      <LineId Id="672" Count="1" />
+      <LineId Id="722" Count="3" />
+      <LineId Id="741" Count="0" />
+      <LineId Id="613" Count="0" />
+      <LineId Id="647" Count="0" />
+      <LineId Id="614" Count="2" />
+      <LineId Id="676" Count="1" />
+      <LineId Id="730" Count="3" />
+      <LineId Id="740" Count="0" />
+      <LineId Id="701" Count="1" />
+      <LineId Id="699" Count="1" />
+      <LineId Id="704" Count="0" />
+      <LineId Id="617" Count="0" />
+      <LineId Id="644" Count="0" />
+      <LineId Id="703" Count="0" />
+      <LineId Id="711" Count="0" />
+      <LineId Id="686" Count="0" />
+      <LineId Id="745" Count="0" />
+      <LineId Id="627" Count="1" />
+      <LineId Id="678" Count="1" />
+      <LineId Id="718" Count="3" />
+      <LineId Id="743" Count="0" />
+      <LineId Id="629" Count="0" />
+      <LineId Id="688" Count="0" />
+      <LineId Id="630" Count="2" />
+      <LineId Id="680" Count="1" />
+      <LineId Id="726" Count="3" />
+      <LineId Id="744" Count="0" />
+      <LineId Id="638" Count="0" />
+      <LineId Id="687" Count="0" />
+      <LineId Id="639" Count="2" />
+      <LineId Id="682" Count="1" />
+      <LineId Id="734" Count="4" />
+      <LineId Id="705" Count="4" />
+      <LineId Id="642" Count="0" />
+      <LineId Id="618" Count="0" />
+      <LineId Id="513" Count="0" />
+      <LineId Id="490" Count="3" />
+      <LineId Id="543" Count="16" />
+      <LineId Id="497" Count="6" />
+      <LineId Id="560" Count="5" />
+      <LineId Id="504" Count="3" />
+      <LineId Id="567" Count="2" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_MACHINE.Mapping">
+      <LineId Id="2" Count="4" />
+      <LineId Id="78" Count="0" />
+      <LineId Id="7" Count="5" />
+      <LineId Id="85" Count="2" />
+      <LineId Id="13" Count="10" />
+      <LineId Id="64" Count="3" />
+      <LineId Id="83" Count="1" />
+      <LineId Id="75" Count="1" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="24" Count="7" />
+      <LineId Id="42" Count="14" />
+      <LineId Id="63" Count="0" />
+      <LineId Id="57" Count="2" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="62" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_MACHINE.RemVar">
+      <LineId Id="2" Count="7" />
+      <LineId Id="148" Count="1" />
+      <LineId Id="138" Count="5" />
+      <LineId Id="53" Count="2" />
+      <LineId Id="144" Count="1" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="90" Count="13" />
+      <LineId Id="146" Count="1" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_MACHINE.Simulate">
+      <LineId Id="21" Count="1" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="1" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="27" Count="3" />
+      <LineId Id="25" Count="1" />
+      <LineId Id="24" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

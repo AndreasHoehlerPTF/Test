@@ -1,0 +1,237 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <POU Name="FB_PurgeControllerSequence" Id="{105a13be-aa11-47e1-af0c-c12680bb1bd4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_PurgeControllerSequence EXTENDS FB_PurgeController
+VAR_INPUT
+  iSubMencPos                  : I_AirVolume;
+  iSubMencNeg                  : I_AirVolume;
+END_VAR
+
+VAR_OUTPUT
+  bO_DeactivateLevelControlHT  : BOOL;
+  bO_DeactivateSubMencNeg      : BOOL;
+
+  bO_PurgeReleaseValveDelayed  AT %Q* : BOOL;              (*Purge pressure release valve*)
+END_VAR
+
+VAR
+  _bActivateSequence           : BOOL;
+
+  iL_PurgeStep                 : INT := 0;
+  fb_TonSubMencRelease         : TON;
+  fb_TonSubMencReleaseDelay    : TON;
+  fb_TonSubMencReactivate      : TON;
+  fb_RTrigCommand              : R_TRIG;
+  fb_SubMencPosRamp            : FB_SPEED_RAMP;
+  fb_SubMencNegRamp            : FB_SPEED_RAMP;
+END_VAR
+
+VAR PERSISTENT
+  tR_ReleaseTime               : TIME := T#3S;
+  tR_SubMencReleaseDelay       : TIME := T#1S;
+  tR_SubMencReactivateTime     : TIME := T#2S;
+  iR_SubMencPosFactor          : INT  := 50;
+  iR_SubMencNegFactor          : INT  := 50;
+  tR_SubMencPosRampTime        : INT  := 10;
+  tR_SubMencNegRampTime        : INT  := 10;
+END_VAR
+
+VAR CONSTANT
+  iC_StepIdle                  : INT := 0;
+  iC_StepMencRelease           : INT := 1;
+  iC_StepLevelContr            : INT := 2;
+  iC_StepPurge                 : INT := 3;
+  iC_StepReactivate1           : INT := 4;
+  iC_StepReactivate2           : INT := 5;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*Delay for one ReleaseValve*)
+bO_PurgeReleaseValveDelayed := fbPurgeGroup[1].bO_PurgeReleaseValve;
+
+IF _bActivateSequence THEN
+  CASE iL_PurgeStep OF
+    iC_StepIdle:  (*Idle, wait for start command*)
+      IF     (   _pAdsIf^.sI_ActivatePurge.bI_Command
+              OR IbPurgeContrRequestHT
+              OR (iMachineInk.pPurgeRequest AND (   _pAdsIf^.sI_ActivatePurge.bO_CommandCanEx
+                                                 OR bL_PurgeAuto)))
+         AND _pAdsIf^.sI_ActivatePurge.bO_CommandCanEx
+      THEN
+        _pAdsIf^.sI_ActivatePurge.bO_CommandExec := TRUE;
+        _pAdsIf^.sI_ActivatePurge.bI_Command     := FALSE;
+  
+        fb_TonSubMencRelease(IN := FALSE);
+        FOR iL_CounterPurgeGroup := 1 TO iL_RegPurgeGroupItfs DO
+          fb_TonSubMencReleaseDelay(IN := FALSE);
+        END_FOR
+        fb_RTrigCommand(CLK := _pAdsIf^.sI_ActivatePurge.bI_Command);
+  
+        fb_SubMencPosRamp(bI_EnableRamp := TRUE, bI_StartRamp := FALSE, II_SpeedActPercent := 100);
+        fb_SubMencNegRamp(bI_EnableRamp := TRUE, bI_StartRamp := FALSE, II_SpeedActPercent := 100);
+  
+        iL_PurgeStep := iC_StepMencRelease;
+      ELSE
+        SUPER^();  
+  
+        bO_DeactivateLevelControlHT := FALSE;
+        bO_DeactivateSubMencNeg     := FALSE;
+      END_IF
+  
+    iC_StepMencRelease:  (*Release sub menc pressure*)
+      fb_TonSubMencRelease(IN:= TRUE, PT := tR_ReleaseTime);
+  
+      FOR iL_CounterPurgeGroup := 1 TO iL_RegPurgeGroupItfs DO
+        fb_TonSubMencReleaseDelay(IN := TRUE, PT := tR_SubMencReleaseDelay);
+        bO_PurgeReleaseValveDelayed := fb_TonSubMencReleaseDelay.Q;
+  
+        fbPurgeGroup[iL_CounterPurgeGroup].pEnableValve := TRUE;
+      END_FOR
+      
+      IF fb_TonSubMencRelease.Q THEN
+        iL_PurgeStep := iC_StepLevelContr;
+      END_IF
+    
+      (*Abort Purge*)
+      fb_RTrigCommand(CLK := _pAdsIf^.sI_ActivatePurge.bI_Command);
+      IF fb_RTrigCommand.Q THEN
+        fb_TonSubMencReactivate(IN := FALSE);
+  
+        iL_PurgeStep := iC_StepReactivate1;
+      END_IF
+    
+    iC_StepLevelContr:
+      bO_DeactivateLevelControlHT := TRUE;
+  
+      _pAdsIf^.sI_ActivatePurge.bI_Command := TRUE;
+    
+      iL_PurgeStep := iC_StepPurge;
+    
+    iC_StepPurge:
+      SUPER^();  
+      IF _bBusy THEN
+        _pAdsIf^.sI_ActivatePurge.bI_Command := FALSE;
+      ELSE
+        fb_TonSubMencReactivate(IN := FALSE);
+  
+        iL_PurgeStep := iC_StepReactivate1;
+      END_IF
+  
+    iC_StepReactivate1:
+      fb_TonSubMencReactivate(IN:= TRUE, PT := tR_SubMencReactivateTime);
+  
+      (*SubMenc must be run up by ramp*)
+      fb_SubMencPosRamp( bI_StartRamp         := TRUE
+                       , II_XTimeRamp         := tR_SubMencPosRampTime
+                       , II_YAnalogMinPercent := iR_SubMencPosFactor
+                       , II_YAnalogMaxPercent := 100);
+      iSubMencPos.pPressSetFactor := DINT_TO_REAL(fb_SubMencPosRamp.IO_YPercent) / 100;
+      
+      bO_DeactivateLevelControlHT := FALSE;
+      bO_DeactivateSubMencNeg     := TRUE;
+  
+      _pAdsIf^.sI_ActivatePurge.bO_CommandExec := FALSE;
+      _pAdsIf^.sI_ActivatePurge.bI_Command     := FALSE;
+  
+      FOR iL_CounterPurgeGroup := 1 TO iL_RegPurgeGroupItfs DO
+        fbPurgeGroup[iL_CounterPurgeGroup].pEnableValve := FALSE;
+      END_FOR
+  
+      IF fb_TonSubMencReactivate.Q THEN
+        iL_PurgeStep := iC_StepReactivate2;
+      END_IF
+    
+    iC_StepReactivate2:
+      (*SubMenc must be run up by ramp*)
+      fb_SubMencPosRamp( bI_StartRamp         := TRUE
+                       , II_XTimeRamp         := tR_SubMencPosRampTime
+                       , II_YAnalogMinPercent := iR_SubMencPosFactor
+                       , II_YAnalogMaxPercent := 100);
+      iSubMencPos.pPressSetFactor := DINT_TO_REAL(fb_SubMencPosRamp.IO_YPercent) / 100;
+      fb_SubMencNegRamp( bI_StartRamp         := TRUE
+                       , II_XTimeRamp         := tR_SubMencNegRampTime
+                       , II_YAnalogMinPercent := iR_SubMencNegFactor
+                       , II_YAnalogMaxPercent := 100);
+      iSubMencNeg.pPressSetFactor := DINT_TO_REAL(fb_SubMencNegRamp.IO_YPercent) / 100;
+  
+      bO_DeactivateSubMencNeg := FALSE;
+  
+      IF fb_SubMencPosRamp.bO_MaxSpeedReached AND fb_SubMencNegRamp.bO_MaxSpeedReached THEN
+        iSubMencPos.pPressSetFactor := 1;
+        iSubMencNeg.pPressSetFactor := 1;
+        
+        iL_PurgeStep := iC_StepIdle;
+      END_IF
+    
+  END_CASE
+ELSE
+  SUPER^();  
+END_IF
+
+
+
+]]></ST>
+    </Implementation>
+    <Property Name="pActivateSequence" Id="{5c27ffb6-c5d4-4e36-a71c-31dc82f68feb}">
+      <Declaration><![CDATA[PROPERTY pActivateSequence : BOOL]]></Declaration>
+      <Set Name="Set" Id="{ca30c9c0-ccd5-4da0-a3de-9e28b6d7bc60}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[_bActivateSequence := pActivateSequence;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <LineIds Name="FB_PurgeControllerSequence">
+      <LineId Id="474" Count="1" />
+      <LineId Id="656" Count="0" />
+      <LineId Id="476" Count="0" />
+      <LineId Id="237" Count="6" />
+      <LineId Id="245" Count="2" />
+      <LineId Id="429" Count="0" />
+      <LineId Id="249" Count="0" />
+      <LineId Id="477" Count="2" />
+      <LineId Id="250" Count="0" />
+      <LineId Id="361" Count="0" />
+      <LineId Id="360" Count="0" />
+      <LineId Id="362" Count="0" />
+      <LineId Id="251" Count="3" />
+      <LineId Id="320" Count="1" />
+      <LineId Id="319" Count="0" />
+      <LineId Id="255" Count="5" />
+      <LineId Id="480" Count="2" />
+      <LineId Id="261" Count="33" />
+      <LineId Id="363" Count="0" />
+      <LineId Id="295" Count="0" />
+      <LineId Id="365" Count="0" />
+      <LineId Id="382" Count="0" />
+      <LineId Id="367" Count="2" />
+      <LineId Id="364" Count="0" />
+      <LineId Id="296" Count="0" />
+      <LineId Id="317" Count="0" />
+      <LineId Id="297" Count="12" />
+      <LineId Id="370" Count="1" />
+      <LineId Id="383" Count="0" />
+      <LineId Id="372" Count="2" />
+      <LineId Id="376" Count="0" />
+      <LineId Id="384" Count="0" />
+      <LineId Id="377" Count="3" />
+      <LineId Id="318" Count="0" />
+      <LineId Id="385" Count="0" />
+      <LineId Id="310" Count="0" />
+      <LineId Id="388" Count="1" />
+      <LineId Id="432" Count="0" />
+      <LineId Id="390" Count="0" />
+      <LineId Id="387" Count="0" />
+      <LineId Id="312" Count="1" />
+      <LineId Id="610" Count="1" />
+      <LineId Id="609" Count="0" />
+      <LineId Id="314" Count="2" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PurgeControllerSequence.pActivateSequence.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,1389 @@
+<?xml version="1.0"?>
+<TcSmItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4024.17" ClassName="CDevEthernetProtocolNvDef" SubType="112">
+	<DataTypes>
+		<DataType>
+			<Name GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF BOOL</Name>
+			<BitSize>16</BitSize>
+			<BaseType GUID="{18071995-0000-0000-0000-000000000030}">BOOL</BaseType>
+			<ArrayInfo>
+				<LBound>1</LBound>
+				<Elements>2</Elements>
+			</ArrayInfo>
+		</DataType>
+		<DataType>
+			<Name GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCD0}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF DINT</Name>
+			<BitSize>64</BitSize>
+			<BaseType GUID="{18071995-0000-0000-0000-000000000009}">DINT</BaseType>
+			<ArrayInfo>
+				<LBound>1</LBound>
+				<Elements>2</Elements>
+			</ArrayInfo>
+		</DataType>
+		<DataType>
+			<Name GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCDD}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF WORD</Name>
+			<BitSize>32</BitSize>
+			<BaseType GUID="{18071995-0000-0000-0000-000000000004}">WORD</BaseType>
+			<ArrayInfo>
+				<LBound>1</LBound>
+				<Elements>2</Elements>
+			</ArrayInfo>
+		</DataType>
+		<DataType>
+			<Name GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCD7}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF LREAL</Name>
+			<BitSize>128</BitSize>
+			<BaseType GUID="{18071995-0000-0000-0000-00000000000E}">LREAL</BaseType>
+			<ArrayInfo>
+				<LBound>1</LBound>
+				<Elements>2</Elements>
+			</ArrayInfo>
+		</DataType>
+		<DataType>
+			<Name GUID="{3A0A41FA-E793-0040-02C3-0E86FC421616}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..13] OF BOOL</Name>
+			<BitSize>104</BitSize>
+			<BaseType GUID="{18071995-0000-0000-0000-000000000030}">BOOL</BaseType>
+			<ArrayInfo>
+				<LBound>1</LBound>
+				<Elements>13</Elements>
+			</ArrayInfo>
+		</DataType>
+	</DataTypes>
+	<Device Id="2" DevType="112" AmsPort="28674" AmsNetId="172.21.10.11.3.1" RemoteName="Device 2 (EtherCAT Automation Protocol)">
+		<Name>__FILENAME__</Name>
+		<AddressInfo>
+			<Pnp>
+				<DeviceDesc>X104 - MachineNetwork (TwinCAT-Intel PCI Ethernet A</DeviceDesc>
+				<DeviceName>\DEVICE\{A439834A-4E83-4E0F-89C7-F394D47E284A}</DeviceName>
+				<DeviceData>000105603970</DeviceData>
+			</Pnp>
+		</AddressInfo>
+		<Image Id="5" AddrType="1" ImageType="3">
+			<Name>Image</Name>
+		</Image>
+		<Box Id="65" BoxType="9051">
+			<Name>Box 65 (Publisher)</Name>
+			<ImageId>99</ImageId>
+			<Vars VarGrpType="1">
+				<Name>Inputs</Name>
+				<Var BoxStateVariable="true">
+					<Name>FrameState</Name>
+					<Comment><![CDATA[0x0001 = Not sent (frame skipped)
+0x0002 = Error (frame oversized)
+0x0004 = Subscriber missing (Unicast only)
+]]></Comment>
+					<Type>UINT</Type>
+				</Var>
+			</Vars>
+			<Vars VarGrpType="2">
+				<Name>Outputs</Name>
+				<Var BoxStateVariable="true">
+					<Name>FrameCtrl</Name>
+					<Comment><![CDATA[0x0001 = Disable sending
+0x0002 = Remove destination MAC from ARP cache
+]]></Comment>
+					<Type>UINT</Type>
+				</Var>
+			</Vars>
+			<Eap InOut="1" Mac="ffffffffffff" DisableSubscriberMonitoring="true" ArpRetryInterval="1000">
+				<EapVar Id="1" VarInOut="1" NvId="1" NvLength="1">
+					<Name>OperatingMode</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>16</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>16</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>BYTE</Type>
+							<BitOffs>32</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="2" VarInOut="1" NvId="2" NvLength="2">
+					<Name>EngagingAllowed</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>32</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>40</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+							<BitOffs>56</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="3" VarInOut="1" NvId="3" NvLength="2">
+					<Name>EngagingActive</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>48</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>72</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+							<BitOffs>88</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="4" VarInOut="1" NvId="4" NvLength="1">
+					<Name>ShutdownReady</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>64</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>104</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>BOOL</Type>
+							<BitOffs>120</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="5" VarInOut="1" NvId="5" NvLength="1">
+					<Name>StandbyReady</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>80</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>128</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>BOOL</Type>
+							<BitOffs>144</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="6" VarInOut="1" NvId="6" NvLength="2">
+					<Name>PrintPosition</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>96</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>152</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+							<BitOffs>168</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="7" VarInOut="1" NvId="7" NvLength="2">
+					<Name>CleaningActive</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>112</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>184</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+							<BitOffs>200</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="8" VarInOut="1" NvId="8" NvLength="2">
+					<Name>PrintReady</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>128</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>216</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+							<BitOffs>232</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="9" VarInOut="1" NvId="9" NvLength="8">
+					<Name>VarnishQuantity</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>144</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>248</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCD0}">ARRAY [1..2] OF DINT</Type>
+							<BitOffs>264</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="10" VarInOut="1" NvId="10" NvLength="4">
+					<Name>MaxWebSpeed</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>160</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>328</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>DINT</Type>
+							<BitOffs>344</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="11" VarInOut="1" NvId="11" NvLength="1">
+					<Name>WarningActive</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>176</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>376</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>BOOL</Type>
+							<BitOffs>392</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="12" VarInOut="1" NvId="12" NvLength="1">
+					<Name>ErrorActive</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>192</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>400</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>BOOL</Type>
+							<BitOffs>416</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="13" VarInOut="1" NvId="13" NvLength="1">
+					<Name>EStop</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>208</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>424</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>BOOL</Type>
+							<BitOffs>440</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="14" VarInOut="1" NvId="14" NvLength="4">
+					<Name>OnEAP_PrintMarkPosBits</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>224</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>448</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCDD}">ARRAY [1..2] OF WORD</Type>
+							<BitOffs>464</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="15" VarInOut="1" NvId="15" NvLength="16">
+					<Name>OnEAP_MasterSpeed</Name>
+					<ImageId>97</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Not sent (variable skipped)
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>240</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Disable publishing
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>496</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCD7}">ARRAY [1..2] OF LREAL</Type>
+							<BitOffs>512</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+			</Eap>
+		</Box>
+		<Box Id="66" BoxType="9052">
+			<Name>Box 66 (Subscriber)</Name>
+			<ImageId>100</ImageId>
+			<Vars VarGrpType="1">
+				<Name>Inputs</Name>
+				<Var BoxStateVariable="true">
+					<Name>FrameState</Name>
+					<Type>UINT</Type>
+					<BitOffs>256</BitOffs>
+				</Var>
+			</Vars>
+			<Vars VarGrpType="2">
+				<Name>Outputs</Name>
+				<Var BoxStateVariable="true">
+					<Name>FrameCtrl</Name>
+					<Type>UINT</Type>
+					<BitOffs>640</BitOffs>
+				</Var>
+			</Vars>
+			<Eap Mac="010105040000">
+				<EapVar Id="1" NvId="1" NvLength="1">
+					<Name>OperatingMode</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>272</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>288</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>304</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>BYTE</Type>
+							<BitOffs>320</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>656</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="2" NvId="2" NvLength="1">
+					<Name>ShutDownActive</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>328</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>344</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>360</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>BOOL</Type>
+							<BitOffs>376</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>672</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="3" NvId="3" NvLength="2">
+					<Name>Engaged</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>384</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>400</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>416</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+							<BitOffs>432</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>688</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="4" NvId="4" NvLength="2">
+					<Name>PrintEnabled</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>448</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>464</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>480</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+							<BitOffs>496</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>704</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="5" NvId="5" NvLength="1">
+					<Name>EStop</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>512</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>528</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>544</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>BOOL</Type>
+							<BitOffs>560</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>720</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="6" NvId="6" NvLength="1">
+					<Name>StandbyActive</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>568</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>584</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>600</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>BOOL</Type>
+							<BitOffs>616</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>736</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="7" NvId="7" NvLength="1">
+					<Name>MessageReset</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>624</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>640</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>656</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>BOOL</Type>
+							<BitOffs>672</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>752</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="8" NvId="8" NvLength="2">
+					<Name>PinningClosed</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>680</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>696</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>712</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+							<BitOffs>728</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>768</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="9" NvId="9" NvLength="4">
+					<Name>SubstrateThickness</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>744</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>760</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>776</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>DINT</Type>
+							<BitOffs>792</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>784</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="10" NvId="10" NvLength="4">
+					<Name>SubstrateWidth</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>824</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>840</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>856</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>DINT</Type>
+							<BitOffs>872</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>800</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="11" NvId="11" NvLength="4">
+					<Name>FormatLength</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>904</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>920</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>936</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>DINT</Type>
+							<BitOffs>952</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>816</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="12" NvId="12" NvLength="4">
+					<Name>WebStretchFactor</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>984</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1000</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1016</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>DINT</Type>
+							<BitOffs>1032</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>832</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="13" NvId="13" NvLength="4">
+					<Name>LateralRegister</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1064</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1080</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1096</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>DINT</Type>
+							<BitOffs>1112</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>848</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="14" NvId="14" NvLength="2">
+					<Name>IbEAP_SpliceDetected</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1144</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1160</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1176</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+							<BitOffs>1192</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>864</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="15" NvId="15" NvLength="4">
+					<Name>InEAP_Module2ToModule3</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1208</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1224</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1240</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>DINT</Type>
+							<BitOffs>1256</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>880</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="16" NvId="16" NvLength="1">
+					<Name>IbEAP_TargetSpeedReached</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1288</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1304</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1320</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>BOOL</Type>
+							<BitOffs>1336</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>896</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="17" NvId="17" NvLength="4">
+					<Name>InEAP_NeutralFibreFactor</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1344</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1360</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1376</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>DINT</Type>
+							<BitOffs>1392</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>912</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="18" NvId="18" NvLength="2">
+					<Name>IbEAP_PrintMarksExist</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1424</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1440</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1456</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+							<BitOffs>1472</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>928</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="19" NvId="19" NvLength="4">
+					<Name>InEAP_TargetSpeed</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1488</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1504</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1520</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type>DINT</Type>
+							<BitOffs>1536</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>944</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+				<EapVar Id="20" NvId="20" NvLength="13">
+					<Name>IbEAP_PanelLEDs</Name>
+					<ImageId>98</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarState</Name>
+							<Comment><![CDATA[0x0001 = Invalid hash value received
+0x0002 = Invalid variable length received
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1568</BitOffs>
+						</Var>
+						<Var>
+							<Name>Quality</Name>
+							<Comment><![CDATA[Duration the variable is not refreshed (in 100µs)]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1584</BitOffs>
+						</Var>
+						<Var>
+							<Name>CycleIndex</Name>
+							<Comment><![CDATA[Incremented each publisher cycle]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>1600</BitOffs>
+						</Var>
+						<Var>
+							<Name>VarData</Name>
+							<Type GUID="{3A0A41FA-E793-0040-02C3-0E86FC421616}">ARRAY [1..13] OF BOOL</Type>
+							<BitOffs>1616</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var BoxStateVariable="true">
+							<Name>VarCtrl</Name>
+							<Comment><![CDATA[0x0001 = Ignore hash value
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>960</BitOffs>
+						</Var>
+					</Vars>
+				</EapVar>
+			</Eap>
+		</Box>
+		<Ethernet DeviceDesc="X104 - MachineNetwork (TwinCAT-Intel PCI Ethernet Adapter (Gigabit) #6)"/>
+		<Eap EapDeviceGuid="{B2003EB3-B901-4230-BC03-737DEC0C09DB}"/>
+	</Device>
+</TcSmItem>

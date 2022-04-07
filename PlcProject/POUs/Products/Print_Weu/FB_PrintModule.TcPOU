@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <POU Name="FB_PrintModule" Id="{cb9319db-6969-4a30-812e-4f2d714eb08a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_PrintModule EXTENDS T_NamedBase
+VAR_INPUT
+  IbPrinterHood           : BOOL;
+  IbServiceDoors          : BOOL;
+  IbExhaustVacuumWarning  : BOOL;
+  IbExhaustVacuumError    : BOOL;
+  IbExhaustFUError        : BOOL;
+  IbDriftControlError     : BOOL;
+  IbSafetyNOk             : BOOL;
+END_VAR
+
+VAR
+  _nIdx                   : UDINT;   // for visu selection only (remove later) 
+  _pAds                   : POINTER TO ST_ADS_PC; (*ads config/status interface*)
+
+  (*Messaging*)
+  fb_MsgQueue             : FB_MSG_QUEUE;                 (*Message queue*)
+  fb_MsgHandler           : FB_MSG_HANDLER;               (*Message handler*)
+  sL_MsgConfig            : ST_MSG_CONFIG;                (*Message config*)
+  fb_Msg                  : ARRAY [1..iC_NUM_MSG] OF FB_MESSAGE;  (*Messages*)
+END_VAR
+
+VAR CONSTANT
+  (*Messaging*)
+  iC_NUM_MSG              : INT := 7;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*Messaging*)
+fb_MsgHandler();
+
+fB_Msg[1](bI_Status := IbPrinterHood);
+fB_Msg[2](bI_Status := IbServiceDoors);
+fB_Msg[3](bI_Status := IbExhaustVacuumWarning);
+fB_Msg[4](bI_Status := IbExhaustVacuumError);
+fB_Msg[5](bI_Status := IbExhaustFUError);
+fB_Msg[6](bI_Status := IbDriftControlError);
+fB_Msg[7](bI_Status := IbSafetyNOk);
+
+fb_MsgQueue();
+
+(********************************* END OF FB *****************************************************)]]></ST>
+    </Implementation>
+    <Method Name="init" Id="{4338a7a6-6293-49ad-a96d-3660b8a91900}">
+      <Declaration><![CDATA[METHOD init : BOOL
+VAR_INPUT
+  nIdx                : UDINT;
+  pAds                : POINTER TO ST_ADS_PM;
+
+  (*Messaging*)
+  nBlockId            : INT;                  // block id for message
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_nIdx := nIdx;
+
+IF pAds = 0 THEN
+  LogError('Invalid parameter');
+  RETURN;
+END_IF
+
+// save config
+_pAds := pAds;
+
+(*Messaging*)
+sL_MsgConfig.bI_Enable       := TRUE;
+sL_MsgConfig.pI_FbMsgHandler := ADR(fb_MsgHandler);
+fb_MsgHandler.pI_MsgQueue    := ADR(fb_MsgQueue);
+fb_MsgQueue.pI_MsgInterface  := ADR(_pAds^.sO_Message);
+fb_MsgQueue.cI_MaxElement    := 6;
+
+(*Messages*)
+fb_Msg[1].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[1].iI_MsgLocation     := nBlockId;
+fb_Msg[1].iI_MsgNumber       := eCMa_COVER_INLET;
+
+fb_Msg[2].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[2].iI_MsgLocation     := nBlockId;
+fb_Msg[2].iI_MsgNumber       := eCMa_SECURITY_DOOR_MONITORING;
+
+fb_Msg[3].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[3].iI_MsgLocation     := nBlockId;
+fb_Msg[3].iI_MsgNumber       := eCMa_EXHAUST_SYSTEM_WARNING;
+
+fb_Msg[4].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[4].iI_MsgLocation     := nBlockId;
+fb_Msg[4].iI_MsgNumber       := eCMa_EXHAUST_SYSTEM_ERROR;
+
+fb_Msg[5].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[5].iI_MsgLocation     := nBlockId;
+fb_Msg[5].iI_MsgNumber       := eCMa_EXHAUST_SYSTEM_MALFUNCTION;
+
+fb_Msg[6].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[6].iI_MsgLocation     := nBlockId;
+fb_Msg[6].iI_MsgNumber       := eCMa_DRIFT_CONTR_ERROR;
+
+fb_Msg[7].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[7].iI_MsgLocation     := nBlockId;
+fb_Msg[7].iI_MsgNumber       := eCMa_AXIS_SAFETY_ACCEPTANCE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_PrintModule">
+      <LineId Id="28" Count="2" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="61" Count="1" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="63" Count="0" />
+      <LineId Id="37" Count="2" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.init">
+      <LineId Id="5" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="32" Count="6" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="17" Count="14" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="54" Count="14" />
+      <LineId Id="70" Count="3" />
+      <LineId Id="14" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

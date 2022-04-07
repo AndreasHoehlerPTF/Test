@@ -1,0 +1,148 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="ST_REM_VAR_I" Id="{6c59076d-6f1a-47de-86ae-9429ad178ce4}">
+    <Declaration><![CDATA[TYPE ST_REM_VAR_I :
+(*************************************************************************************************)
+(*  FILENAME:     ST_REM_VAR_I.EXP                                                               *)
+(*  PROJECT:      CALMAR Ink System                                                              *)
+(*  COPYRIGHT:    Wifag//Polytype SA Fribourg                                                    *)
+(*  ENVIRONMENT:  TwinCAT PLC / CoDeSys                                                          *)
+(*  DESCRIPTION:  Structure of remanent variables                                                *)
+(*  AUTHOR:       SDC                                                                            *)
+(*************************************************************************************************)
+(*  REVISION:                                                                                    *)
+(*************************************************************************************************)
+(*  Datum     Author  Comments                                                                   *)
+(*  05.12.13  SDC     Initial Version                                                            *)
+(*  06.12.13  PAR     Visu ink and vacuum added                                                  *)
+(*  07.07.14  HOA     Values for ADS structure added                                             *)
+(*************************************************************************************************)
+
+STRUCT
+(*VISU INK*)
+  wR_StptSpeedFillInkPumpVarnishPercent     : ARRAY[1..iCIk_NB_HEADERTANK] OF WORD;   (*Setpoint of speed for fill ink pump in percent*)
+  wR_MinSpeedFillInkPumpVarnish             : WORD;   (*Min limit of speed for fill ink pump*)
+  wR_MaxSpeedFillInkPumpVarnish             : WORD;   (*Max limit of speed for fill ink pump*)
+  wR_AnalogMinDigitVarnish                  : WORD;
+  wR_AnalogMaxDigitVarnish                  : WORD;
+  wR_PumpTimeOffDelayVarnish                : WORD;   (*The time the pump runs Sec*)
+  wR_ValveTimeOnDelayVarnish                : WORD;   (*Waiting time after pump start Sec *)
+  IR_MinDigitRampe                          : DINT;
+  IR_MaxDigitRampe                          : DINT;
+  fR_MinVoltRampe                           : REAL;
+  fR_MaxVoltRampe                           : REAL;
+  IR_MinPercentRampe                        : DINT;
+  IR_MaxPercentRampe                        : DINT;
+  IR_TimeRampe                              : DINT;
+  wR_InkPumpMaxTime                         : WORD;
+  wR_CleanerPumpMaxTime                     : WORD;
+  lR_TimeReturnFlow                         : UDINT;
+  lR_TimeBlowOut                            : UDINT;
+  lR_TimeEmptyCleaner                       : UDINT;
+  lR_TimeWarnExchange                       : UDINT;
+
+(*VISU VACCUM*)
+  fR_DgasPressStpt                          : REAL;   (*Dgas Controller Press Stpt*)
+  lR_DgasEnable                             : BOOL;
+  lR_DgasEnableMainValve                    : BOOL;
+
+(*MENISCUS*)
+(*************************************************************************************************)
+  fR_MencPressStpt                          : ARRAY [1..iCIk_NB_MENC] OF REAL;       (*Menc Controller Press Stpt*)
+  lR_MencEnable                             : ARRAY [1..iCIk_NB_MENC] OF BOOL;       (*@@@ PAR 05-02-14 Temporary add*)
+
+(*SUB MENISCUS*)
+(*************************************************************************************************)
+  fR_SubMencPressStpt                       : ARRAY [1..iCIk_NB_SUB_MENC] OF REAL;   (*Sub Menc Controller Press Stpt*)
+  lR_SubMencEnable                          : ARRAY [1..iCIk_NB_SUB_MENC] OF BOOL;   (*@@@ PAR 05-02-14 Temporary add*)
+
+(*VISU MAINTENANCE*)
+  (*Cleaner*)
+  wR_MinSpeedFillInkPumpCleaner             : WORD;   (*Min limit of speed for fill ink pump*)
+  wR_MaxSpeedFillInkPumpCleaner             : WORD;   (*Max limit of speed for fill ink pump*)
+  wR_AnalogMinDigitCleaner                  : WORD;
+  wR_AnalogMaxDigitCleaner                  : WORD;
+  wR_StptSpeedCleanInkPumpCleanerPercent    : WORD;
+
+(*VISU PURGE*)
+  (*header tank*)
+  bR_PurgeControllerEnable                  : ARRAY[1..iCIk_NB_PURGE_CONTR] OF BOOL;
+  bR_PurgeGroupEnable                       : ARRAY[1..iCIk_NB_PURGE_GROUP] OF BOOL;
+  bR_PurgeGroupThroughNozzle                : ARRAY[1..iCIk_NB_PURGE_GROUP] OF BOOL;
+  bR_PurgeGroupFlush                        : ARRAY[1..iCIk_NB_PURGE_GROUP] OF BOOL;
+  cR_PurgeRepeatsHT                         : BYTE;   (*number of repetitions*)
+  wR_PurgeMaxTimeManuHT                     : WORD;   (*sec*)
+  wR_TimeWaitbuttonHT                       : WORD;   (*sec*)
+  wR_WaitValveOnHT                          : WORD;   (*sec*)
+  wR_PurgeTimeHT                            : WORD;   (*milisec*)
+  wR_PurgeWaitTimeHT                        : WORD;   (*milisec*)
+  wR_DeAirTimeHT                            : WORD;   (*milisec*)
+  wR_DeAirWaitTimeHT                        : WORD;   (*milisec*)
+
+(*VISU SETTINGS*)
+  lR_DgasTimeError                          : DINT;
+  wR_MencTimeError                          : WORD;                                  (*Menc max time pump is enabled [s]*)
+  wR_SubMencTimeError                       : WORD;                                  (*Sub menc max time pump is enabled [s]*)
+  wR_TimeMaxPumpPurge                       : WORD;
+
+
+(*INK*)
+(*************************************************************************************************)
+  lR_StoragetankAssignment                  : ARRAY[1..iCIk_NB_HEADERTANK] OF DINT;  (*Headertank assignment to storagetank*)
+  lR_ActStoragetankAssignment               : ARRAY[1..iCIk_NB_HEADERTANK] OF DINT;  (*Headertank assignment to storagetank*)
+  bI_EnableFillInk                          : ARRAY[1..iCIk_NB_HEADERTANK] OF BOOL;  (*Enable fill ink controller*)
+  bI_FillModeAuto                           : ARRAY[1..iCIk_NB_HEADERTANK] OF BOOL;  (*Enable auto ink fill mode*)
+  bI_EnableUnFillInk                        : ARRAY[1..iCIk_NB_HEADERTANK] OF BOOL;  (*Enable un-fill ink controller*)
+  bI_UnFillModeAuto                         : ARRAY[1..iCIk_NB_HEADERTANK] OF BOOL;  (*Enable auto ink un-fill mode*)
+  eR_StateHeadertank                        : ARRAY[1..iCIk_NB_HEADERTANK] OF EN_STATE_HEADERTANK;
+
+
+(*TEMP*)
+(*************************************************************************************************)
+  bI_EnableHeater                           : ARRAY[1..iCIk_NB_TEMP_CONTR] OF BOOL;  (*enable heater*)
+  sI_HeaterSetPoint                         : ARRAY[1..iCIk_NB_TEMP_CONTR] OF REAL;  (*Target temparature value []*)
+
+
+(*INKSTORAGE_TANK*)
+(*************************************************************************************************)
+  bI_EnableStorageTank                      : ARRAY[1..iCIk_NB_INKSTORAGE_TANK] OF BOOL;  (*Enable storage tank*)
+  lO_InkColorId                             : ARRAY[1..iCIk_NB_INKSTORAGE_TANK] OF UINT;  (*ink (color) id*)
+  fO_StorageTankSize                        : ARRAY[1..iCIk_NB_INKSTORAGE_TANK] OF REAL;  (*size of storage tank in [liter]*)
+
+
+(*BALANCE SYSTEM*)
+(*************************************************************************************************)
+  bI_EnableBalanceLink                      : BOOL;  (*enable balance communication*)
+  fI_CorrectionValue                        : REAL;  (*Correction value for the MUX retrieved data*)
+  iI_RefreshRate                            : INT;  (*Balance Channel refresh rate in [ms]*)
+  iI_MaintenanceTimeout                     : DINT;  (*Maintenance Timout in [ms]*)
+
+  bI_EnableBalance                          : ARRAY[1..iCIk_NB_INKBALANCE] OF BOOL;    (*enable balance*)
+  sI_InkDensitySet                          : ARRAY[1..iCIk_NB_INKBALANCE] OF REAL;    (*Ink density TO convert [kg] TO [liter]*)
+  sI_CorrectionValue                        : ARRAY[1..iCIk_NB_INKBALANCE] OF REAL;    (*Correction value for the MUX retrieved data*)
+  sI_WarningLevelSet                        : ARRAY[1..iCIk_NB_INKBALANCE] OF REAL;    (*warning level on the balance in [liter]*)
+  sI_ErrorlevelSet                          : ARRAY[1..iCIk_NB_INKBALANCE] OF REAL;    (*error level on the balance in [liter]*)
+
+  lR_VarParamScannerId                      : ARRAY[1..iCIk_NB_INKBALANCE] OF UDINT;   (*varnish parameter scanner ID*)
+  iR_VarParamIndex                          : ARRAY[1..iCIk_NB_INKBALANCE] OF UINT;    (*varnish parameter index*)
+  bR_VarParamCompatibility                  : ARRAY[1..iCIk_NB_INKBALANCE, 1..10] OF BOOL; (*varnish parameter compatibility to other index*)
+  fR_VarParamTemp                           : ARRAY[1..iCIk_NB_INKBALANCE] OF REAL;    (*varnish parameter temperature*)
+  fR_VarParamMenc                           : ARRAY[1..iCIk_NB_INKBALANCE] OF REAL;    (*varnish parameter meniscus*)
+  aR_VarParamWaveform                       : ARRAY[1..iCIk_NB_INKBALANCE] OF STRING;  (*varnish parameter waveform*)
+  iR_VarParamTimer                          : ARRAY[1..iCIk_NB_INKBALANCE] OF UINT;    (*varnish parameter timer*)
+  fR_VarParamDensity                        : ARRAY[1..iCIk_NB_INKBALANCE] OF REAL;    (*varnish parameter density*)
+  fR_VarParamViscosity                      : ARRAY[1..iCIk_NB_INKBALANCE] OF REAL;    (*varnish parameter viscosity*)
+  iR_VarParamColorId                        : ARRAY[1..iCIk_NB_INKBALANCE] OF UINT;    (*varnish parameter color ID*)
+
+  aI_CalibrateFrameText1                    : ARRAY[1..iCIk_NB_INKBALANCE] OF STRING;  (*Calibration string variable for text 1*)
+  aI_CalibrateFrameText2                    : ARRAY[1..iCIk_NB_INKBALANCE] OF STRING;  (*Calibration string variable for text 2*)
+
+  fR_BalanceOffset                          : ARRAY[1..iCIk_NB_INKBALANCE] OF REAL;   (*Calibration value for empty tank*)
+
+
+(*Last entry----retain (remanent) variables of PRG_INK and realated modules*)
+  aL_Pattern                                : UDINT;  (*check pattern for rem validity*)
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

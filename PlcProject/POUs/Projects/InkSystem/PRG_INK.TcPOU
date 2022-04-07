@@ -1,0 +1,3563 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <POU Name="PRG_INK" Id="{afcab994-f568-4c43-8a58-3d4d653d253f}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM PRG_INK
+(*************************************************************************************************)
+(*  FILENAME:    PRG_INK.EXP                                                                     *)
+(*  PROJECT:     CALMAR PUPLC                                                                    *)
+(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2016)            *)
+(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
+(*  VERSION:     <version>                                                                       *)
+(*************************************************************************************************)
+(*  DESCRIPTION:                                                                   <description> *)
+(*    Controls the ink supply of digital printheads.                                             *)
+(*    Main functions: Degassing, main and sub meniscus control, purge, ink supply, temperature   *)
+(*    control, storage tank and mixer.                                                           *)
+(*                                                                                </description> *)
+(*************************************************************************************************)
+
+VAR_INPUT
+(*GENERAL*)
+(*************************************************************************************************)
+(*Interface to PRG_PRINT - direct accessed data*)
+  pAdsPg                                      : ARRAY[1..iCPr_NB_PG] OF POINTER TO ST_ADS_PG;
+  bPrgPrintIf_Ok                              : BOOL := FALSE;
+
+(*Monitoring of terminals*)
+  bI_Temperature1WcState                AT%I* : BOOL;                                  (*EL3204 temperature WcState*)
+  bI_InkLevel1WcState                   AT%I* : BOOL;                                  (*EL3052 ink level WcState*)
+  bI_Pressure1WcState                   AT%I* : BOOL;                                  (*EM3712 pressure WcState*)
+  bI_Pressure2WcState                   AT%I* : BOOL;                                  (*EM3712 pressure WcState*)
+  bI_SubPressureWcState                 AT%I* : ARRAY [1..iCIk_NB_SUB_MENC] OF BOOL;   (*EM3701 sub menc pressure WcState*)
+
+
+(*DEGASSING*)
+(*************************************************************************************************)
+(*Inputs from hardware*)
+
+(*Inputs from visu*)
+  bIDp_EnableMainDgasValve                    : BOOL;                                  (*Enable main dgas valve*)
+
+
+(*MENISCUS*)
+(*************************************************************************************************)
+(*Inputs from hardware*)
+
+
+(*SUB MENISCUS*)
+(*************************************************************************************************)
+(*Inputs from hardware*)
+
+
+(*PURGE - GLOBAL*)
+(*************************************************************************************************)
+
+
+(*VACUUM PUMP*)
+(*************************************************************************************************)
+
+
+(*INK*)
+(*************************************************************************************************)
+
+
+(*VARNISH*)
+(*************************************************************************************************)
+(*Inputs from hardware*)
+  (*fill varnish*)
+  bIKn_TankInkLevelReached              AT%I* : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL; (*-BX53, BX57: HT front level reached*)
+
+  bIKn_TankCleanerLevelEmpty            AT%I* : BOOL; (*Tank cleaner level empty reached*)
+  bIKn_TankRefuseLevelFull              AT%I* : BOOL; (*Tank refuse level full reached*)
+
+(*Inputs from visu*)
+  (*fill varnish ramp*)
+  IIDp_MinDigitRampe                          : DINT := 1638;
+  IIDp_MaxDigitRampe                          : DINT := 16383;
+  fIDp_MinVoltRampe                           : REAL := 0;
+  fIDp_MaxVoltRampe                           : REAL := 5;
+  IIDp_MinPercentRampe                        : DINT := 0;
+  IIDp_MaxPercentRampe                        : DINT := 100;
+  IIDp_TimeRampe                              : DINT := 10;
+
+  (*fill varnish pump*)
+  wIDp_PumpTimeOffDelayVarnish                : WORD;                                  (*The time the pump runs [s]*)
+  wIDp_MinSpeedFillInkPumpVarnish             : WORD;                                  (*Min limit of speed for fill varnish pump in percent*)
+  wIDp_MaxSpeedFillInkPumpVarnish             : WORD;                                  (*Max limit of speed for fill varnish pump in percent*)
+  wIDP_AnalogMaxDigitVarnish                  : WORD;                                  (*Max limit of speed for fill varnish pump in digits*)
+  wIDP_AnalogMinDigitVarnish                  : WORD;                                  (*Min limit of speed for fill varnish pump in digits*)
+
+  (*cleaner*)
+  bIDp_StopFillCleaner                        : ARRAY [1..iCIk_NB_HEADERTANK]   OF BOOL;
+
+
+(*TEMP*)
+(*************************************************************************************************)
+(*Inputs from hardware*)
+
+
+(*BALANCE*)
+(*************************************************************************************************)
+  bI_Balance_AckInit                    AT%I* : BOOL;                                  (*EL6021: Balance acknowledge init*)
+  bI_Balance_AckSend                    AT%I* : BOOL;                                  (*EL6021: Balance acknowledge send*)
+  bI_Balance_DataRec                    AT%I* : BOOL;                                  (*EL6021: Balance receive data*)
+  iI_Balance_RecDataLength              AT%I* : USINT;                                 (*EL6021: Balance receive data length*)
+  cI_Balance_RxBuffWord                 AT%I* : ARRAY [0..49] OF UINT;                 (*EL6021: Data in 0..49*)
+  bI_Balance_BufferFull                 AT%I* : BOOL;                                  (*EL6021: Balance buffer full*)
+  bI_Balance_FramingError               AT%I* : BOOL;                                  (*EL6021: Balance framing error*)
+  bI_Balance_OverRunError               AT%I* : BOOL;                                  (*EL6021: Balance over run error*)
+
+
+(*BARCODE SCANNER*)
+(*************************************************************************************************)
+  bI_Barcode_AckInit                    AT%I* : BOOL;                                  (*EL6001: Barcode scanner acknowledge init*)
+  bI_Barcode_AckSend                    AT%I* : BOOL;                                  (*EL6001: Barcode scanner acknowledge send*)
+  bI_Barcode_DataRec                    AT%I* : BOOL;                                  (*EL6001: Barcode scanner receive data*)
+  iI_Barcode_RecDataLength              AT%I* : USINT;                                 (*EL6001: Barcode scanner receive data length*)
+  cI_Barcode_RxBuff                     AT%I* : ARRAY [0..21] OF BYTE;                 (*EL6001: Barcode scanner receive data buffer*)
+  bI_Barcode_BufferFull                 AT%I* : BOOL;                                  (*EL6001: Barcode scanner buffer full*)
+  bI_Barcode_FramingError               AT%I* : BOOL;                                  (*EL6001: Barcode scanner framing error*)
+  bI_Barcode_OverRunError               AT%I* : BOOL;                                  (*EL6001: Barcode scanner over run error*)
+END_VAR
+
+VAR_OUTPUT
+(*GENERAL*)
+(*************************************************************************************************)
+  bO_InitOk                                   : BOOL := FALSE;                         (*Init Ok*)
+  bO_InkSystemOk                              : BOOL := TRUE;                          (*Global ink system status*)
+  bO_InkStorageTankOk                         : BOOL := TRUE;                          (*Global ink storagetank status*)
+  bO_TemperatureOk                            : BOOL;
+  bO_VacuumOk                                 : BOOL;
+  bO_StorageTankOk                            : BOOL;
+  bO_TotalWcState                             : BOOL := FALSE;                         (*Monitoring: WcStates from all terminals*)
+  bO_CommandPrintlineExec                     : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF BOOL := [FALSE,FALSE];   (*Command printline is executing*)
+
+  
+(*DEGASSING*)
+(*************************************************************************************************)
+(*Outputs to hardware*)
+
+(*Outputs to visu*)
+  bODp_EnableMainDgasValve                    : BOOL;                                  (*enable main degass valve*)
+
+
+(*MENISCUS*)
+(*************************************************************************************************)
+(*Outputs to hardware*)
+
+
+(*SUB MENISCUS*)
+(*************************************************************************************************)
+(*Outputs to hardware*)
+
+
+(*PURGE*)
+(*************************************************************************************************)
+  bO_MainPurgeReleaseValve   AT %Q* : BOOL;                        (*Main purge pressure release valve*)
+
+
+(*VACUUM PUMP*)
+(*************************************************************************************************)
+
+
+(*INK*)
+(*************************************************************************************************)
+(*Outputs to hardware*)
+  (*fill varnish*)
+  bOKp_EnableFillInkPumpVarnish         AT%Q* : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL; (*Enable fill ink pump*)
+  wOKp_StptSpeedFillInkPumpVarnish      AT%Q* : ARRAY [1..iCIk_NB_HEADERTANK] OF WORD; (*Setpoint of speed for fill ink pump*)
+
+  bO_HTInkConnectionClose               AT%Q* : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL; (*-KX87: HT ink connection valve*)
+
+  bO_RefuseValveHT                      AT%Q* : BOOL;  (*-KX63: White HT refuse valve*)                
+  bO_RefuseValveStorageTank             AT%Q* : BOOL;  (*-KX67: White HT refuse to storage tank valve*)                
+
+  bO_FlushingReturnPump                 AT%Q* : ARRAY [1..iCIk_NB_RETURN_FLOW_UNITS] OF BOOL;                
+
+  (*Outputs to visu*)
+  bODp_DgasPressOK                            : BOOL;  (*Dgas pressure ok*)
+
+  (*White*)
+  bO_WarnLevelEmptyRT                         : BOOL;  (*Empty level reached RT*)
+  bO_ErrorLevelLowRT                          : BOOL;  (*Low level reached RT*)
+  bO_ErrorLevelErrorRT                        : BOOL;  (*Error level reached RT*)
+  bO_ErrorInkLossRT                           : BOOL;  (*Illogical ink loss RT*)
+  bO_SupervisionFillPumpRT                    : BOOL;  (*Supervision fill pump RT*)
+  bO_LevelRangePoint01RT                      : BOOL;  (*Level range 01 reached RT*)
+  bO_RisingLevelRT                            : BOOL;  (*Level of RT rising*)
+
+  bO_TankCleanerLevelEmpty                    : BOOL := FALSE;     (*Tank cleaner level empty reached*)
+  bO_TankRefuseLevelFull                      : BOOL := FALSE;     (*Tank refuse level full reached*)
+  
+
+(*INKSTORAGE_TANK*)
+(*************************************************************************************************)
+
+
+(*TEMP*)
+(*************************************************************************************************)
+(*Outputs to hardware*)
+
+
+(*BALANCE*)
+(*************************************************************************************************)
+  bO_Balance_ReqInit                    AT%Q* : BOOL;                            (*EL6021: Ctrl: Init request*)
+  bO_Balance_ReqSend                    AT%Q* : BOOL;                            (*EL6021: Ctrl: Transmit request*)
+  bO_Balance_AckRec                     AT%Q* : BOOL;                            (*EL6021: Ctrl: Receive accepted*)
+  iO_Balance_SendDataLength             AT%Q* : USINT;                           (*EL6021: Ctrl: Output length*)
+  cO_Balance_TxBuffWord                 AT%Q* : ARRAY [0..49] OF UINT;           (*EL6021: Data out 0..49*)
+
+
+(*BARCODE SCANNER*)
+(*************************************************************************************************)
+  bO_Barcode_ReqInit                    AT%Q* : BOOL;                                  (*EL6001: Barcode scanner request init*)
+  bO_Barcode_ReqSend                    AT%Q* : BOOL;                                  (*EL6001: Barcode scanner request send*)
+  bO_Barcode_AckRec                     AT%Q* : BOOL;                                  (*EL6001: Barcode scanner acknowledge receive*)
+  iO_Barcode_SendDataLength             AT%Q* : USINT;                                 (*EL6001: Barcode scanner send data length*)
+  cO_Barcode_TxBuff                     AT%Q* : ARRAY [0..21] OF BYTE;                 (*EL6001: Barcode scanner send buffer*)
+END_VAR
+
+VAR
+(*GENERAL*)
+(*************************************************************************************************)
+  (*Initiation*)
+  bL_RemVar_Init                              : BOOL;
+
+  (*Dummy read unused inputs*)
+  bL_DummyReadInput                           : BOOL;
+  iL_DummyReadInput                           : INT;
+
+  (*Infos from other tasks*)
+  sL_SystemCmd                                : ST_SYSTEM_CMD;                         (*PRG_MACHINE*)
+  bL_CleanPumpRequest                         : ARRAY[1..iCIk_NB_SUB_MENC] OF BOOL;    (*PRG_MACHINE*)
+  bL_CleanAfterPurge                          : ARRAY[1..iCIk_NB_SUB_MENC] OF BOOL;    (*PRG_MACHINE*)
+  bL_CleanAbort                               : ARRAY[1..iCIk_NB_SUB_MENC] OF BOOL;    (*PRG_MACHINE*)
+  bL_Engaged                                  : ARRAY[1..iCPr_NB_PM]       OF BOOL;    (*PRG_MACHINE*)
+  bPU1Printing                                : BOOL;                                  (*PRG_PRINT*)
+
+  iMachineInk                                 : ARRAY[1..iCPr_NB_PM] OF I_MachineInk;                          (*Interface to Machine*)
+
+
+  (*Counter*)
+  cL_State                                    : BYTE := cL_INIT;                       (*state init*)
+  iL_Sel_BlkType                              : INT  := 1;                             (*used for module information visualisation*)
+  iL_Counter                                  : INT;                                   (*working counter*)
+  iL_Counter2                                 : INT;                                   (*working counter*)
+  iL_Counter3                                 : INT;                                   (*working counter*)
+  iL_Offset                                   : INT;                                   (*use for generic offsets*)
+  iL_CounterDgas                              : INT;                                   (*Counter for Dgas controller*)
+  iL_CounterMenc                              : INT;                                   (*Counter for Menc controller*)
+  iL_CounterSubMenc                           : INT;                                   (*Counter for sub menc controller*)
+  iL_CounterMencSta                           : INT;                                   (*Counter for menc controller*)
+  iL_CounterPurge                             : INT;                                   (*Counter for purge controller*)
+  iL_CounterPurgeGroup                        : INT;                                   (*Counter for purge group*)
+  iL_CounterValve                             : INT;                                   (*Counter for Purge controller*)
+
+  sC_Config_I                                 : ST_CONFIG_I;
+
+(*INK SYSTEM ADS STRUCTURES *)
+(*************************************************************************************************)
+  sC_Ads_Info                                 : ST_ADS_INFO;                           (*ADS INFO*)
+  sMappingInfo                                : T_MapInfo;        // Block mapping configuration
+  ISystemBase                                 : I_SystemBase;     // reference to system base
+  pModuleDef                                  : POINTER TO FB_ModuleDef;    // Module definition in system
+
+  sAdsIkHeaderTank                            : ARRAY[1..iCIk_NB_HEADERTANK]      OF ST_ADS_IK_HEADERTANK;
+  sAdsIkHeaderTankGroup                       : ARRAY[1..iCIk_NB_HEADERTANK_GROUP]OF ST_ADS_HeaderTankGroup;
+
+  sAdsIkInkPump                               : ARRAY[1..iCIk_NB_INK_PUMPS]       OF ST_ADS_IK_INKPUMP;
+
+  sAdsIkDgas                                  : ARRAY[1..iCIk_NB_DGAS]            OF ST_ADS_PRESSION;
+
+  sAdsIkMenc                                  : ARRAY[1..iCIk_NB_MENC_STA]        OF ST_ADS_PRESSION;
+
+  sAdsIkPurgeController                       : ARRAY[1..iCIk_NB_PURGE_CONTR]     OF ST_ADS_IK_PURGE_CONTROLLER;
+
+  sAdsIkPurgeGroup                            : ARRAY[1..iCIk_NB_PURGE_GROUP]     OF ST_ADS_IK_PURGE_GROUP;
+
+  sAdsIkInkStorageTank                        : ARRAY[1..iCIk_NB_INKSTORAGE_TANK] OF ST_ADS_IK_INKSTORAGE_TANK;
+
+  sAdsIkHeater                                : ARRAY[1..iCIk_NB_TEMP_CONTR]      OF ST_ADS_IK_HEATER;
+
+  sAdsIkDummy                                 : ARRAY[1..1]                       OF ST_ADS_DUMMY;
+
+
+  sL_Pressures                                : ST_IK_PRESSURE;
+  sL_PumpConditions                           : ST_IK_INKPUMP_COND;
+  sL_VacuumConditions                         : ST_IK_VACUUM_COND;
+
+  
+(*DEGASSING*)
+(*************************************************************************************************)
+  fb_DgasMencContr                            : ARRAY[1..iCIk_NB_DGAS] OF FB_MencController;
+  fb_DgasValvePlus                            : ARRAY[1..iCIk_NB_DGAS] OF FB_ValveControl;    (*not existent*)
+  fb_DgasPumpMinus                            : ARRAY[1..iCIk_NB_DGAS] OF FB_PumpControl;     (*MUC-MX123*)
+  fb_DgasMainValve                            : ARRAY[1..iCIk_NB_DGAS] OF FB_ValveControl;    (*MUC-KX65*)
+  fb_TofDgasMainValve                         : TOF;                                          (*Off timer for main dgas valve*)
+  fb_VisuDgasMencController                   : FB_MencControllerVisu;
+
+
+(*MENISCUS*)
+(*************************************************************************************************)
+                                                                                                  (*   mainW, mainCMYK, subW neg, subW pos,     subC,     subM,     subY, subK*)
+  fb_MeniscusMencContr                        : ARRAY[1..iCIk_NB_MENC_STA] OF FB_MencController;
+  fb_MeniscusValvePlus                        : ARRAY[1..iCIk_NB_MENC_STA] OF FB_ValveControl;    (*     -  ,      -  , MUW-KX73, MUW-KX77, MUC-KX71, MUC-KX73, MUC-KX75, MUC-KX77*)
+  fb_MeniscusValveMinus                       : ARRAY[1..iCIk_NB_MENC_STA] OF FB_ValveControl;    (*MUW-KX61, MUC-KX61, MUW-KX71, MUW-KX75, MUC-KX72, MUC-KX74, MUC-KX76, MUC-KX78*)
+  bL_EnableMencFromHeadertank                 : ARRAY[1..iCIk_NB_MENC_STA] OF BOOL;
+  
+  fb_MeniscusPump                             : FB_PumpControl;
+  fb_VisuMeniscusMencController               : FB_MencControllerVisu;
+
+  fb_TofRtLevelDetectionPoint04               : TOF;
+  fb_SubMencShutOffValve                      : ARRAY[1..iCIk_NB_SUB_MENC] OF FB_ValveControl;    (*KX81, KX83*)
+  bL_DeactivateSubMenc                        : ARRAY[1..iCIk_NB_SUB_MENC] OF BOOL;
+  bL_SubMencShutOffValveForceFalse            : ARRAY[1..iCIk_NB_SUB_MENC] OF BOOL;
+  bL_SubMencShutOffValveForceTrue             : ARRAY[1..iCIk_NB_SUB_MENC] OF BOOL;
+  RF_TrigCleaning                             : ARRAY[1..iCIk_NB_SUB_MENC] OF RF_TRIG;
+  R_TrigEnable                                : ARRAY[1..iCIk_NB_SUB_MENC] OF R_TRIG;
+  fL_SubMencAdjustWhilePurgeClean             : ARRAY[1..iCIk_NB_SUB_MENC] OF REAL;  (*[mbar]*)
+
+  
+(*PURGE*)
+(*************************************************************************************************)
+  fb_PurgeController                          : ARRAY[1..iCIk_NB_PURGE_CONTR] OF FB_PurgeControllerSequence;  (*MUW-KX63, MUC-KX63*)
+  fb_PurgeGroup                               : ARRAY[1..iCIk_NB_PURGE_GROUP] OF FB_PurgeGroup;               (*MUW-KX85, MUC-KX81, MUC-KX83, MUC-KX85, MUC-KX87*)
+
+  bL_PurgeBusy                                : BOOL;
+  fb_TofPurgeBusy                             : ARRAY[1..iCIk_NB_PURGE_CONTR] OF TOF;
+  fb_PurgeControllerDummy                     : FB_PurgeController;  (*used for MencController if Purge is not relevant*)
+
+  bL_PurgeDeAirValveRequest                   : ARRAY[1..iCIk_NB_HEADERTANK] OF BOOL; (*Request for DeAir valve*)
+
+  bL_PurgeOutflow1ValveHT                     : ARRAY[1..iCIk_NB_HEADERTANK] OF BOOL; (*Enable outflow1 valve headertank*)
+  bL_PurgeOutflow2ValveHT                     : ARRAY[1..iCIk_NB_HEADERTANK] OF BOOL; (*Enable outflow2 valve headertank*)
+
+  bL_PurgeContrRequestHT                      : ARRAY[1..iCIk_NB_PURGE_CONTR] OF BOOL;
+  bL_PurgeGroupRequestHT                      : ARRAY[1..iCIk_NB_PURGE_GROUP] OF BOOL;
+  bL_PurgeGroupRequestDeAirHT                 : ARRAY[1..iCIk_NB_PURGE_GROUP] OF BOOL;
+
+  
+(*INK*)
+(*************************************************************************************************)
+(*controller*)
+  fb_Headertank                               : ARRAY[1..iCIk_NB_HEADERTANK] OF FB_HEADERTANK_UNIT;
+
+  bL_ChangeActiveOtherHT                      : ARRAY[1..iCIk_NB_HEADERTANK] OF BOOL;
+  iL_Sel_HeaderTank                           : INT := 1;                              (*Selection for visu*)
+  bL_CleanCommandToMachine                    : ARRAY[1..iCPr_NB_PM] OF BOOL;
+  bL_CleanEnable1ToMachine                    : BOOL;
+  bL_CleanEnable2ToMachine                    : BOOL;
+  bL_CappingCommandToMachine                  : BOOL;
+  bL_HeadertankCanEx                          : BOOL;
+  bL_HeadertankFillCanEx                      : BOOL;
+  lL_TimeReturnFlow                           : UDINT;
+  tL_TimeReturnFlow                           : TIME;
+  tL_TimeReturnFlowHt                         : ARRAY [1..iCIk_NB_HEADERTANK] OF TIME;
+  tL_TimeBlowOut                              : TIME;
+  lL_TimeBlowOut                              : UDINT;
+  tL_TimeEmptyCleaner                         : TIME;
+  lL_TimeEmptyCleaner                         : UDINT;
+  lL_TimeWarnExchange                         : UDINT;
+  tL_TimeMaxFill                              : TIME;
+  wL_TimeMaxFillHt                            : ARRAY [1..iCIk_NB_HEADERTANK] OF WORD;
+  fL_StorageTankLevelLiter                    : REAL;
+  bL_Compatibility                            : BOOL;
+  iL_ActIndex                                 : UINT;
+  iL_StoragetankAssignmentIndex               : ARRAY [1..iCIk_NB_HEADERTANK] OF DINT;
+  iL_ActStoragetankAssignmentIndex            : ARRAY [1..iCIk_NB_HEADERTANK] OF DINT;
+  fb_RTrigChangeStateHeadertank               : ARRAY [1..iCIk_NB_HEADERTANK] OF R_TRIG;
+  fb_RTrigCommandChangeHeadertank             : ARRAY [1..iCIk_NB_HEADERTANK] OF R_TRIG;       
+  bL_BalanceMaintenanceExec                   : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL;
+  sL_CommandChangePrintline                   : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF ST_COMMAND;   (*Command to change printline system*)
+  bL_CommandChangePrintlineVisu               : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF BOOL;         (*Command to change printline system from visu*)
+  bL_CommandChangePrintlinesVisu              : BOOL;                                                (*Command to change printlines system from visu*)
+  fb_RTrigCommandChangePrintline              : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF R_TRIG;       
+  fb_FTrigCommandChangePrintline              : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF F_TRIG;       
+  sL_CommandEmptyPrintline                    : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF ST_COMMAND;   (*Command to empty printline system*)
+  bL_CommandEmptyPrintlineVisu                : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF BOOL;         (*Command to empty printline system from visu*)
+  bL_CommandEmptyPrintlinesVisu               : BOOL;                                                (*Command to empty printlines system from visu*)
+  fb_RTrigCommandEmptyPrintline               : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF R_TRIG;
+  fb_FTrigCommandEmptyPrintline               : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF F_TRIG;
+  fb_RTrigCommandEmptyHT                      : ARRAY [1..iCIk_NB_HEADERTANK] OF R_TRIG;
+  fb_FTrigCommandEmptyHT                      : ARRAY [1..iCIk_NB_HEADERTANK] OF F_TRIG;
+  fb_RTrigCommandCleanerHT                    : ARRAY [1..iCIk_NB_HEADERTANK] OF R_TRIG;
+  fb_FTrigCommandCleanerHT                    : ARRAY [1..iCIk_NB_HEADERTANK] OF F_TRIG;
+  eL_LowestActiveStateChange                  : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF EN_STATE_CHANGE;    (*Info to synchronize the states of the headertanks*)
+  eL_LowestActiveStateEmpty                   : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF EN_STATE_EMPTY;     (*Info to synchronize the states of the headertanks*)
+  eL_LowestActiveStateFill                    : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF EN_STATE_FILL;      (*Info to synchronize the states of the headertanks*)
+  eL_LowestActiveStateFlush                   : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF EN_STATE_FLUSH;     (*Info to synchronize the states of the headertanks*)
+  eL_LowestActiveStateCleaning                : ARRAY [1..iCIk_NB_HEADERTANK_GROUP] OF EN_STATE_CLEANING;  (*Info to synchronize the states of the headertanks*)
+
+  (*Fill varnish controller*)
+  fb_FillInkVarnish                           : ARRAY [1..iCIk_NB_HEADERTANK] OF FB_INK_SUPPLY_UNIT;
+  fb_Ramp                                     : ARRAY [1..iCIk_NB_HEADERTANK] OF FB_SPEED_RAMP;
+
+  sL_InkTable                                 : ARRAY [1..iCIk_NB_HEADERTANK] OF ST_INKDEFINITON;  (*needed for VISU*)
+
+  bL_TankInkLevelReachedVarnish               : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL; (*Tank ink level reached*)
+  bL_LowLevelReached                          : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL; (*Tank ink low level reached*)
+  bL_DgasPressOK                              : BOOL;                                  (*Dgas pressure ok*)
+
+  (*Circulation ink controller*)
+  fb_CirculationInk                           : ARRAY [1..iCIk_NB_HEADERTANK] OF FB_InkCirculation;
+
+
+(*CLEANER*)
+(*************************************************************************************************)
+  (*White*)
+  fb_Cleaner                                  : ARRAY [1..iCIk_NB_CLEANER_PUMPS] OF FB_CLEANER_UNIT;
+  bL_CleanerPumpRequest                       : ARRAY [1..iCIk_NB_CLEANER_PUMPS] OF BOOL;  (*Cleaner pump request*)
+  bL_CleanerPumpConfirmation                  : ARRAY [1..iCIk_NB_HEADERTANK]    OF BOOL;  (*Cleaner pump confirmation HT*)
+
+  wIDp_AnalogMinPercentCleaner                : WORD := 0;     (*Min value analog-output in percent*)
+  wIDp_AnalogMaxPercentCleaner                : WORD := 100;   (*Max value analog-output in percent*)
+  wL_StptSpeedCleanInkPumpPercent             : WORD;          (*Setpoint cleaner pump in %*)
+  wL_StptSpeedCleanInkPumpDigit               : WORD;          (*Setpoint cleaner pump in digit*)
+  fL_MFunction                                : REAL := 0;     (*m of function for analog-output*)
+
+
+(*RETURN FLOW*)
+(*************************************************************************************************)
+  fb_ReturnFlow                               : ARRAY [1..iCIk_NB_RETURN_FLOW_UNITS] OF FB_RETURN_FLOW_UNIT;
+  fb_ReturnFlowStorTank                       : ARRAY [1..iCIk_NB_RETURN_FLOW_UNITS] OF FB_ValveControl; (*-KX35 to KX38: return flow valve*)
+
+  bL_ReturnFlowRequest                        : ARRAY [1..iCIk_NB_RETURN_FLOW_UNITS] OF BOOL;  (*Return flow request*)
+  iL_NbReturnFlowRequest                      : ARRAY [1..iCIk_NB_RETURN_FLOW_UNITS] OF UINT;  (*Number of return flow request*)
+  iL_NbReturnFlowAssignHT                     : ARRAY [1..iCIk_NB_RETURN_FLOW_UNITS] OF UINT;  (*Number of assigned HT*)
+  fb_TimerReturnFlow                          : ARRAY [1..iCIk_NB_RETURN_FLOW_UNITS] OF FB_TIMER_DUTYCYCLE;
+  bL_ReturnFlowRefuse                         : ARRAY [1..iCIk_NB_RETURN_FLOW_UNITS] OF BOOL;  (*Return flow to refuse container*)
+  fb_TonReturnFlowValveDelay                  : ARRAY [1..iCIk_NB_RETURN_FLOW_UNITS] OF TON;   (*Reset valves with a delay because pump request is controlled with a PWM.*)
+
+  bL_ReturnFlowConfirmation                   : ARRAY [1..iCIk_NB_HEADERTANK]        OF BOOL;  (*Return flow confirmation HT*)
+
+
+
+
+(*TEMP*)
+(*************************************************************************************************)
+(*temp controller*)
+  fb_TempControllerHys                        : ARRAY [1..iCIk_NB_TEMP_HYS] OF FB_TempContrHysteresis; (*temp controller hysteresis*)
+  bL_TemperatureWcState                       : ARRAY [1..iCIk_NB_TEMP_HYS] OF BOOL;                   (*EL3204 temperature WcState*)
+  fb_RTrigEnableHeater                        : ARRAY [1..iCIk_NB_TEMP_HYS] OF R_TRIG;
+  fb_RTrigDisableHeater                       : ARRAY [1..iCIk_NB_TEMP_HYS] OF R_TRIG;
+  
+
+(*INKSTORAGE_TANK*)
+(*************************************************************************************************)
+  fb_Storagetank                              : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF FB_STORAGETANK_UNIT;
+  bL_FillPumpConfirmation                     : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL;  (*Fill pump confirmation HT*)
+
+	iL_Sel_InkStorTank	                        : INT := 1;
+	fb_RTrigEnableInkStorTank                   : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF R_TRIG; 	(*Start of enable ink storage tank*)
+	fb_FTrigEnableInkStorTank                   : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF F_TRIG; 	(*End of enable ink storage tank*)
+	bL_OneInkStorTankEnabled                    : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF BOOL;     (*Indicates that one ink storage tank is enabled*)
+	bL_SeveralInkStorTanksEnabled               : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF BOOL;     (*Indicates that several ink storage tanks are enabled*)
+	bL_CheckNbInkStorTankEnabled                : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF BOOL;     (**)
+	iL_SelectedInkStorTank                      : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF INT;      (*Selector for ink storage tank*)
+	iL_SelectedInkStorTankLevel                 : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF DINT;     (*Selector for ink storage tank level*)
+	fb_TpStorTankSetZero                        : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF TP;       (*Time to set balance to zero*)
+	bL_MessageWarning                           : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF BOOL;     (**)
+	bL_MessageError                             : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF BOOL;     (**)
+
+	(*Messages*)
+  fb_MsgQueueStorage                          : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF FB_MSG_QUEUE;
+	fb_BalanceMsgHandler                        : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF FB_MSG_HANDLER;
+	sL_MsgConfigStorage                         : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF ST_MSG_CONFIG;
+
+  bL_HtAssignedToStorage                      : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF BOOL;
+
+  (*Barcode scanner*)
+  bI_EnableBarcodeScanner                     : BOOL;
+  fb_BarcodeStoragetank                       : FB_BARCODE_COMM;
+
+
+(*BALANCE*)
+(*************************************************************************************************)
+  FB_Balance                                  : ARRAY [1..iCIk_NB_INKBALANCE] OF FB_BALANCE_MONITOR;
+  FB_BalanceLink                              : FB_BALANCE_COMM_WORD;
+  bI_EnableBalanceLink                        : BOOL;                                  (*enable balance link communication*)
+  bL_AckFaultGUI                              : BOOL;
+  bL_BalanceOk                                : BOOL;
+
+  fI_CorrectionValue                          : REAL := 1.0;                           (*Correction value for the MUX retrieved Data*)
+  iI_RefreshRate                              : INT  := 2000;                          (*Balance Channel refresh rate in [ms]*)
+  iI_MaintenanceTimeout                       : DINT := 5000;                          (*Maintenance Timout in [ms]*)
+
+  iL_SelectedBalance                          : INT  := 1;                             (*Selector for balance channel, PLC VISU*)
+
+  fL_BalanceOffset                            : ARRAY [1..iCIk_NB_INKBALANCE] OF REAL;
+
+  (*Messages*)
+  fB_BalanceMsg                               : ARRAY [1..iCIk_NB_INKSTORAGE_TANK, 1..iCIk_NB_BALANCE_MSG] OF FB_MESSAGE;
+
+(*MIXER (not existing here)*)
+(*************************************************************************************************)
+  bL_MixerFeedbackExist                       : BOOL := FALSE;
+  fL_MixerOnTime                              : REAL := 5.0;                                              (*Mixer on time [min]*)
+  fL_MixerWaitTime                            : REAL := 1.0;                                              (*Mixer wait time [min]*)
+  bL_MixerEnable                              : ARRAY [1..iCIk_NB_INKSTORAGE_TANK_MIXER] OF BOOL;         (*Mixer enable*)
+  wL_MixerOnTime                              : ARRAY [1..iCIk_NB_INKSTORAGE_TANK_MIXER] OF WORD;         (*Mixer on time [min]*)
+  wL_MixerWaitTime                            : ARRAY [1..iCIk_NB_INKSTORAGE_TANK_MIXER] OF WORD;         (*Mixer wait time [min]*)
+  fb_TpMixerOn                                : ARRAY [1..iCIk_NB_INKSTORAGE_TANK_MIXER] OF TP;           (*Mixer on*)
+  fb_TpMixerWait                              : ARRAY [1..iCIk_NB_INKSTORAGE_TANK_MIXER] OF TP;           (*Mixer wait*)
+  fb_TonMixerSupervision                      : ARRAY [1..iCIk_NB_INKSTORAGE_TANK_MIXER] OF TON;          (*Mixer supervision*)
+  fb_RTrigMixerPulse                          : ARRAY [1..iCIk_NB_INKSTORAGE_TANK_MIXER] OF R_TRIG;       (*Trigger mixer pulse*)
+  bL_MixerPulseIndicator                      : ARRAY [1..iCIk_NB_INKSTORAGE_TANK_MIXER] OF BOOL;         (*Mixer pulse indicator*)
+  bL_MixerPulseError                          : ARRAY [1..iCIk_NB_INKSTORAGE_TANK_MIXER] OF BOOL;         (*Mixer pulse error*)
+  bL_StorageTankMixerError                    : ARRAY [1..iCIk_NB_INKSTORAGE_TANK]       OF BOOL;         (*Storage tank mixer error*)
+  bL_AckMixerPulseError                       : ARRAY [1..iCIk_NB_INKSTORAGE_TANK]       OF BOOL;         (*Ack mixer pulse error*)
+
+
+(* ADS Mappping *)
+(*************************************************************************************************)
+  iL_I                                        : INT;                                   (*instance counter*)
+  iL_I2                                       : INT;                                   (*second instance counter for double loops*)
+  sL_pI                                       : POINTER TO ST_MAP_BLK;                 (*pointer to module mapping instance*)
+  iL_Ctr                                      : INT;                                   (*counter value*)
+  iL_ActElmt                                  : INT;                                   (*actual array element*)
+  pL_Ctr                                      : POINTER TO INT;                        (*pointer to mapping array index*)
+  aL_Name                                     : STRING;                                (*Block string creation*)
+  iL_NumModules                               : INT;                                   (*number of different block types*)
+  cL_Module                                   : BYTE;                                  (*this module number*)
+
+  FB_GEN_BLOCK_MAPPING                        : FB_GEN_BLOCK_MAPPING;                  (*generation of block mappings in this module*)
+  Fb_RegToAry                                 : FB_REG_TO_ARY;
+
+  sL_MOD_MAP                                  : ARRAY [1..iCIk_NB_BLOCK_TYPES] OF ST_MAP_MODBLKARY;  (*array conataining all modules with their mapping informations*)
+  sL_ModBlkAry                                : ST_MAP_MODBLKARY;
+
+  sL_BLK_PURGE_CONTR                          : ARRAY [1..iCIk_NB_PURGE_CONTR]     OF ST_MAP_BLK;
+  sL_BLK_PURGE_GROUP                          : ARRAY [1..iCIk_NB_PURGE_GROUP]     OF ST_MAP_BLK;
+  sL_BLK_DGAS                                 : ARRAY [1..iCIk_NB_DGAS]            OF ST_MAP_BLK;
+  sL_BLK_MENC                                 : ARRAY [1..iCIk_NB_MENC_STA]        OF ST_MAP_BLK;
+  sL_BLK_INKSTORAGE_TANK                      : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF ST_MAP_BLK;
+  sL_BLK_HEADERTANK                           : ARRAY [1..iCIk_NB_HEADERTANK]      OF ST_MAP_BLK;
+  sL_BLK_HEADERTANK_GROUP                     : ARRAY [1..iCIk_NB_HEADERTANK_GROUP]OF ST_MAP_BLK;
+  sL_BLK_INKPUMP                              : ARRAY [1..iCIk_NB_INK_PUMPS]       OF ST_MAP_BLK;
+  sL_BLK_HEATER                               : ARRAY [1..iCIk_NB_TEMP_CONTR]      OF ST_MAP_BLK;
+ 
+ (* FB to store the generated block ID's *)
+  bL_ExecuteBlockIdSave                      : BOOL;
+  fb_BlkIdSave                               : FB_BLK_ID_SAVE;
+
+(*Automatic flushing device print unit*)
+  iL_SelHeaderTankFlushing                   : INT := 1;                        (*Selection for visu*)
+  aI_FlushingSafePattern                     : STRING;                          (*Safe pattern*)
+  fb_TonFlushingUnlock                       : TON;
+  bL_FlushingUnlock                          : BOOL;
+  bL_FlushingHtEmpty                         : BOOL;
+  bL_FlushingStop                            : BOOL;
+  bL_FlushingActivate                        : BOOL;
+  bL_FlushingActive                          : BOOL;
+  bL_FlushingActiveHt                        : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL;
+  fb_FTrigFlushingActive                     : F_TRIG;
+  iL_FlushingState                           : INT;
+  aL_FlushingState                           : STRING;
+  bL_FlushingReturnFlowRequest               : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL;
+  fb_FlushingReturnFlowTimer                 : FB_OperatingCounter;
+  lL_OpCounterReturnFlowSeconds              : UDINT;
+  lL_OpCounterReturnFlowCycles               : UDINT;
+
+  (*Recipe read/write*)
+  pFbRecipeMngr                              : POINTER TO FB_RECIPE_READ_WRITE;
+    
+  (*visu*)
+  aVisuInkSystemFrameIndex                   : INT := 1;
+
+  (*Simulation variables*)
+  bL_SimInputs                               : BOOL := FALSE;
+END_VAR
+
+VAR CONSTANT
+(*GENERAL*)
+(*************************************************************************************************)
+  cL_INIT                                     : BYTE := 0;       (*Init-state 0*)
+  cL_INIT_PRG                                 : BYTE := 1;       (*Init-state 1*)
+  cL_INIT_OK                                  : BYTE := 2;       (*Init-state 2*)
+
+  iC_FilterSupervisionArraySize               : INT  := 50;      (*Amount of stored values*)
+  iC_FilterSupervisionAddInfoArraySize        : INT  :=  4;      (*Amount of additional info for HT*)
+END_VAR
+
+VAR PERSISTENT
+  lR_MinSpeedFillInkPumpCleaner               : WORD := 10;    (*Min limit of speed for cleaner pump*)
+  lR_MaxSpeedFillInkPumpCleaner               : WORD := 100;   (*Max limit of speed for cleaner pump*)
+  lR_AnalogMinDigitCleaner                    : WORD := 0;     (*Min value analog-output in digit*)
+  lR_AnalogMaxDigitCleaner                    : WORD := 16383; (*Max value analog-output in digit*)
+  lR_StptSpeedCleanInkPumpCleanerPercent      : WORD := 20;    (*Cleaner pump set point*)
+
+  lL_TimeRefuseFlow                           : UDINT:= 5;
+  tL_TimeRefuseFlow                           : TIME;
+
+  (*Sub menc adjustment*)
+  fR_SubMencSetAdjustWhilePurgeClean          : ARRAY [1..iCIk_NB_SUB_MENC] OF REAL;  (*[mbar]*)
+  fR_SubMencSetTolWdwBig                      : REAL := 0.5;     (*TolWdwBig for sub menc while Purge/Clean [mbar]*)
+
+  (*Automatic flushing device print unit*)
+  lL_TimeFlushingReturnFlow                   : UDINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*GENERAL*)
+(*************************************************************************************************)
+(*First action init call*)
+IF NOT bO_InitOk THEN
+  Init();
+ELSE (*Else when init Ok*)
+  (*Check interface*)
+  IF bPrgPrintIf_Ok = FALSE THEN
+    FOR iL_Counter := 1 TO iCPr_NB_PG DO
+      bPrgPrintIf_Ok := TRUE;
+      IF pAdsPg[iL_Counter] = 0 THEN bPrgPrintIf_Ok := FALSE; END_IF    // check ADS_PG access
+    END_FOR
+    RETURN;
+  END_IF
+
+  (*Dummy read unused inputs*)
+
+  
+  (*handle remanent variables*)
+  RemVar();
+
+  (*Automatic flushing device print unit*)
+  (*Remove call after commissioning.*)
+  //{warning 'Remove call AutoFlushingDevice after commissioning!!!'}
+  //AutoFlushingDevice();
+  (*AuxReturnPump activation*)
+  bO_FlushingReturnPump[1] := bL_FlushingReturnFlowRequest[1] OR bL_FlushingReturnFlowRequest[2];
+  bO_FlushingReturnPump[2] := bL_FlushingReturnFlowRequest[3] OR bL_FlushingReturnFlowRequest[4];
+
+  (*Call visualisation control*)
+  Visu();
+
+  (*Call simulation*)
+  IF bL_SimInputs THEN Simulate(); END_IF
+
+  (*Set monitor variables, will be set to false if a device is not ok*)
+  bO_VacuumOk      := TRUE;
+  bO_TemperatureOk := TRUE;
+
+  bO_TankCleanerLevelEmpty := NOT bIKn_TankCleanerLevelEmpty;
+  bO_TankRefuseLevelFull   := NOT bIKn_TankRefuseLevelFull;
+
+  (*Temp*)
+  bL_TemperatureWcState[1]    := bI_Temperature1WcState;
+
+  (*Infos from other tasks*)
+  (*Machine infos are communicated via iMachineInk*)
+  sL_SystemCmd                := PRG_MACHINE.sO_SystemCmd;
+  bPU1Printing                := PRG_PRINT.FB_PU[ePr_PU_UNIT_1].sO_UnitStatus.bPrinting;
+  FOR iL_Counter := 1 TO iCIk_NB_SUB_MENC DO
+    bL_CleanPumpRequest[iL_Counter] := PRG_MACHINE.bO_CleanPumpRequest[iL_Counter];
+    bL_CleanAfterPurge [iL_Counter] := PRG_MACHINE.sADS_CleanProcess[iL_Counter].bI_CleanAfterPurge;
+    bL_CleanAbort      [iL_Counter] := PRG_MACHINE.sADS_CleanProcess[iL_Counter].bI_Abort;
+  END_FOR
+  FOR iL_Counter := 1 TO iCPr_NB_PM DO
+    bL_Engaged[iL_Counter] := PRG_MACHINE.bL_IO_Engaged[iL_Counter];
+  END_FOR
+
+  (*Printline command and status for Change and Empty*)
+  FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK_GROUP DO
+    sL_CommandChangePrintline[iL_Counter].bI_Command := sAdsIkHeaderTankGroup[iL_Counter].sI_CommandChangeInk.bI_Command;
+    sL_CommandEmptyPrintline [iL_Counter].bI_Command := sAdsIkHeaderTankGroup[iL_Counter].sI_CommandEmptyInk .bI_Command;
+
+    sAdsIkHeaderTankGroup[iL_Counter].sI_CommandChangeInk.bO_CommandCanEx := sL_CommandChangePrintline[iL_Counter].bO_CommandCanEx;
+    sAdsIkHeaderTankGroup[iL_Counter].sI_CommandChangeInk.bO_CommandExec  := sL_CommandChangePrintline[iL_Counter].bO_CommandExec;
+    sAdsIkHeaderTankGroup[iL_Counter].sI_CommandEmptyInk .bO_CommandCanEx := sL_CommandEmptyPrintline [iL_Counter].bO_CommandCanEx;
+    sAdsIkHeaderTankGroup[iL_Counter].sI_CommandEmptyInk .bO_CommandExec  := sL_CommandEmptyPrintline [iL_Counter].bO_CommandExec;
+  END_FOR
+
+
+(*VACUUM*)
+(*************************************************************************************************)
+  (*DEGASSING*)
+  FOR iL_CounterDgas := 1 TO iCIk_NB_DGAS DO
+    fb_DgasMencContr[iL_CounterDgas]();
+    fb_DgasValvePlus[iL_CounterDgas]();
+    fb_DgasPumpMinus[iL_CounterDgas]();
+    fb_DgasMainValve[iL_CounterDgas]();
+  END_FOR
+  bODp_DgasPressOK := fb_DgasMencContr[1].pErrorCode = 0;
+  
+  (*Output for main DGAS valve*)
+  (*Valve should be activated all the time, except while sleep
+  fb_TofDgasMainValve(IN := bIDp_EnableMainDgasValve, PT := T#15S);
+  IF fb_TofDgasMainValve.Q THEN
+    fb_DgasMainValve[1].mEnable();
+
+    bODp_EnableMainDgasValve := TRUE;
+  ELSE
+    fb_DgasMainValve[1].mDisable();
+
+    bODp_EnableMainDgasValve := FALSE;
+	END_IF
+  *)
+
+  (*MENISCUS*)
+  FOR iL_CounterMenc := 1 TO iCIk_NB_MENC_STA DO
+    fb_MeniscusMencContr [iL_CounterMenc]();
+    fb_MeniscusValvePlus [iL_CounterMenc]();
+    fb_MeniscusValveMinus[iL_CounterMenc]();
+    
+    bO_VacuumOk := bO_VacuumOk AND fb_MeniscusMencContr[iL_CounterMenc].fb_2PointContrVacuum.bO_PressOk;
+  END_FOR
+
+  (*MAIN MENISCUS*)
+  (*With the valve for minus the meniscus pump must also activated.*)
+  IF fb_MeniscusValveMinus[1].pActive THEN
+    fb_MeniscusPump.mEnable();
+  ELSE
+    fb_MeniscusPump.mDisable();
+  END_IF
+  fb_MeniscusPump();
+
+  (*SUB MENISCUS*)
+  FOR iL_CounterSubMenc := 1 TO iCIk_NB_SUB_MENC DO
+    (*With the start of the cleaning the special setpoints are activated.*)
+    (*With the end of the cleaning the original setpoints are reactivated.*)
+    RF_TrigCleaning[iL_CounterSubMenc](CLK := bL_CleanPumpRequest[iL_CounterSubMenc]);
+
+    (*Sub menc adjustment:*)
+    (*- While Purge and Cleaning.*)
+    (*  With a start of the Purge, the setpoint adjustment and the lI_TolWdwBig are set.*)
+    IF     bL_CleanAfterPurge[iL_CounterSubMenc]
+       AND (   iMachineInk[iCIk_MAP_SUB_MENC_HTG[iL_CounterSubMenc]].pPurgeRequest
+            OR RF_TrigCleaning[iL_CounterSubMenc].RT
+           ) 
+    THEN
+      (*Set adjusment value*)
+      fL_SubMencAdjustWhilePurgeClean[iL_CounterSubMenc] := fR_SubMencSetAdjustWhilePurgeClean[iL_CounterSubMenc];
+      (*Set lI_TolWdwBig*)
+      fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].mSetToleranceBig(IbSetToleranceBig := TRUE, IfSetToleranceBig := fR_SubMencSetTolWdwBig);
+    END_IF
+  
+    IF     (sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].sI_PressSet.fI_Val <> 0) 
+       AND (fL_SubMencAdjustWhilePurgeClean[iL_CounterSubMenc]              <> 0)
+    THEN
+      fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].pPressSetFactor :=   (  fL_SubMencAdjustWhilePurgeClean[iL_CounterSubMenc]
+                                                                                   + sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].sI_PressSet.fI_Val) 
+                                                                                / sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].sI_PressSet.fI_Val;
+    ELSE
+      fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].pPressSetFactor := 1;
+    END_IF
+
+    (*Rising trigger of enable sub menc conroller*)
+    R_TrigEnable[iL_CounterSubMenc](CLK := sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].bI_Enable);
+    (*Reset values*)
+    IF    R_TrigEnable[iL_CounterSubMenc].Q  (*(precaution)*)
+       OR RF_TrigCleaning[iL_CounterSubMenc].FT
+       OR bL_CleanAbort[iL_CounterSubMenc]
+    THEN 
+      (*Reset adjusment value*)
+      fL_SubMencAdjustWhilePurgeClean[iL_CounterSubMenc] := 0; 
+      (*Reset lI_TolWdwBig*)
+      fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].mSetToleranceBig(IbSetToleranceBig := FALSE, IfSetToleranceBig := fR_SubMencSetTolWdwBig);
+    END_IF
+  END_FOR
+    
+(*TEMP*)
+(*************************************************************************************************)
+  (*Headertank, base plate heater*)
+  FOR iL_Counter := 1 TO iCIk_NB_TEMP_HYS DO
+    fb_RTrigEnableHeater[iL_Counter](CLK := bL_TemperatureWcState[iL_Counter]);
+    IF fb_RTrigEnableHeater[iL_Counter].Q THEN
+      fb_TempControllerHys[iL_Counter].mDisable();
+    END_IF
+    fb_RTrigDisableHeater[iL_Counter](CLK := NOT bL_TemperatureWcState[iL_Counter]);
+    IF fb_RTrigDisableHeater[iL_Counter].Q THEN
+      fb_TempControllerHys[iL_Counter].mEnable();
+    END_IF
+  
+    fb_TempControllerHys[iL_Counter]();
+
+    IF fb_TempControllerHys[iL_Counter].pErrorCode <> 0 THEN
+      bO_TemperatureOk := FALSE;
+		END_IF
+  END_FOR
+
+
+(*PURGE*)
+(*************************************************************************************************)
+  FOR iL_Counter := 1 TO iCIk_NB_PURGE_GROUP DO
+    fb_PurgeController[cCIk_MAP_PURGE_GROUP_CONTR[iL_Counter]].IbPurgeGroupRequestHT     [cCIk_MAP_PURGE_GROUP_PURGE_STA[iL_Counter]] := bL_PurgeGroupRequestHT     [iL_Counter];
+    fb_PurgeController[cCIk_MAP_PURGE_GROUP_CONTR[iL_Counter]].IbPurgeGroupRequestDeAirHT[cCIk_MAP_PURGE_GROUP_PURGE_STA[iL_Counter]] := bL_PurgeGroupRequestDeAirHT[iL_Counter];
+
+    sAdsIkPurgeGroup[iL_Counter].bI_EnableFlush := FALSE;  (*Flush not existing*)
+  END_FOR
+
+  bL_PurgeBusy := FALSE;
+  FOR iL_Counter := 1 TO iCIk_NB_PURGE_CONTR DO
+    fb_PurgeController[iL_Counter].IbPurgeContrRequestHT := bL_PurgeContrRequestHT[iL_Counter];
+    fb_PurgeController[iL_Counter]();
+
+    (* TOF because pPurgeBusy is reset for one cycle if Purge is switching to the next HT.*)
+    fb_TofPurgeBusy[iL_Counter](IN := fb_PurgeController[iL_Counter].pPurgeBusy, PT := T#20ms);
+    bL_PurgeBusy := bL_PurgeBusy OR fb_TofPurgeBusy[iL_Counter].Q;
+    iMachineInk[iL_Counter].pPurgeBusy := fb_TofPurgeBusy[iL_Counter].Q;
+  END_FOR
+  bO_MainPurgeReleaseValve := fb_PurgeController[1].bO_MainPurgeReleaseValve OR fb_PurgeController[2].bO_MainPurgeReleaseValve;
+  
+
+(*INK VARNISH*)
+(*************************************************************************************************)
+  (*Hadertank*)
+  (******************)
+  (*Inits*)
+  FOR iL_Counter := 1 TO iCIk_NB_MENC_STA DO
+    bL_EnableMencFromHeadertank[iL_Counter] := FALSE;
+  END_FOR
+  FOR iL_Counter := 1 TO iCIk_NB_PURGE_CONTR DO
+    bL_PurgeContrRequestHT[iL_Counter] := FALSE;
+  END_FOR
+  FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK_GROUP DO
+    eL_LowestActiveStateChange  [iL_Counter] := eChangeEnd;
+    eL_LowestActiveStateEmpty   [iL_Counter] := eEmptyEnd;
+    eL_LowestActiveStateFill    [iL_Counter] := eFillEnd;
+    eL_LowestActiveStateFlush   [iL_Counter] := eFlushEnd;
+    eL_LowestActiveStateCleaning[iL_Counter] := eCleaningEnd;
+  END_FOR
+
+  (*Command for printline*)
+  FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK_GROUP DO
+    fb_RTrigCommandChangePrintline[iL_Counter](CLK :=    sL_CommandChangePrintline[iL_Counter].bI_Command 
+                                                      OR bL_CommandChangePrintlineVisu[iL_Counter]
+                                                      OR bL_CommandChangePrintlinesVisu);
+    fb_FTrigCommandChangePrintline[iL_Counter](CLK :=    sL_CommandChangePrintline[iL_Counter].bI_Command
+                                                      OR bL_CommandChangePrintlineVisu[iL_Counter]
+                                                      OR bL_CommandChangePrintlinesVisu);
+  
+    fb_RTrigCommandEmptyPrintline [iL_Counter](CLK :=    sL_CommandEmptyPrintline[iL_Counter].bI_Command 
+                                                      OR bL_CommandEmptyPrintlineVisu[iL_Counter]
+                                                      OR bL_CommandEmptyPrintlinesVisu);
+    fb_FTrigCommandEmptyPrintline [iL_Counter](CLK :=    sL_CommandEmptyPrintline[iL_Counter].bI_Command
+                                                      OR bL_CommandEmptyPrintlineVisu[iL_Counter]
+                                                      OR bL_CommandEmptyPrintlinesVisu);
+  END_FOR
+
+  FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK DO
+    (*Change varnish not allowed if a change in another headertank is active.*)
+    bL_ChangeActiveOtherHT[iL_Counter] := FALSE;
+    FOR iL_Counter2 := 1 TO iCIk_NB_HEADERTANK DO
+      IF iL_Counter <> iL_Counter2 THEN
+        IF     sAdsIkHeaderTank[iL_Counter2].sI_CommandChange.bO_CommandExec 
+           AND (iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter] = iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter2])
+        THEN
+          bL_ChangeActiveOtherHT[iL_Counter] := TRUE;
+        END_IF
+      END_IF
+    END_FOR
+  
+    fb_RTrigChangeStateHeadertank[iL_Counter](CLK :=     sAdsIkHeaderTank[iL_Counter].bI_EnableFillInk
+                                                     AND sAdsIkHeaderTank[iL_Counter].cO_StatusFillInk.5);
+    IF fb_RTrigChangeStateHeadertank[iL_Counter].Q THEN
+      fb_Headertank[iL_Counter].StateHeadertank := eHeadertankFull;
+    END_IF
+
+    fb_RTrigCommandChangeHeadertank[iL_Counter](CLK := sAdsIkHeaderTank[iL_Counter].sI_CommandChange.bI_Command);
+
+    (*Allocate command for printline to headertank*)
+    IF     (   fb_RTrigCommandChangePrintline[iCIk_MAP_HEADERTANK_INK[iL_Counter]].Q
+            OR fb_RTrigCommandChangeHeadertank[iL_Counter].Q)
+       AND bCIk_HEADERTANK_EXIST[iL_Counter]
+    THEN
+      (*Special profile for empty with ColorId = 255*)
+      IF sAdsIkInkStorageTank[iL_StoragetankAssignmentIndex[iL_Counter]].sI_InkParameter.iColorId = sC_Config_I.iC_ColorIdEmpty THEN
+        sAdsIkHeaderTank[iL_Counter].sI_CommandChange.bI_Command := FALSE;
+        sAdsIkHeaderTank[iL_Counter].sI_CommandEmpty.bI_Command  := TRUE;
+        fb_Headertank   [iL_Counter].bI_ExecutePurgeManu         := TRUE;
+      (*Special storage tank with conservation*)
+      ELSIF FIND(sAdsIkInkStorageTank[iL_StoragetankAssignmentIndex[iL_Counter]].aO_Name, sC_Config_I.aC_STORAGETANK_CONSERVATION) > 0 THEN
+        sAdsIkHeaderTank[iL_Counter].sI_CommandChange.bI_Command   := FALSE;
+        sAdsIkHeaderTank[iL_Counter].sI_CommandEmpty.bI_Command    := TRUE;
+        sAdsIkHeaderTank[iL_Counter].sI_ActivateCleaner.bI_Command := TRUE;
+        fb_Headertank   [iL_Counter].bI_ExecutePurgeManu           := TRUE;
+      ELSE
+        sAdsIkHeaderTank[iL_Counter].sI_CommandChange.bI_Command := TRUE;
+        fb_Headertank   [iL_Counter].bI_ExecutePurgeManu         := FALSE;
+      END_IF
+    END_IF
+    IF fb_FTrigCommandChangePrintline[iCIk_MAP_HEADERTANK_INK[iL_Counter]].Q THEN
+      sAdsIkHeaderTank[iL_Counter].sI_CommandEmpty.bI_Command  := FALSE;
+      sAdsIkHeaderTank[iL_Counter].sI_CommandChange.bI_Command := FALSE;
+    END_IF
+  
+    IF     fb_RTrigCommandEmptyPrintline[iCIk_MAP_HEADERTANK_INK[iL_Counter]].Q 
+       AND bCIk_HEADERTANK_EXIST[iL_Counter]
+    THEN
+      sAdsIkHeaderTank[iL_Counter].sI_CommandEmpty.bI_Command := TRUE;
+      fb_Headertank   [iL_Counter].bI_ExecutePurgeManu        := TRUE;
+    END_IF
+    IF fb_FTrigCommandEmptyPrintline[iCIk_MAP_HEADERTANK_INK[iL_Counter]].Q THEN
+      sAdsIkHeaderTank[iL_Counter].sI_CommandEmpty.bI_Command := FALSE;
+    END_IF
+  
+    IF     fb_RTrigCommandEmptyHT[iL_Counter].Q 
+       AND bCIk_HEADERTANK_EXIST[iL_Counter]
+    THEN
+      sAdsIkHeaderTank[iL_Counter].sI_CommandEmpty.bI_Command := TRUE;
+      fb_Headertank   [iL_Counter].bI_ExecutePurgeManu        := TRUE;
+    END_IF
+    IF fb_FTrigCommandEmptyHT[iL_Counter].Q THEN
+      sAdsIkHeaderTank[iL_Counter].sI_CommandEmpty.bI_Command := FALSE;
+    END_IF
+  
+    (*Check states of all headertanks*)
+    IF     (fb_Headertank[iL_Counter].StateChange > eChangeIdle)
+       AND (fb_Headertank[iL_Counter].StateChange < eL_LowestActiveStateChange[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]])
+    THEN
+      eL_LowestActiveStateChange[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]] := fb_Headertank[iL_Counter].StateChange;
+    END_IF
+    IF     (fb_Headertank[iL_Counter].StateEmpty > eEmptyIdle)
+       AND (fb_Headertank[iL_Counter].StateEmpty < eL_LowestActiveStateEmpty[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]])
+    THEN
+      eL_LowestActiveStateEmpty[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]] := fb_Headertank[iL_Counter].StateEmpty;
+    END_IF
+    IF     (fb_Headertank[iL_Counter].StateFill > eFillIdle)
+       AND (fb_Headertank[iL_Counter].StateFill < eL_LowestActiveStateFill[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]])
+    THEN
+      eL_LowestActiveStateFill[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]] := fb_Headertank[iL_Counter].StateFill;
+    END_IF
+    IF     (fb_Headertank[iL_Counter].StateFlush > eFlushIdle)
+       AND (fb_Headertank[iL_Counter].StateFlush < eL_LowestActiveStateFlush[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]])
+    THEN
+      eL_LowestActiveStateFlush[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]] := fb_Headertank[iL_Counter].StateFlush;
+    END_IF
+    IF     (fb_Headertank[iL_Counter].StateCleaning > eCleaningIdle)
+       AND (fb_Headertank[iL_Counter].StateCleaning < eL_LowestActiveStateCleaning[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]])
+    THEN
+      eL_LowestActiveStateCleaning[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]] := fb_Headertank[iL_Counter].StateCleaning;
+    END_IF
+
+    (*Switch to another storage tank with same varnish if storage tank reaches error level.*)
+    IF iL_StoragetankAssignmentIndex[iL_Counter] <> 0 THEN
+      IF sAdsIkInkStorageTank[iL_StoragetankAssignmentIndex[iL_Counter]].bO_StorageTankError THEN
+        FOR iL_Counter2 := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+          IF     (iL_StoragetankAssignmentIndex[iL_Counter] <> iL_Counter2)
+             AND (  sAdsIkInkStorageTank[iL_StoragetankAssignmentIndex[iL_Counter]].sI_InkParameter.iIndex
+                  = sAdsIkInkStorageTank[iL_Counter2].sI_InkParameter.iIndex)
+             AND NOT sAdsIkInkStorageTank[iL_Counter2].bO_StorageTankError
+          THEN
+            sAdsIkHeaderTank[iL_Counter].sI_StoragetankAssignment   .lI_Val := UDINT_TO_DINT(sL_BLK_INKSTORAGE_TANK[iL_Counter2].iBlk_AdsId);
+            sAdsIkHeaderTank[iL_Counter].sO_ActStoragetankAssignment.lI_Val := UDINT_TO_DINT(sL_BLK_INKSTORAGE_TANK[iL_Counter2].iBlk_AdsId);
+          END_IF
+        END_FOR
+      END_IF
+    END_IF
+  
+    (*Check assignment of header tank to storage tank*)
+    iL_StoragetankAssignmentIndex   [iL_Counter] := 0;
+    iL_ActStoragetankAssignmentIndex[iL_Counter] := 0;
+  
+    FOR iL_Counter2 := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+      IF   sAdsIkHeaderTank[iL_Counter].sI_StoragetankAssignment.lI_Val
+         = UDINT_TO_DINT(sL_BLK_INKSTORAGE_TANK[iL_Counter2].iBlk_AdsId)
+      THEN
+        iL_StoragetankAssignmentIndex[iL_Counter] := iL_Counter2;
+      END_IF
+  
+      IF   sAdsIkHeaderTank[iL_Counter].sO_ActStoragetankAssignment.lI_Val
+         = UDINT_TO_DINT(sL_BLK_INKSTORAGE_TANK[iL_Counter2].iBlk_AdsId)
+      THEN
+        iL_ActStoragetankAssignmentIndex[iL_Counter] := iL_Counter2;
+      END_IF
+    END_FOR
+
+    (*Purge: outflow valve while DeAir*)
+    bL_PurgeOutflow2ValveHT[iL_Counter] :=     fb_PurgeController[iCIk_MAP_HEADERTANK_PURGE_CONTR[iL_Counter]].fb_PurgeContr.bI_DeAirSelect[iCIk_MAP_HEADERTANK_PURGE_GROUPIDX[iL_Counter]]
+                                           AND fb_PurgeController[iCIk_MAP_HEADERTANK_PURGE_CONTR[iL_Counter]].fb_PurgeContr.bO_Outflow2Valve;
+
+  END_FOR
+  
+  
+  
+  FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK DO
+    (*Data from assigned storage tank*)
+    IF     (iL_ActStoragetankAssignmentIndex[iL_Counter] > 0)
+       AND (iL_ActStoragetankAssignmentIndex[iL_Counter] <= iCIk_NB_INKSTORAGE_TANK)
+    THEN
+      fL_StorageTankLevelLiter := sAdsIkInkStorageTank[iL_ActStoragetankAssignmentIndex[iL_Counter]].fO_StorageTankLevelLiter.fO_Val;
+  
+      IF sAdsIkInkStorageTank[iL_ActStoragetankAssignmentIndex[iL_Counter]].sI_InkParameter.iTimer = 0 THEN
+        IF (sAdsIkInkStorageTank[iL_ActStoragetankAssignmentIndex[iL_Counter]].sI_InkParameter.iColorId >= 254) THEN
+          tL_TimeReturnFlow := tL_TimeReturnFlowHt[iL_Counter];
+        ELSE
+          tL_TimeReturnFlow := UDINT_TO_TIME(lL_TimeReturnFlow * 1000);
+        END_IF
+      ELSE
+        tL_TimeReturnFlow := UDINT_TO_TIME(UINT_TO_UDINT(sAdsIkInkStorageTank[iL_ActStoragetankAssignmentIndex[iL_Counter]].sI_InkParameter.iTimer) * 1000);
+        tL_TimeReturnFlowHt[iL_Counter] := tL_TimeReturnFlow;
+      END_IF
+  
+      IF     (iL_StoragetankAssignmentIndex   [iL_Counter] > 0)
+         AND (iL_StoragetankAssignmentIndex   [iL_Counter] <= iCIk_NB_INKSTORAGE_TANK)
+         AND (iL_ActStoragetankAssignmentIndex[iL_Counter] > 0)
+         AND (iL_ActStoragetankAssignmentIndex[iL_Counter] <= iCIk_NB_INKSTORAGE_TANK)
+      THEN
+        (*Special storage tank with conservation*)
+        IF FIND(sAdsIkInkStorageTank[iL_StoragetankAssignmentIndex[iL_Counter]].aO_Name, sC_Config_I.aC_STORAGETANK_CONSERVATION) > 0 THEN
+          bL_Compatibility := FALSE;
+        ELSE
+          iL_ActIndex := sAdsIkInkStorageTank[iL_ActStoragetankAssignmentIndex[iL_Counter]].sI_InkParameter.iIndex + 1;
+          
+          IF iL_ActIndex > 0 THEN
+            bL_Compatibility := sAdsIkInkStorageTank[iL_StoragetankAssignmentIndex[iL_Counter]].sI_InkParameter.bCompatibility[iL_ActIndex];
+          ELSE
+            bL_Compatibility := FALSE;
+          END_IF
+        END_IF
+      ELSE
+        bL_Compatibility := FALSE;
+      END_IF
+    ELSE
+      tL_TimeReturnFlow        := UDINT_TO_TIME(lL_TimeReturnFlow * 1000);
+      fL_StorageTankLevelLiter := 0;
+      bL_Compatibility         := FALSE;
+    END_IF
+  
+    (*Data from desired storage tank*)
+    IF     (iL_StoragetankAssignmentIndex[iL_Counter] > 0)
+       AND (iL_StoragetankAssignmentIndex[iL_Counter] <= iCIk_NB_INKSTORAGE_TANK)
+    THEN
+      IF sAdsIkInkStorageTank[iL_StoragetankAssignmentIndex[iL_Counter]].sI_InkParameter.iTimerFill = 0 THEN
+        tL_TimeMaxFill := DINT_TO_TIME(WORD_TO_DINT(sC_Config_I.wC_INKPUMP_MAX_TIME) * 1000);
+        wL_TimeMaxFillHt[iL_Counter] := sC_Config_I.wC_INKPUMP_MAX_TIME;
+      ELSE
+        tL_TimeMaxFill := UDINT_TO_TIME(UINT_TO_UDINT(sAdsIkInkStorageTank[iL_StoragetankAssignmentIndex[iL_Counter]].sI_InkParameter.iTimerFill) * 1000);
+        wL_TimeMaxFillHt[iL_Counter] := UINT_TO_WORD(sAdsIkInkStorageTank[iL_StoragetankAssignmentIndex[iL_Counter]].sI_InkParameter.iTimerFill);
+      END_IF
+    ELSE
+      tL_TimeMaxFill := DINT_TO_TIME(WORD_TO_DINT(sC_Config_I.wC_INKPUMP_MAX_TIME) * 1000);
+      wL_TimeMaxFillHt[iL_Counter] := sC_Config_I.wC_INKPUMP_MAX_TIME;
+    END_IF
+  
+    tL_TimeBlowOut      := UDINT_TO_TIME(lL_TimeBlowOut      * 1000);
+    tL_TimeEmptyCleaner := UDINT_TO_TIME(lL_TimeEmptyCleaner * 1000);
+    tL_TimeRefuseFlow   := UDINT_TO_TIME(lL_TimeRefuseFlow   * 1000);
+
+    (*---input---*)
+    bL_PurgeDeAirValveRequest[iL_Counter] :=     fb_PurgeController[iCIk_MAP_HEADERTANK_PURGE_CONTR[iL_Counter]].fb_PurgeContr.bI_DeAirSelect[iCIk_MAP_HEADERTANK_PURGE_GROUPIDX[iL_Counter]]
+                                             AND fb_PurgeController[iCIk_MAP_HEADERTANK_PURGE_CONTR[iL_Counter]].fb_PurgeContr.bO_DeAirValve;
+
+    fb_Headertank[iL_Counter].pI_sAdsHeadertank            := ADR(sAdsIkHeaderTank[iL_Counter]);
+    fb_Headertank[iL_Counter].pI_StorTankAssignIndex       := ADR(iL_StoragetankAssignmentIndex[iL_Counter]);
+    fb_Headertank[iL_Counter].pI_ActStorTankAssignIndex    := ADR(iL_ActStoragetankAssignmentIndex[iL_Counter]);
+    fb_Headertank[iL_Counter].bI_PurgeActive               := bL_PurgeBusy;
+    fb_Headertank[iL_Counter].bI_PurgeValveActive          := fb_PurgeController[iCIk_MAP_HEADERTANK_PURGE_CONTR[iL_Counter]].fbPurgeGroup[iCIk_MAP_HEADERTANK_PURGE_GROUPIDX[iL_Counter]].bO_PurgeReleaseValve;
+    fb_Headertank[iL_Counter].bI_DeAirValveRequest         :=    bL_PurgeDeAirValveRequest[iL_Counter]
+                                                              OR fb_CirculationInk[iL_Counter].ObHtCloseMencConnectionValve;
+    fb_Headertank[iL_Counter].bI_Outflow1ValveRequest      := bL_PurgeOutflow1ValveHT[iL_Counter];
+    fb_Headertank[iL_Counter].bI_Outflow2ValveRequest      :=    bL_PurgeOutflow2ValveHT[iL_Counter]
+                                                              OR fb_CirculationInk[iL_Counter].ObValveActivation;
+    fb_Headertank[iL_Counter].bI_FillPumpConfirmation      := fb_Headertank[iL_Counter].bO_FillPumpRequest;
+    fb_Headertank[iL_Counter].bI_CleanerPumpInUse          := bL_CleanerPumpRequest[iCIk_MAP_HEADERTANK_CLEANER_PUMP[iL_Counter]];
+    fb_Headertank[iL_Counter].bI_CleanerPumpConfirmation   := bL_CleanerPumpConfirmation[iL_Counter];
+    fb_Headertank[iL_Counter].bI_ReturnFlowConfirmation    := bL_ReturnFlowConfirmation[iL_Counter];
+    fb_Headertank[iL_Counter].bI_Niveau                    := bIKn_TankInkLevelReached[iL_Counter];
+    fb_Headertank[iL_Counter].bI_CleanExec                 := iMachineInk[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]].pCleanExec;
+    (*bI_PrintExec is only used to set a message that an exchange with degassed varnish is needed.*)
+    fb_Headertank[iL_Counter].bI_PrintExec                 := TRUE;
+    fb_Headertank[iL_Counter].tL_TimeWarnExchange          := UDINT_TO_TIME(lL_TimeWarnExchange * 1000 * 60 * 60);  (*[h] => [ms]*)
+    fb_Headertank[iL_Counter].fI_StorageTankLevelLiter     := fL_StorageTankLevelLiter;  (*not used yet*)
+    fb_Headertank[iL_Counter].bI_Compatibility             := bL_Compatibility;
+    fb_Headertank[iL_Counter].StateChange                  := eL_LowestActiveStateChange  [iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]];
+    fb_Headertank[iL_Counter].StateEmpty                   := eL_LowestActiveStateEmpty   [iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]];
+    fb_Headertank[iL_Counter].StateFill                    := eL_LowestActiveStateFill    [iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]];
+    fb_Headertank[iL_Counter].StateFlush                   := eL_LowestActiveStateFlush   [iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]];
+    fb_Headertank[iL_Counter].StateCleaning                := eL_LowestActiveStateCleaning[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]];
+
+    (*Until now the pump command comes from FB_INK_SUPPLY_UNIT*)
+    fb_Headertank[iL_Counter].bI_FillPumpExtern := fb_FillInkVarnish[iL_Counter].bO_EnablePump;
+
+    (*---call---*)
+    IF (iL_StoragetankAssignmentIndex[iL_Counter] > 0) THEN
+      bL_HeadertankCanEx :=     iMachineInk[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]].pInCappingPos
+                            AND iMachineInk[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]].pSeparatorNiveauOk;
+
+      IF FIND(sAdsIkInkStorageTank[iL_StoragetankAssignmentIndex[iL_Counter]].aO_Name, sC_Config_I.aC_STORAGETANK_CONSERVATION) = 0 THEN
+        bL_HeadertankFillCanEx := TRUE;
+      ELSE
+        bL_HeadertankFillCanEx := FALSE;
+      END_IF
+    ELSE
+      bL_HeadertankCanEx     := FALSE;
+      bL_HeadertankFillCanEx := FALSE;
+    END_IF
+
+    fb_Headertank[iL_Counter].Change  ( bI_CommandCanEx            :=     bL_HeadertankCanEx 
+                                                                      AND bCIk_HEADERTANK_CHANGE[iL_Counter]
+                                                                      AND NOT bL_FlushingActiveHt[iL_Counter]
+                                                                      AND NOT bO_TankCleanerLevelEmpty
+                                                                      AND NOT bO_TankRefuseLevelFull
+                                                                      AND NOT bL_ChangeActiveOtherHT[iL_Counter]
+                                      , tI_TimeRefuse              := tL_TimeRefuseFlow);
+    fb_Headertank[iL_Counter].Empty   ( bI_CommandCanEx            :=     bL_HeadertankCanEx
+                                                                      AND NOT bL_FlushingActiveHt[iL_Counter]
+                                      , bI_ReturnFlowConfirmation  := bL_ReturnFlowConfirmation[iL_Counter]
+                                      , tI_TimeReturnFlow          := tL_TimeReturnFlow
+                                      , tI_TimeBlowOut             := tL_TimeBlowOut);
+    fb_Headertank[iL_Counter].Fill    ( bI_CommandCanEx            :=     bL_HeadertankCanEx 
+                                                                      AND bCIk_HEADERTANK_FILL[iL_Counter]
+                                                                      (*Storage tank for Conservation must be skiped*)
+                                                                      AND bL_HeadertankFillCanEx
+                                                                      AND NOT bL_FlushingActiveHt[iL_Counter]
+                                                                      // not working if Cleaner is filled: AND (fb_Headertank[iL_Counter].aL_StateCleaner = 'Idle')
+                                      , tI_TimeFillMax             := tL_TimeMaxFill);
+    fb_Headertank[iL_Counter].Flush   ( bI_CommandCanEx            :=     bL_HeadertankCanEx
+                                                                      AND bCIk_HEADERTANK_FLUSH[iL_Counter]
+                                                                      AND NOT bL_FlushingActiveHt[iL_Counter]
+                                      , tI_TimeFillCleanerMax      := DINT_TO_TIME(WORD_TO_DINT(sC_Config_I.wC_CLEANERPUMP_MAX_TIME) * 1000)
+                                      , tI_TimeEmptyCleaner        := tL_TimeEmptyCleaner
+                                      , tI_TimeBlowOut             := tL_TimeBlowOut);
+    fb_Headertank[iL_Counter].Cleaning( bI_CommandCanEx            :=     bL_HeadertankCanEx 
+                                                                      AND NOT bL_FlushingActiveHt[iL_Counter]
+                                                                      AND (fb_Headertank[iL_Counter].aL_StateCleaner = 'Idle'));
+    fb_Headertank[iL_Counter].Cleaner ( bI_CommandCanEx            :=     bL_HeadertankCanEx 
+                                                                      AND (iL_ActStoragetankAssignmentIndex[iL_Counter] = 0)
+                                                                      AND (eL_LowestActiveStateEmpty[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]] = eEmptyEnd)
+                                                                      AND NOT bL_FlushingActiveHt[iL_Counter]
+                                                                      AND NOT sAdsIkHeaderTank[iL_Counter].sI_CommandEmpty.bI_Command
+                                                                      AND NOT sAdsIkHeaderTank[iL_Counter].sI_CommandEmpty.bO_CommandExec
+                                      , bI_CommandStop             :=    bIDp_StopFillCleaner[iL_Counter]
+                                                                      OR bL_FlushingStop
+                                      , tI_TimeFillCleanerMax      := DINT_TO_TIME(WORD_TO_DINT(sC_Config_I.wC_CLEANERPUMP_MAX_TIME) * 1000));
+    fb_Headertank[iL_Counter].Output();
+    fb_Headertank[iL_Counter].Messaging();
+
+    (*---output---*)
+    IF fb_Headertank[iL_Counter].bO_PurgeRequest THEN
+      bL_PurgeContrRequestHT[iCIk_MAP_HEADERTANK_PURGE_CONTR[iL_Counter]] :=    bL_PurgeContrRequestHT[iCIk_MAP_HEADERTANK_PURGE_CONTR[iL_Counter]]
+                                                                             OR fb_Headertank[iL_Counter].bO_PurgeRequest;
+    END_IF
+    bL_PurgeGroupRequestHT     [iCIk_MAP_HEADERTANK_PURGE_GROUP[iL_Counter]] := fb_Headertank[iL_Counter].bO_PurgeRequest;
+    bL_PurgeGroupRequestDeAirHT[iCIk_MAP_HEADERTANK_PURGE_GROUP[iL_Counter]] := fb_Headertank[iL_Counter].bO_PurgeRequestDeAir;
+    (*ToDo: iL_Counter passt so eigentlich nicht zu sAdsIkInkPump*)
+    sAdsIkInkPump[iCIk_MAP_HEADERTANK_INK_PUMP[iL_Counter]].cO_StatusInkPump.eO_Activ := fb_Headertank[iL_Counter].bO_FillPumpRequest;
+  END_FOR
+
+  (*Interface with Motion System*)
+  (*PRG_MACHINE.bI_CleanCommandFromInk   := bL_CleanCommandToMachine;*)
+  (*PRG_MACHINE.bI_CleanEnable1FromInk   := bL_CleanEnable1ToMachine;*)
+  (*PRG_MACHINE.bI_CleanEnable2FromInk   := bL_CleanEnable2ToMachine;*)
+  (*PRG_MACHINE.bI_CappingCommandFromInk := bL_CappingCommandToMachine;*)
+  bL_CleanCommandToMachine[1]:= FALSE;
+  bL_CleanCommandToMachine[2]:= FALSE;
+  bL_CleanEnable1ToMachine   := FALSE;
+  bL_CleanEnable2ToMachine   := FALSE;
+  bL_CappingCommandToMachine := FALSE;
+  FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK DO
+    bL_CleanCommandToMachine[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]] := bL_CleanCommandToMachine[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]] OR fb_Headertank[iL_Counter].bO_CleanRequest;
+    IF fb_Headertank[iL_Counter].bO_CleanRequest THEN
+      IF iCIk_MAP_HEADERTANK_INK[iL_Counter] = 1 THEN
+        bL_CleanEnable1ToMachine   := TRUE;    
+      END_IF
+      IF iCIk_MAP_HEADERTANK_INK[iL_Counter] = 2 THEN
+        bL_CleanEnable2ToMachine   := TRUE;    
+      END_IF
+    END_IF
+    bL_CappingCommandToMachine := bL_CappingCommandToMachine OR fb_Headertank[iL_Counter].bO_CappingRequest;
+  END_FOR
+  iMachineInk[1].pCleanCommand := bL_CleanCommandToMachine[1];
+  iMachineInk[2].pCleanCommand := bL_CleanCommandToMachine[2];
+
+  (*Command for printline*)
+  FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK_GROUP DO
+    bO_CommandPrintlineExec[iL_Counter] := FALSE;
+ 
+   (*Change printline*)
+    sL_CommandChangePrintline[iL_Counter].bO_CommandCanEx := FALSE;
+    FOR iL_Counter2 := 1 TO iCIk_NB_HEADERTANK DO
+      IF sAdsIkHeaderTank[iL_Counter2].sI_CommandChange.bO_CommandCanEx THEN
+        sL_CommandChangePrintline[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter2]].bO_CommandCanEx := TRUE;
+      END_IF
+    END_FOR
+  
+    sL_CommandChangePrintline[iL_Counter].bO_CommandExec := FALSE;
+    FOR iL_Counter2 := 1 TO iCIk_NB_HEADERTANK DO
+      IF    sAdsIkHeaderTank[iL_Counter2].sI_CommandChange.bO_CommandExec 
+         OR sAdsIkHeaderTank[iL_Counter2].sI_CommandEmpty .bO_CommandExec
+         (*Info needed for fill conservation*)
+         OR sAdsIkHeaderTank[iL_Counter2].sI_ActivateCleaner.bO_CommandExec
+         OR sAdsIkHeaderTank[iL_Counter2].sI_ActivateCleaner.bI_Command
+      THEN
+        sL_CommandChangePrintline[iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter2]].bO_CommandExec := TRUE;
+        bO_CommandPrintlineExec  [iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter2]]                := TRUE;
+      END_IF
+    END_FOR
+  END_FOR
+
+  (*Check assignment of header tank to storage tank*)
+  FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK DO
+    sAdsIkHeaderTank[iL_Counter].sI_StoragetankAssignment.lI_Val    := 0;
+    sAdsIkHeaderTank[iL_Counter].sO_ActStoragetankAssignment.lI_Val := 0;
+    FOR iL_Counter2 := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+      IF    (iL_StoragetankAssignmentIndex[iL_Counter] = iL_Counter2)
+         OR (iL_StoragetankAssignmentIndex[iL_Counter] = UDINT_TO_DINT(sL_BLK_INKSTORAGE_TANK[iL_Counter2].iBlk_AdsId))
+      THEN
+        sAdsIkHeaderTank[iL_Counter].sI_StoragetankAssignment.lI_Val
+          := UDINT_TO_DINT(sL_BLK_INKSTORAGE_TANK[iL_Counter2].iBlk_AdsId);
+      END_IF
+      IF    (iL_ActStoragetankAssignmentIndex[iL_Counter] = iL_Counter2)
+         OR (iL_ActStoragetankAssignmentIndex[iL_Counter] = UDINT_TO_DINT(sL_BLK_INKSTORAGE_TANK[iL_Counter2].iBlk_AdsId))
+      THEN
+        sAdsIkHeaderTank[iL_Counter].sO_ActStoragetankAssignment.lI_Val
+          := UDINT_TO_DINT(sL_BLK_INKSTORAGE_TANK[iL_Counter2].iBlk_AdsId);
+      END_IF
+    END_FOR
+  END_FOR
+
+
+  (*Cleaner*)
+  (******************)
+  (*Pump setpoint*)
+  wL_StptSpeedCleanInkPumpPercent := LIMIT( lR_MinSpeedFillInkPumpCleaner
+                                          , lR_StptSpeedCleanInkPumpCleanerPercent
+                                          , lR_MaxSpeedFillInkPumpCleaner);	(*Limitation of setpoint*)
+  
+  IF (wIDp_AnalogMaxPercentCleaner - wIDp_AnalogMinPercentCleaner) <> 0 THEN
+    fL_MFunction := 1.0 * DINT_TO_REAL(lR_AnalogMaxDigitCleaner - lR_AnalogMinDigitCleaner)
+                        / DINT_TO_REAL(wIDp_AnalogMaxPercentCleaner - wIDp_AnalogMinPercentCleaner); (*calculation ramp for analog-output of pump*)
+  END_IF;
+  wL_StptSpeedCleanInkPumpDigit := FC_REAL_TO_WORD(fL_MFunction * wL_StptSpeedCleanInkPumpPercent + DINT_TO_REAL(lR_AnalogMinDigitCleaner), ADR(PRG_SYSTEMBASE.lI_ConversionErr));  (*calculated pump speed in digits*)
+  
+  FOR iL_Counter := 1 TO iCIk_NB_CLEANER_PUMPS DO
+    (*---input---*)
+    fb_Cleaner[iL_Counter].sI_SystemCmd    := sL_SystemCmd;
+    fb_Cleaner[iL_Counter].bI_Acknowledge  := FALSE;  (*not used*)
+    fb_Cleaner[iL_Counter].wI_MaxPumpTime  := 0;      (*not used*)
+    fb_Cleaner[iL_Counter].wI_SetPointPump := wL_StptSpeedCleanInkPumpDigit;
+  
+    (*init*)
+    bL_CleanerPumpRequest[iL_Counter] := FALSE;
+    FOR iL_Counter2 := 1 TO iCIk_NB_HEADERTANK DO
+      IF (iCIk_MAP_HEADERTANK_CLEANER_PUMP[iL_Counter2] = iL_Counter) THEN 
+        bL_CleanerPumpConfirmation[iL_Counter2] := FALSE;
+      END_IF
+    END_FOR
+  
+    FOR iL_Counter2 := 1 TO iCIk_NB_HEADERTANK DO
+      IF     (iCIk_MAP_HEADERTANK_CLEANER_PUMP[iL_Counter2] = iL_Counter) 
+         AND NOT bL_CleanerPumpRequest[iL_Counter]
+      THEN
+        bL_CleanerPumpRequest     [iL_Counter]  := fb_Headertank[iL_Counter2].bO_CleanerPumpRequest;
+        bL_CleanerPumpConfirmation[iL_Counter2] := fb_Headertank[iL_Counter2].bO_CleanerPumpRequest;
+        fb_Cleaner[iL_Counter].bI_PumpRequest   := fb_Headertank[iL_Counter2].bO_CleanerPumpRequest;
+      END_IF
+    END_FOR
+  
+    (*---call---*)
+    fb_Cleaner[iL_Counter].PumpOption(bI_PumpSetPoint := iCIk_CLEANER_PUMP_SETPOINT[iL_Counter]);
+    fb_Cleaner[iL_Counter].Pump();
+  END_FOR
+  
+  
+  (*Return flow*)
+  (******************)
+  FOR iL_Counter := 1 TO iCIk_NB_RETURN_FLOW_UNITS DO
+    (*---input---*)
+    fb_ReturnFlow[iL_Counter].sI_SystemCmd   := sL_SystemCmd;
+    fb_ReturnFlow[iL_Counter].bI_Acknowledge := FALSE;  (*not used*)
+    fb_ReturnFlow[iL_Counter].wI_MaxPumpTime := 0;      (*not used*)
+  
+    (*init*)
+    bL_ReturnFlowRequest[iL_Counter]           := FALSE;
+    fb_ReturnFlow[iL_Counter].bI_PumpRequest   := FALSE;
+    fb_ReturnFlow[iL_Counter].bI_BypassValve   := FALSE;
+    (*Reset valves with a delay because pump request is made with a PWM.*)
+    IF fb_TonReturnFlowValveDelay[iL_Counter].Q THEN
+      fb_ReturnFlow[iL_Counter].bI_RefuseRequest := FALSE;
+      FOR iL_Counter2 := 1 TO iCIk_NB_INKSTORAGE_TANK_MAX DO
+        fb_ReturnFlow[iL_Counter].bI_StoragetankAssignment[iL_Counter2] := FALSE;
+      END_FOR
+		END_IF
+    FOR iL_Counter2 := 1 TO iCIk_NB_HEADERTANK DO
+      IF (iCIk_MAP_HEADERTANK_RETURN_FLOW[iL_Counter2] = iL_Counter) THEN
+        bL_ReturnFlowConfirmation[iL_Counter2] := FALSE;
+      END_IF
+    END_FOR
+  
+    iL_NbReturnFlowAssignHT[iL_Counter] := 0;
+    iL_NbReturnFlowRequest [iL_Counter] := 0;
+    bL_ReturnFlowRefuse    [iL_Counter] := FALSE;
+    FOR iL_Counter2 := 1 TO iCIk_NB_HEADERTANK DO
+      IF     (iCIk_MAP_HEADERTANK_RETURN_FLOW[iL_Counter2] = iL_Counter) 
+         (*not needed here because each tank group has it's own return pump
+         AND NOT bL_ReturnFlowRequest[iL_Counter] *)
+      THEN
+        iL_NbReturnFlowAssignHT[iL_Counter] := iL_NbReturnFlowAssignHT[iL_Counter] + 1;
+        (*Check number of requests for PWM control of pump*)
+        IF    fb_Headertank[iL_Counter2].bO_ReturnFlowPumpRequest 
+           OR bL_PurgeDeAirValveRequest[iL_Counter2]
+           OR fb_CirculationInk[iL_Counter2].ObPumpActivation
+           // is done with a special pump OR bL_FlushingReturnFlowRequest[iL_Counter2]
+        THEN
+          bL_ReturnFlowRequest     [iL_Counter]      := TRUE;
+          bL_ReturnFlowConfirmation[iL_Counter2]     := TRUE;
+          bL_ReturnFlowRefuse      [iL_Counter]      :=  bL_ReturnFlowRefuse[iL_Counter] OR fb_Headertank[iL_Counter2].bO_ReturnFlowRefuse;
+  
+          iL_NbReturnFlowRequest[iL_Counter] := iL_NbReturnFlowRequest[iL_Counter] + 1;
+  
+          IF     (iL_ActStoragetankAssignmentIndex[iL_Counter2] > 0) 
+             AND (iL_ActStoragetankAssignmentIndex[iL_Counter2] <= iCIk_NB_INKSTORAGE_TANK)
+          THEN
+            fb_ReturnFlow[iL_Counter].bI_StoragetankAssignment[iL_ActStoragetankAssignmentIndex[iL_Counter2]] := TRUE;
+          END_IF
+        END_IF
+      END_IF
+    END_FOR
+
+    fb_TonReturnFlowValveDelay[iL_Counter](IN := NOT bL_ReturnFlowRequest[iL_Counter], PT := T#200MS);
+
+    (*PWM control depending on number of requesting HT*)
+    IF iL_NbReturnFlowAssignHT[iL_Counter] <> 0 THEN
+      fb_TimerReturnFlow[iL_Counter]( bI_Enable    := TRUE
+                                    , tI_Frequency := T#25MS
+                                    , iI_DutyCycle := (100 * iL_NbReturnFlowRequest[iL_Counter]) / iL_NbReturnFlowAssignHT[iL_Counter]);
+    END_IF
+    
+    IF bL_ReturnFlowRequest[iL_Counter] THEN
+      fb_ReturnFlow[iL_Counter].bI_PumpRequest   := bL_ReturnFlowRequest[iL_Counter] AND fb_TimerReturnFlow[iL_Counter].bO_State;
+      fb_ReturnFlow[iL_Counter].bI_BypassValve   := FALSE;
+      fb_ReturnFlow[iL_Counter].bI_RefuseRequest := bL_ReturnFlowRefuse[iL_Counter];
+    END_IF
+  
+    (*---call---*)
+    fb_ReturnFlow[iL_Counter].PumpOption(bI_PumpSetPoint := iCIk_RETURN_FLOW_PUMP_SETPOINT);
+    fb_ReturnFlow[iL_Counter].Pump();
+    fb_ReturnFlow[iL_Counter].Valves();
+    
+    (*Return flow valve has negativ logic than output of fb_ReturnFlow*)
+    fb_ReturnFlowStorTank[iL_Counter]();
+    IF fb_ReturnFlow[iL_Counter].fb_ReturnFlowPump.bOKp_EnablePump THEN
+      IF fb_ReturnFlow[iL_Counter].bOKp_ReturnFlowSelRefuse THEN 
+        fb_ReturnFlowStorTank[iL_Counter].mDisable(); 
+      ELSE 
+        fb_ReturnFlowStorTank[iL_Counter].mEnable(); 
+      END_IF
+    ELSE
+      fb_ReturnFlowStorTank[iL_Counter].mDisable(); 
+		END_IF
+  END_FOR
+
+
+	(*Fill Ink Varnish*)
+	(******************)
+  bIDp_EnableMainDgasValve := FALSE;
+  FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK DO
+    (*---collect conditions---*)
+    sL_PumpConditions.bI_SubMencEnabled             := sAdsIkMenc[iCIk_MAP_HEADERTANK_MENC_STA[iL_Counter]].bI_Enable;
+    sL_PumpConditions.bI_SubMencOk                  := TRUE;
+    sL_PumpConditions.bI_DgasPressOk                := fb_DgasMencContr[iCIk_MAP_HEADERTANK_DGAS[iL_Counter]].pErrorCode = 0;
+
+    sL_PumpConditions.bI_BalancePumpStateOk         := TRUE;
+    sL_PumpConditions.bI_BalanceMaintenanceNoExec   := TRUE;
+    sL_PumpConditions.bI_WasteBinNotFull            := TRUE;
+    sL_PumpConditions.bI_WcStateOk                  := NOT (   bI_InkLevel1WcState
+                                                            OR bI_SubPressureWcState[1]
+                                                            OR bI_Pressure1WcState);
+    sL_PumpConditions.bI_StorTankSetZeroNoExec      := TRUE;
+    sL_PumpConditions.bL_HeadertankFillAllowed      := NOT fb_Headertank[iL_Counter].bL_DisableHeadertankFill;
+
+    (*---input---*)
+    fb_FillInkVarnish[iL_Counter].pI_ConversionErr     := ADR(PRG_SYSTEMBASE.lI_ConversionErr);
+		fb_FillInkVarnish[iL_Counter].sI_SystemCmd         := sL_SystemCmd;
+		fb_FillInkVarnish[iL_Counter].sI_InkPumpConditions := sL_PumpConditions;
+		fb_FillInkVarnish[iL_Counter].wI_AnalogMaxDigit    := wIDP_AnalogMaxDigitVarnish;
+		fb_FillInkVarnish[iL_Counter].wI_AnalogMinDigit    := wIDP_AnalogMinDigitVarnish;
+		fb_FillInkVarnish[iL_Counter].bI_EnableAuto        := sAdsIkHeaderTank[iL_Counter].bI_FillModeAuto;
+		fb_FillInkVarnish[iL_Counter].bI_EnablePump        :=     (   sAdsIkHeaderTank[iL_Counter].bI_EnableFillInk
+                                                               OR fb_Headertank[iL_Counter].bO_FillRequest);
+                                                          (*not used, different bahavior     
+                                                          AND (   bOKp_EnableStorageTankValve[1]
+                                                               OR bOKp_EnableStorageTankValve[2])*)
+		fb_FillInkVarnish[iL_Counter].bI_Niveau            := bIKn_TankInkLevelReached[iL_Counter];
+		fb_FillInkVarnish[iL_Counter].bI_PumpManu          := sAdsIkHeaderTank[iL_Counter].bI_FillManual;
+		fb_FillInkVarnish[iL_Counter].tI_PumpTime          := WORD_TO_TIME(wIDp_PumpTimeOffDelayVarnish);
+    fb_FillInkVarnish[iL_Counter].wI_MaxPumpTime       := wL_TimeMaxFillHt[iL_Counter];
+    fb_FillInkVarnish[iL_Counter].wI_LevelDelayTime    := sC_Config_I.wC_INKPUMP_LEVELDELAY_TIME;
+
+    IF sAdsIkHeaderTank[iL_Counter].bI_EnableRamp THEN
+      fb_Ramp[iL_Counter].pI_ConversionErr     := ADR(PRG_SYSTEMBASE.lI_ConversionErr);
+      fb_Ramp[iL_Counter].II_YAnalogMaxDigit   := IIDp_MaxDigitRampe;
+      fb_Ramp[iL_Counter].II_YAnalogMinDigit   := IIDp_MinDigitRampe;
+      fb_Ramp[iL_Counter].II_YAnalogMaxPercent := IIDp_MaxPercentRampe;
+      fb_Ramp[iL_Counter].II_YAnalogMinPercent := IIDp_MinPercentRampe;
+      fb_Ramp[iL_Counter].fI_YAnalogMaxVolt    := fIDp_MaxVoltRampe;
+      fb_Ramp[iL_Counter].fI_YAnalogMinVolt    := fIDp_MinVoltRampe;
+      fb_Ramp[iL_Counter].II_XTimeRamp         := IIDp_TimeRampe;
+  
+      fb_Ramp[iL_Counter].bI_EnableRamp        := sAdsIkHeaderTank[iL_Counter].bI_EnableRamp AND sAdsIkHeaderTank[iL_Counter].bI_FillModeAuto;
+      fb_Ramp[iL_Counter].bI_StartRamp         := fb_FillInkVarnish[iL_Counter].bO_EnablePump; (*NOT bL_TankInkLevelReachedVarnish[iL_Counter];*)
+      (*ToDo: iL_Counter passt so eigentlich nicht zu sAdsIkInkPump*)
+      fb_Ramp[iL_Counter].II_SpeedActPercent   := sAdsIkInkPump[iCIk_MAP_HEADERTANK_INK_PUMP[iL_Counter]].sI_InkPumpSpeedSet.lI_Val;
+  
+      fb_Ramp[iL_Counter]();
+  
+      fb_FillInkVarnish[iL_Counter].wI_StptInkPumpPercent := DINT_TO_WORD(fb_Ramp[iL_Counter].IO_YPercent);
+    ELSE
+      (*ToDo: iL_Counter passt so eigentlich nicht zu sAdsIkInkPump*)
+      fb_FillInkVarnish[iL_Counter].wI_StptInkPumpPercent := DINT_TO_WORD(sAdsIkInkPump[iCIk_MAP_HEADERTANK_INK_PUMP[iL_Counter]].sI_InkPumpSpeedSet.lI_Val);
+    END_IF
+
+		fb_FillInkVarnish[iL_Counter].wI_StptInkPumpPercentMin	:= wIDp_MinSpeedFillInkPumpVarnish;
+		fb_FillInkVarnish[iL_Counter].wI_StptInkPumpPercentMax	:= wIDp_MaxSpeedFillInkPumpVarnish;
+		fb_FillInkVarnish[iL_Counter]();
+
+    IF fb_FillInkVarnish[iL_Counter].bI_EnablePump AND NOT sAdsIkHeaderTank[iL_Counter].bI_EnableRamp THEN
+      wOKp_StptSpeedFillInkPumpVarnish[iL_Counter]	:= fb_FillInkVarnish[iL_Counter].wO_PumpSpeed;
+    ELSE
+      wOKp_StptSpeedFillInkPumpVarnish[iL_Counter]	:= DINT_TO_WORD(fb_Ramp[iL_Counter].IO_YDigit);
+    END_IF
+  
+    bOKp_EnableFillInkPumpVarnish[iL_Counter] := fb_FillInkVarnish[iL_Counter].bO_EnablePump;
+
+  //bIDp_EnableMainDgasValve := bIDp_EnableMainDgasValve OR sAdsIkHeaderTank[iL_Counter].bI_EnableFillInk;
+    bIDp_EnableMainDgasValve := bIDp_EnableMainDgasValve OR fb_Headertank[iL_Counter].bO_FillPumpRequest;
+
+    (*Set CanEx if error*)
+    IF fb_FillInkVarnish[iL_Counter].bO_ErrorPumpTime THEN
+      sAdsIkHeaderTank[iL_Counter].sI_AckFillInk.bO_CommandCanEx := TRUE;
+		ELSE
+      sAdsIkHeaderTank[iL_Counter].sI_AckFillInk.bO_CommandCanEx := FALSE;
+		END_IF;
+
+		(*Acknowledge fill ink error*)
+		IF FC_COMMAND(ADR(sAdsIkHeaderTank[iL_Counter].sI_AckFillInk)) THEN
+			fb_FillInkVarnish[iL_Counter].bI_AckFault                  := TRUE;		(*clear fill ink error*)
+			sAdsIkHeaderTank[iL_Counter].sI_AckFillInk.bO_CommandCanEx := FALSE;
+		ELSE
+			fb_FillInkVarnish[iL_Counter].bI_AckFault                  := FALSE;	(*clear fill ink error*)
+		END_IF
+
+		(*update ADS status*)
+		sAdsIkHeaderTank[iL_Counter].cO_StatusFillInk.eO_Activ       := fb_FillInkVarnish[iL_Counter].bO_FillActiv;
+		sAdsIkHeaderTank[iL_Counter].cO_StatusFillInk.eO_SpareBit5   := NOT bIKn_TankInkLevelReached[iL_Counter];
+		sAdsIkHeaderTank[iL_Counter].cO_StatusFillInk.eO_SpareBit6   := fb_FillInkVarnish[iL_Counter].bO_EnableValve;
+    sAdsIkHeaderTank[iL_Counter].cO_StatusFillInk.eO_SpareBit7   := fb_Ramp[iL_Counter].bO_MaxSpeedReached;
+
+    sAdsIkHeaderTank[iL_Counter].bO_EnableFillInkCanEn           := bCIk_HEADERTANK_EXIST[iL_Counter] AND NOT bL_FlushingActiveHt[iL_Counter];
+
+    (*Messaging in fb_FillInkVarnish only dummy, messaging is now handled by fb_Headertank*)
+    fb_Headertank[iL_Counter].bI_Msg[1]  := fb_FillInkVarnish[iL_Counter].fb_Msg[1].bI_Status;
+    fb_Headertank[iL_Counter].bI_Msg[2]  := fb_FillInkVarnish[iL_Counter].fb_Msg[2].bI_Status;
+    fb_Headertank[iL_Counter].bI_Msg[3]  := fb_FillInkVarnish[iL_Counter].fb_Msg[3].bI_Status;
+    fb_Headertank[iL_Counter].bI_Msg[4]  := fb_FillInkVarnish[iL_Counter].fb_Msg[4].bI_Status;
+    fb_Headertank[iL_Counter].bI_Msg[5]  := fb_FillInkVarnish[iL_Counter].fb_Msg[5].bI_Status;
+    fb_Headertank[iL_Counter].bI_Msg[6]  := fb_FillInkVarnish[iL_Counter].fb_Msg[6].bI_Status;
+    fb_Headertank[iL_Counter].bI_Msg[10] := FALSE;
+  END_FOR
+
+
+  (*Circulation ink controller*)
+  FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK DO
+    fb_CirculationInk[iL_Counter]( IbAxisMovement := PRG_PRINT.bAxisMovement
+                                 , IbHeadertankOk :=     sAdsIkHeaderTank[iL_Counter].bI_EnableFillInk                        (*Fill ink is enabled*)
+                                                     AND NOT sAdsIkHeaderTank[iL_Counter].sI_CommandChange.bO_CommandExec     (*Execution not active*)
+                                                     AND NOT sAdsIkHeaderTank[iL_Counter].sI_CommandEmpty.bO_CommandExec      (*Execution not active*)
+                                                     AND NOT sAdsIkHeaderTank[iL_Counter].sI_CommandFlush.bO_CommandExec      (*Execution not active*)
+                                                     AND (fb_Headertank[iL_Counter].aL_StateCleaner = 'Idle')                 (*No cleaner filled*)
+                                                     AND NOT fb_FillInkVarnish[iL_Counter].bO_ErrorPumpTime                   (*No fill ink error*)
+                                                     AND NOT fb_FillInkVarnish[iL_Counter].bO_ErrorLevel                      (*No fill ink error*)
+                                                     AND NOT fb_FillInkVarnish[iL_Counter].bO_ErrorPumpMonitoring             (*No fill ink error*)
+                                                     AND fb_TempControllerHys[iCIk_MAP_HEADERTANK_TEMP_CONTR[iL_Counter]].pErrorCode = 0
+                                 , IbPHTempOk     := NOT PRG_PRINT.stPcFlags[iCIk_MAP_HEADERTANK_INK[iL_Counter]].bTempOutOfRange
+                                 );
+    bO_HTInkConnectionClose[iL_Counter] := NOT fb_CirculationInk[iL_Counter].ObHtCloseInkConnectionValve;
+  END_FOR
+
+
+  (*Storagetank*)
+  (******************)
+  FOR iL_Counter := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+    (*---input---*)
+    fb_Storagetank[iL_Counter].bI_Msg[ 1] := fB_BalanceMsg[iL_Counter,  1].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[ 2] := fB_BalanceMsg[iL_Counter,  2].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[ 3] := fB_BalanceMsg[iL_Counter,  3].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[ 4] := fB_BalanceMsg[iL_Counter,  4].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[ 5] := fB_BalanceMsg[iL_Counter,  5].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[ 6] := fB_BalanceMsg[iL_Counter,  6].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[ 7] := fB_BalanceMsg[iL_Counter,  7].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[ 8] := fB_BalanceMsg[iL_Counter,  8].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[ 9] := fB_BalanceMsg[iL_Counter,  9].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[10] := fB_BalanceMsg[iL_Counter, 10].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[11] := fB_BalanceMsg[iL_Counter, 11].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[12] := fB_BalanceMsg[iL_Counter, 12].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[13] := fB_BalanceMsg[iL_Counter, 13].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[14] := fB_BalanceMsg[iL_Counter, 14].bI_Status;
+    fb_Storagetank[iL_Counter].bI_Msg[15] := fB_BalanceMsg[iL_Counter, 15].bI_Status;
+  
+    fb_Storagetank[iL_Counter].sI_SystemCmd       := sL_SystemCmd;
+    fb_Storagetank[iL_Counter].pI_sAdsStoragetank := ADR(sAdsIkInkStorageTank[iL_Counter]);
+    fb_Storagetank[iL_Counter].bI_Acknowledge     := FALSE;  (*not used*)
+    fb_Storagetank[iL_Counter].wI_MaxPumpTime     := 0;      (*not used*)
+  
+    FOR iL_Counter2 := 1 TO iCIk_NB_INKSTORAGE_TANK_PUMP DO
+      fb_Storagetank[iL_Counter].bI_PumpRequest[iL_Counter2] := FALSE;
+    END_FOR
+  
+    bL_HtAssignedToStorage[iL_Counter] := FALSE;
+    FOR iL_Counter2 := 1 TO iCIk_NB_HEADERTANK DO
+      IF    (iL_ActStoragetankAssignmentIndex[iL_Counter2] = iL_Counter)
+         OR (    (iL_StoragetankAssignmentIndex[iL_Counter2] = iL_Counter))
+             AND (   sAdsIkHeaderTank[iL_Counter2].sI_CommandChange.bO_CommandExec
+                  OR sAdsIkHeaderTank[iL_Counter2].sI_CommandEmpty.bO_CommandExec 
+                  OR sAdsIkHeaderTank[iL_Counter2].sI_CommandFill.bO_CommandExec) 
+      THEN   
+        bL_HtAssignedToStorage[iL_Counter] := TRUE;
+      END_IF
+  
+      IF iL_StoragetankAssignmentIndex[iL_Counter2] = iL_Counter THEN   
+        fb_Storagetank[iL_Counter].bI_PumpRequest[iCIk_MAP_HEADERTANK_STORAGE_PUMP[iL_Counter2]]
+          := fb_Headertank[iL_Counter2].bO_FillPumpRequest;
+        bL_FillPumpConfirmation[iL_Counter2] := fb_Headertank[iL_Counter2].bO_FillPumpRequest;
+  
+        (*---output---*)
+        bIDp_EnableMainDgasValve := bIDp_EnableMainDgasValve OR fb_Headertank[iL_Counter2].bO_FillPumpRequest;
+      END_IF
+    END_FOR
+    fb_Storagetank[iL_Counter].bI_HtAssignedToStorage     := bL_HtAssignedToStorage[iL_Counter];
+  
+    (*---call---*)
+    fb_Storagetank[iL_Counter].PumpOption(bI_PumpSetPoint := iCIk_STORAGE_TANK_PUMP_SETPOINT);
+    fb_Storagetank[iL_Counter].Pump();
+    fb_Storagetank[iL_Counter].Messaging();
+  END_FOR
+  
+  (*Barcode scanner*)
+  (*****************)
+  (*---input---*)
+  fb_BarcodeStoragetank.bI_Enable := bI_EnableBarcodeScanner;		(*activate communication*)
+  FOR iL_Counter := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+    fb_BarcodeStoragetank.bI_WeightOk         [iL_Counter] := NOT sAdsIkInkStorageTank[iL_Counter].cO_StatusBalance.eO_Err;
+    fb_BarcodeStoragetank.bI_MaintenanceActive[iL_Counter] := sAdsIkInkStorageTank[iL_Counter].sI_EnableMaintenance.bO_CommandExec;
+    fb_BarcodeStoragetank.lI_ScannerId        [iL_Counter] := sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.iScannerId;		(*Scanner ID*)
+  END_FOR
+  
+  
+  (*Process barcode communication signals*)
+  fb_BarcodeStoragetank.bI_AckInit      := bI_Barcode_AckInit;
+  fb_BarcodeStoragetank.bI_DataReceived := bI_Barcode_DataRec;
+  fb_BarcodeStoragetank.iI_RecvLength   := iI_Barcode_RecDataLength;
+  fb_BarcodeStoragetank.cI_RxBuffer     := cI_Barcode_RxBuff;
+  fb_BarcodeStoragetank.bI_BufferFull   := bI_Barcode_BufferFull;
+  fb_BarcodeStoragetank.bI_FramingFault := bI_Barcode_FramingError;
+  fb_BarcodeStoragetank.bI_OverRunError := bI_Barcode_OverRunError;
+  
+  (*---call---*)
+  fb_BarcodeStoragetank();
+  
+  (*---output---*)
+  bO_Barcode_ReqInit                    := fb_BarcodeStoragetank.bO_ReqInit;
+  bO_Barcode_AckRec                     := fb_BarcodeStoragetank.bO_DataRetrieved;
+  
+
+  (*BALANCE*)
+  (***********************************************************************************************)
+  IF bCIk_BALANCE_EXISTING THEN
+    (*---input---*)
+    fb_BalanceLink.bI_Enable := bI_EnableBalanceLink;		(*activate communication*)
+
+    bL_AckFaultGUI := FALSE;
+    FOR iL_Counter := 1 TO iCIk_NB_INKBALANCE DO
+      fb_BalanceLink.bI_GW_SelectedChannel [iL_Counter] := FC_COMMAND(ADR(sAdsIkInkStorageTank[iL_Counter].sI_EnableBalance));
+
+      fb_BalanceLink.aI_CalibrateFrameText1[iL_Counter] := sAdsIkInkStorageTank[iL_Counter].aI_CalibrateFrameText1;
+      fb_BalanceLink.aI_CalibrateFrameText2[iL_Counter] := sAdsIkInkStorageTank[iL_Counter].aI_CalibrateFrameText2;
+
+      bL_AckFaultGUI                                    := bL_AckFaultGUI OR fB_MsgQueueStorage[iL_Counter].bO_ReceiptMessage;
+    END_FOR;
+
+	  (*process balance communication link*)
+    fb_BalanceLink.fL_CorrectionValue := fI_CorrectionValue;
+    fb_BalanceLink.tI_UpdateRate      := INT_TO_TIME(iI_RefreshRate);
+    fb_BalanceLink.bI_AckFaultGUI     := bL_AckFaultGUI;
+
+    (*---call---*)
+    fb_BalanceLink();
+
+    (*---output---*)
+    (*process balance communication signals*)
+    fb_BalanceLink.bI_AckInit      := bI_Balance_AckInit;
+    bO_Balance_ReqInit             := fb_BalanceLink.bO_ReqInit;
+
+    fb_BalanceLink.bI_AckSend      := bI_Balance_AckSend;
+    bO_Balance_ReqSend             := fb_BalanceLink.bO_SendReq;
+
+    fb_BalanceLink.bI_DataReceived := bI_Balance_DataRec;
+    bO_Balance_AckRec              := fb_BalanceLink.bO_DataRetrieved;
+
+    fb_BalanceLink.iI_RecvLength   := iI_Balance_RecDataLength;
+    iO_Balance_SendDataLength      := fb_BalanceLink.iO_SendLength;
+
+    FOR iL_Counter := 0 TO 49 DO
+      fb_BalanceLink.cI_RxBuffer[iL_Counter]  := UINT_TO_BYTE(cI_Balance_RxBuffWord[iL_Counter]);
+      cO_Balance_TxBuffWord[iL_Counter]       := BYTE_TO_UINT(fb_BalanceLink.cO_TxBuffer[iL_Counter]);
+    END_FOR;
+
+    FOR iL_Counter := 1 TO iCIk_NB_INKBALANCE DO
+      fb_Balance[iL_Counter].fI_StorageTank_ActualLvl
+        :=   fb_BalanceLink.fO_Readings[iL_Counter]
+           * sAdsIkInkStorageTank[iL_Counter].sI_CorrectionValue.fI_Val;
+    END_FOR;
+
+    (*process balance controller inputs*)
+    FOR iL_Counter :=1 TO iCIk_NB_INKBALANCE DO
+      (*---input---*)
+      fb_Balance[iL_Counter].bI_Enable                 := sAdsIkInkStorageTank[iL_Counter].sI_EnableBalance.bI_Command;
+      fb_Balance[iL_Counter].bI_MaintenanceOP          := sAdsIkInkStorageTank[iL_Counter].sI_EnableMaintenance.bI_Command;
+      fb_Balance[iL_Counter].lI_MaintenanceTimeout     := FC_SET_VAR_DINT(ADR(sAdsIkInkStorageTank[iL_Counter].sI_MaintenanceTimeout.lI_Val));
+      fb_Balance[iL_Counter].bI_SetZero                := sAdsIkInkStorageTank[iL_Counter].bI_SetZero (*AND sAdsIkInkStorageTank[iL_Counter].bO_SetZeroCanEx*);
+      fb_Balance[iL_Counter].fI_StorageTank_WarningLvl := sAdsIkInkStorageTank[iL_Counter].sI_WarningLevelSet.fI_Val;
+      fb_Balance[iL_Counter].fI_StorageTank_ErrorLvl   := sAdsIkInkStorageTank[iL_Counter].sI_ErrorlevelSet.fI_Val;
+      fb_Balance[iL_Counter].fI_StorageTank_ActualLvl  :=   fb_BalanceLink.fO_Readings[iL_Counter]
+                                                          * sAdsIkInkStorageTank[iL_Counter].sI_CorrectionValue.fI_Val;
+      fb_Balance[iL_Counter].bI_AckFaultGUI            := fB_MsgQueueStorage[iL_Counter].bO_ReceiptMessage;
+      IF sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sDensity.fI_Val = 0 THEN
+        FB_Balance[iL_Counter].fI_Density              := sAdsIkInkStorageTank[iL_Counter].sI_InkDensitySet.fI_Val;
+      ELSE
+        FB_Balance[iL_Counter].fI_Density              := sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sDensity.fI_Val;
+      END_IF
+
+      (*---call---*)
+      fb_Balance[iL_Counter]();
+
+      sAdsIkInkStorageTank[iL_Counter].bO_SetZeroExec	 :=	sAdsIkInkStorageTank[iL_Counter].bI_SetZero;	(*command feedback*)
+    END_FOR;
+
+    (*---output---*)
+    (*process balance controller outputs*)
+    FOR iL_Counter := 1 TO iCIk_NB_INKBALANCE DO
+      (*get balance feedback*)
+      IF fb_Balance[iL_Counter].bI_Enable THEN
+        IF FB_Balance[iL_Counter].fO_MeasuredQuantity > 0 THEN
+          sAdsIkInkStorageTank[iL_Counter].fO_StorageTankLevelLiter.fO_Val := FB_Balance[iL_Counter].fO_MeasuredQuantity;
+  
+          IF sAdsIkInkStorageTank[iL_Counter].fO_StorageTankSize <> 0 THEN
+            sAdsIkInkStorageTank[iL_Counter].fO_StorageTankLevelPercent.fO_Val := (  FB_Balance[iL_Counter].fO_MeasuredQuantity
+                                                                                   / sAdsIkInkStorageTank[iL_Counter].fO_StorageTankSize) * 100;
+          END_IF;
+        ELSE  (*Storage tank is removed from balance*)
+          sAdsIkInkStorageTank[iL_Counter].fO_StorageTankLevelLiter.fO_Val   := 0;
+          sAdsIkInkStorageTank[iL_Counter].fO_StorageTankLevelPercent.fO_Val := 0;
+        END_IF;
+
+        sAdsIkInkStorageTank[iL_Counter].sI_EnableMaintenance.bO_CommandExec := fb_Balance[iL_Counter].bO_MaintenanceExec;
+        sAdsIkInkStorageTank[iL_Counter].sO_MaintenanceTimeAct.lO_Val        := fb_Balance[iL_Counter].lO_MaintenanceRemTime;
+
+        sAdsIkInkStorageTank[iL_Counter].bO_SetZeroExec                      := fb_Balance[iL_Counter].bO_SetZero;
+
+        (*StorageTank states*)
+        sAdsIkInkStorageTank[iL_Counter].cO_StatusStorageTank.eO_Warn        := (fb_Balance[iL_Counter].eO_StorageState = eWarning);
+        sAdsIkInkStorageTank[iL_Counter].bO_StorageTankWarning               := (fb_Balance[iL_Counter].eO_StorageState = eWarning);
+        sAdsIkInkStorageTank[iL_Counter].cO_StatusStorageTank.eO_Err         := (fb_Balance[iL_Counter].eO_StorageState = eError);
+        sAdsIkInkStorageTank[iL_Counter].bO_StorageTankError                 := (fb_Balance[iL_Counter].eO_StorageState = eError);
+
+        (*Balance states*)
+        sAdsIkInkStorageTank[iL_Counter].cO_StatusBalance.eO_Warn            := (fb_Balance[iL_Counter].eO_BalanceState = eWarning);
+        sAdsIkInkStorageTank[iL_Counter].cO_StatusBalance.eO_Err             := (fb_Balance[iL_Counter].eO_BalanceState = eError);
+      END_IF;
+
+      sAdsIkInkStorageTank[iL_Counter].cO_StatusBalance.eO_Enable            := fb_Balance[iL_Counter].bI_Enable;
+
+      sAdsIkInkStorageTank[iL_Counter].sI_EnableMaintenance.bO_CommandCanEx  :=     sAdsIkInkStorageTank[iL_Counter].sI_EnableBalance.bI_Command
+                                                                                AND NOT sAdsIkInkStorageTank[iL_Counter].sI_EnableMaintenance.bI_Command
+                                                                                AND NOT sAdsIkInkStorageTank[iL_Counter].sI_EnableMaintenance.bO_CommandExec;
+(*      bL_MessageWarning[iL_Counter] := (   sAdsIkInkStorageTank[iL_Counter].bO_StorageTankWarning
+                                        OR (    sAdsIkInkStorageTank[iL_Counter].bO_StorageTankError
+                                            AND NOT sAdsIkInkStorageTank[iL_Counter].bI_EnableStorageTank));*)
+      bL_MessageWarning[iL_Counter] := (    sAdsIkInkStorageTank[iL_Counter].bO_StorageTankWarning
+                                        AND sAdsIkInkStorageTank[iL_Counter].bI_EnableStorageTank);
+      bL_MessageError  [iL_Counter] := (    sAdsIkInkStorageTank[iL_Counter].bO_StorageTankError
+                                        AND sAdsIkInkStorageTank[iL_Counter].bI_EnableStorageTank);
+    END_FOR; (*FOR iL_Counter := 1 TO iCIk_NB_INKBALANCE DO*)
+
+    FOR iL_Counter := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+      (*Storage Messages*)
+      fB_BalanceMsgHandler[iL_Counter]();	(*Call to check for blocked access*)
+
+      fb_BalanceMsg[iL_Counter, 1](bI_Status := fb_BalanceLink.wO_ErrorCodeChannel[iL_Counter].1);
+      fb_BalanceMsg[iL_Counter, 2](bI_Status := fb_BalanceLink.wO_ErrorCodeChannel[iL_Counter].2);
+      fb_BalanceMsg[iL_Counter, 3](bI_Status := fb_BalanceLink.wO_ErrorCodeChannel[iL_Counter].3);
+      fb_BalanceMsg[iL_Counter, 4](bI_Status := fb_BalanceLink.wO_ErrorCodeChannel[iL_Counter].4);
+      fb_BalanceMsg[iL_Counter, 5](bI_Status := FALSE);
+      fb_BalanceMsg[iL_Counter, 6](bI_Status := FALSE);
+      fb_BalanceMsg[iL_Counter, 7](bI_Status := FALSE);
+      fb_BalanceMsg[iL_Counter, 8](bI_Status := bL_MessageWarning[iL_Counter]);
+      fb_BalanceMsg[iL_Counter, 9](bI_Status := bL_MessageError  [iL_Counter]);
+      fb_BalanceMsg[iL_Counter,10](bI_Status := FALSE);
+      fb_BalanceMsg[iL_Counter,11](bI_Status := FALSE);  (*InkStorageTankMixerNotWorking*)
+      (*Storage tank level info message*)
+      fb_BalanceMsg[iL_Counter,12](bI_Status :=     (   sAdsIkInkStorageTank[iL_Counter].bO_StorageTankWarning
+                                                     OR sAdsIkInkStorageTank[iL_Counter].bO_StorageTankError)
+                                                AND NOT sAdsIkInkStorageTank[iL_Counter].cO_StatusStorageTank.eO_Activ);
+      fB_BalanceMsg[iL_Counter,13](bI_Status :=     fb_BarcodeStoragetank.bO_LabelScanNeeded[iL_Counter]
+                                                AND sAdsIkInkStorageTank[iL_Counter].cO_StatusStorageTank.eO_Activ);
+      fB_BalanceMsg[iL_Counter,14](bI_Status :=     fb_BarcodeStoragetank.bO_LabelScanFalse [iL_Counter]
+                                                AND sAdsIkInkStorageTank[iL_Counter].cO_StatusStorageTank.eO_Activ);
+      fB_BalanceMsg[iL_Counter,15](bI_Status :=     NOT fb_Storagetank[iL_Counter].bI_HtAssignedToStorage
+                                                AND sAdsIkInkStorageTank[iL_Counter].cO_StatusStorageTank.eO_Activ);
+
+      fb_MsgQueueStorage[iL_Counter]();
+
+    END_FOR;
+  END_IF; (*IF bCIk_BALANCE_EXISTING THEN*)
+
+  (*Set fO_StorageTankLevelPercent of conservation tank with bO_TankCleanerLevelEmpty*)
+  IF bO_TankCleanerLevelEmpty THEN
+    sAdsIkInkStorageTank[iCIk_NB_INKSTORAGE_TANK].fO_StorageTankLevelPercent.fO_Val := 0;
+  ELSE
+    sAdsIkInkStorageTank[iCIk_NB_INKSTORAGE_TANK].fO_StorageTankLevelPercent.fO_Val := 100;
+END_IF
+  
+END_IF; (*Else when init Ok*)
+
+
+(*Global status*)
+bO_InkSystemOk :=     bO_VacuumOk
+                  AND bO_TemperatureOk
+                //AND bO_StorageTankOk
+                  AND (NOT bO_CommandPrintlineExec[1] OR NOT bL_Engaged[1])
+                  AND (NOT bO_CommandPrintlineExec[2] OR NOT bL_Engaged[2]);
+
+IF sL_SystemCmd.bSleep THEN
+  bO_InkStorageTankOk := TRUE;
+ELSE
+  bO_InkStorageTankOk := FALSE;
+  FOR iL_Counter := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+    IF bCIk_INKSTORAGE_TANK_EXIST[iL_Counter] THEN
+      bO_InkStorageTankOk := bO_InkStorageTankOk OR sAdsIkInkStorageTank[iL_Counter].bI_EnableStorageTank;
+    END_IF;
+  END_FOR;
+END_IF;
+
+(*WcState: 0 = Data valid, 1 = Data invalid*)
+bO_TotalWcState     :=     bI_Pressure1WcState
+                        OR bI_Pressure2WcState
+                        OR bI_SubPressureWcState[1]
+                        OR bI_Temperature1WcState
+                        OR bI_InkLevel1WcState;
+
+
+(********************************* END OF PRG ****************************************************)]]></ST>
+    </Implementation>
+    <Action Name="AutoFlushingDevice" Id="{6627fb9e-33a2-468a-baa9-49ad7fdee6fb}">
+      <Implementation>
+        <ST><![CDATA[IF aI_FlushingSafePattern = 'SAFE' THEN
+  bL_FlushingUnlock      := TRUE;
+ELSE
+  aI_FlushingSafePattern := 'LOCKED';
+  bL_FlushingUnlock      := FALSE;
+END_IF;
+fb_FTrigFlushingActive(CLK:= bL_FlushingActive);
+fb_TonFlushingUnlock(IN := bL_FlushingUnlock AND (iL_FlushingState = 0), PT := T#180S);
+IF fb_TonFlushingUnlock.Q OR fb_FTrigFlushingActive.Q THEN
+  aI_FlushingSafePattern := 'LOCKED';
+  bL_FlushingHtEmpty     := FALSE;
+END_IF
+
+fb_FlushingReturnFlowTimer( bI_Reset    := (iL_FlushingState = 0)
+                          , bI_In       :=    fb_ReturnFlow[iCIk_MAP_HEADERTANK_RETURN_FLOW[PRG_INK.iL_SelHeaderTankFlushing]].fb_ReturnFlowPump.bOKp_EnablePump
+                                           OR bO_FlushingReturnPump[iCIk_MAP_HEADERTANK_RETURN_FLOW[PRG_INK.iL_SelHeaderTankFlushing]]
+                          , lIO_Seconds := lL_OpCounterReturnFlowSeconds
+                          , lIO_Cycles  := lL_OpCounterReturnFlowCycles);
+
+(*Return if function is not unlocked.*)
+IF NOT bL_FlushingUnlock THEN
+  RETURN;
+END_IF
+
+CASE iL_FlushingState OF
+0:  (*Idle*)
+  aL_FlushingState := 'Idle';
+
+  IF     bL_FlushingActivate 
+     AND bL_FlushingHtEmpty 
+     AND sAdsIkHeaderTank[PRG_INK.iL_SelHeaderTankFlushing].sI_ActivateCleaner.bO_CommandCanEx
+     AND NOT sAdsIkHeaderTank[PRG_INK.iL_SelHeaderTankFlushing].bI_EnableFillInk
+  THEN
+    bL_FlushingActive := TRUE;
+
+    iL_FlushingState  := 1;
+  ELSE
+    bL_FlushingStop     := FALSE;
+    bL_FlushingActivate := FALSE;
+    bL_FlushingActive   := FALSE;
+    bL_FlushingActiveHt         [PRG_INK.iL_SelHeaderTankFlushing] := FALSE;
+    bL_FlushingReturnFlowRequest[PRG_INK.iL_SelHeaderTankFlushing] := FALSE;
+    sAdsIkHeaderTank[PRG_INK.iL_SelHeaderTankFlushing].sI_ActivateCleaner.bI_Command := FALSE;
+	END_IF
+
+1:  (*Start fill cleaner*)
+  aL_FlushingState := 'Start fill cleaner';
+
+  sAdsIkHeaderTank[PRG_INK.iL_SelHeaderTankFlushing].sI_ActivateCleaner.bI_Command := TRUE;
+  
+  IF sAdsIkHeaderTank[PRG_INK.iL_SelHeaderTankFlushing].sI_ActivateCleaner.bO_CommandExec THEN
+    sAdsIkHeaderTank[PRG_INK.iL_SelHeaderTankFlushing].sI_ActivateCleaner.bI_Command := FALSE;
+    bL_FlushingActiveHt[PRG_INK.iL_SelHeaderTankFlushing] := TRUE;
+
+    iL_FlushingState := 2;
+	END_IF
+  
+  IF bL_FlushingStop THEN
+    sAdsIkHeaderTank[PRG_INK.iL_SelHeaderTankFlushing].sI_ActivateCleaner.bI_Command := FALSE;
+
+    iL_FlushingState := 5;
+	END_IF
+  
+2:  (*Fill cleaner*)
+  aL_FlushingState := 'Fill cleaner';
+
+  IF NOT sAdsIkHeaderTank[PRG_INK.iL_SelHeaderTankFlushing].sI_ActivateCleaner.bO_CommandExec THEN
+    iL_FlushingState := 3;
+	END_IF
+  
+  IF bL_FlushingStop THEN
+    iL_FlushingState := 5;
+	END_IF
+  
+3:  (*Start empty cleaner*)
+  aL_FlushingState := 'Start empty cleaner';
+
+  bL_FlushingReturnFlowRequest[PRG_INK.iL_SelHeaderTankFlushing] := TRUE;
+  
+  IF    fb_ReturnFlow[iCIk_MAP_HEADERTANK_RETURN_FLOW[PRG_INK.iL_SelHeaderTankFlushing]].fb_ReturnFlowPump.bOKp_EnablePump 
+     OR bO_FlushingReturnPump[iCIk_MAP_HEADERTANK_RETURN_FLOW[PRG_INK.iL_SelHeaderTankFlushing]]
+  THEN
+    iL_FlushingState := 4;
+	END_IF
+
+  IF bL_FlushingStop THEN
+    bL_FlushingReturnFlowRequest[PRG_INK.iL_SelHeaderTankFlushing] := FALSE;
+
+    iL_FlushingState := 5;
+	END_IF
+  
+4:  (*Empty cleaner*)
+  aL_FlushingState := 'Empty cleaner';
+
+  IF lL_OpCounterReturnFlowSeconds >= lL_TimeFlushingReturnFlow THEN
+    bL_FlushingReturnFlowRequest[PRG_INK.iL_SelHeaderTankFlushing] := FALSE;
+    bL_FlushingActiveHt         [PRG_INK.iL_SelHeaderTankFlushing] := FALSE;
+
+    iL_FlushingState := 0;
+	END_IF
+
+  IF bL_FlushingStop THEN
+    bL_FlushingReturnFlowRequest[PRG_INK.iL_SelHeaderTankFlushing] := FALSE;
+
+    iL_FlushingState := 5;
+	END_IF
+  
+5:  (*Abort*)
+  aL_FlushingState := 'Abort';
+
+  IF     NOT sAdsIkHeaderTank[PRG_INK.iL_SelHeaderTankFlushing].sI_ActivateCleaner.bO_CommandExec
+     AND (   NOT fb_ReturnFlow[iCIk_MAP_HEADERTANK_RETURN_FLOW[PRG_INK.iL_SelHeaderTankFlushing]].fb_ReturnFlowPump.bOKp_EnablePump
+          OR NOT bO_FlushingReturnPump[iCIk_MAP_HEADERTANK_RETURN_FLOW[PRG_INK.iL_SelHeaderTankFlushing]])
+  THEN
+    bL_FlushingStop     := FALSE;
+    bL_FlushingActivate := FALSE;
+
+    iL_FlushingState := 0;
+	END_IF
+
+END_CASE
+
+]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="Init" Id="{3df6df47-00b1-4dfe-b031-bbb8c830433a}">
+      <Implementation>
+        <ST><![CDATA[(*************************************************************************************************)
+(* --- Module preprarations --- *)
+
+
+(*GENERAL*)
+(*************************************************************************************************)
+(*System init*)
+CASE cL_State OF
+
+  cL_INIT : 		(*First init*)
+
+                // Get system reference
+                ISystemBase := PRG_SYSTEMBASE.getSystemBaseInterface();
+                IF ISystemBase = 0 THEN RETURN; END_IF
+                // Wait until system(base) is booted
+                IF ISystemBase.bBooting THEN RETURN; END_IF
+                
+                // Build mapping information for ADS
+                Mapping();
+                
+                // Register module to system
+                pModuleDef := ISystemBase.regModule(
+                  pAdsInfo:=ADR(sC_Ads_Info),
+                  pMapInfo:=ADR(sMappingInfo)
+                );
+                IF pModuleDef = 0 THEN RETURN; END_IF
+
+                Fb_RegToAry.iI_ActElem := 0;   (*init module's block mapping array*)
+                Fb_RegToAry.sI_Parent := FC_CREATE_ARYPTR(ADR(sL_MOD_MAP), SIZEOF(sL_MOD_MAP)/SIZEOF(sL_MOD_MAP[1]), SIZEOF(sL_MOD_MAP[1]));
+
+                iMachineInk[1] := PRG_MACHINE.fb_InterfaceMachineInk[1];
+                iMachineInk[2] := PRG_MACHINE.fb_InterfaceMachineInk[2];
+
+                cL_State := cL_INIT_PRG;
+
+  cL_INIT_PRG :	(*Program call init*)
+
+                FOR iL_CounterDgas := 1 TO iCIk_NB_DGAS DO
+                  ;
+                END_FOR;
+
+                FOR iL_CounterMenc := 1 TO iCIk_NB_MENC DO
+                  ;
+                END_FOR
+
+                FOR iL_CounterSubMenc := 1 TO iCIk_NB_SUB_MENC DO
+                  ;
+                END_FOR
+
+                bL_RemVar_Init := TRUE;    (* Write variables by remanent variables *)
+                RemVar();
+
+                cL_State := cL_INIT_OK;
+
+  cL_INIT_OK: 	(*First init ok*)
+                bO_InitOk := TRUE;
+
+END_CASE;
+
+
+
+(*************************************************************************************************)
+(*ADS Structures Init*)
+(*************************************************************************************************)
+
+(*INK TABLE*)
+(*************************************************************************************************)
+sL_InkTable[1].iI_ColorID := 0; sL_InkTable[1].aI_ColorName := sC_Config_I.aC_HEADERTANK_NAME_DETAIL[1]; sL_InkTable[1].lI_ColorRGB := 16#FFFFFF;
+sL_InkTable[2].iI_ColorID := 0; sL_InkTable[2].aI_ColorName := sC_Config_I.aC_HEADERTANK_NAME_DETAIL[2]; sL_InkTable[2].lI_ColorRGB := 16#FFFFFF;
+sL_InkTable[3].iI_ColorID := 1; sL_InkTable[3].aI_ColorName := sC_Config_I.aC_HEADERTANK_NAME_DETAIL[3]; sL_InkTable[3].lI_ColorRGB := 16#FFFFFF;
+sL_InkTable[4].iI_ColorID := 1; sL_InkTable[4].aI_ColorName := sC_Config_I.aC_HEADERTANK_NAME_DETAIL[4]; sL_InkTable[4].lI_ColorRGB := 16#FFFFFF;
+
+
+(*DEGASSING*)
+(*************************************************************************************************)
+(*Pneumatic Controller Board CB1*)
+(*generate block ads name*)
+FOR iL_Counter := 1 TO iCIk_NB_DGAS DO
+  aL_Name := sC_Config_I.aC_DGAS_NAME;
+  IF sC_Config_I.aC_DGAS_NAME_DETAIL[iL_Counter] <> '' THEN
+    aL_Name := CONCAT(aL_Name, CONCAT(' - ', sC_Config_I.aC_DGAS_NAME_DETAIL[iL_Counter]));
+  ELSE
+    aL_Name := CONCAT(aL_Name, INT_TO_STRING(iL_Counter));
+  END_IF
+  sAdsIkDgas[iL_Counter].aO_Name := aL_Name;
+END_FOR;
+
+sAdsIkDgas[eIk_DGAS1].sI_PressSet.aC_Type := sC_Config_I.aC_DGAS1_PRESS_TYPE;
+sAdsIkDgas[eIk_DGAS1].sI_PressSet.aC_Unit := sC_Config_I.aC_DGAS1_PRESS_UNIT;
+sAdsIkDgas[eIk_DGAS1].sI_PressSet.fC_Min  := sC_Config_I.fL_DGAS1_PRESS_SET_MIN;
+sAdsIkDgas[eIk_DGAS1].sI_PressSet.fC_Max  := sC_Config_I.fL_DGAS1_PRESS_SET_MAX;
+
+sAdsIkDgas[eIk_DGAS1].sO_PressAct.aC_Type := sC_Config_I.aC_DGAS1_PRESS_TYPE;
+sAdsIkDgas[eIk_DGAS1].sO_PressAct.aC_Unit := sC_Config_I.aC_DGAS1_PRESS_UNIT;
+sAdsIkDgas[eIk_DGAS1].sO_PressAct.fC_Min  := sC_Config_I.fL_DGAS1_PRESS_ACT_MIN;
+sAdsIkDgas[eIk_DGAS1].sO_PressAct.fC_Max  := sC_Config_I.fL_DGAS1_PRESS_ACT_MAX;
+
+sAdsIkDgas[eIk_DGAS1].sI_AckPression.bO_CommandExist := TRUE;
+
+
+(*MENISCUS*)
+(*************************************************************************************************)
+(*generate block ads name*)
+FOR iL_Counter := 1 TO iCIk_NB_MENC DO
+  aL_Name := sC_Config_I.aC_MENC_NAME;
+  IF sC_Config_I.aC_MENC_NAME_DETAIL[iL_Counter] <> '' THEN
+    aL_Name := CONCAT(aL_Name, CONCAT(' - ', sC_Config_I.aC_MENC_NAME_DETAIL[iL_Counter]));
+  ELSE
+    aL_Name := CONCAT(aL_Name, INT_TO_STRING(iL_Counter));
+  END_IF
+  sAdsIkMenc[iL_Counter].aO_Name := aL_Name;
+
+  sAdsIkMenc[iL_Counter].sI_PressSet.aC_Type := sC_Config_I.aC_MENC_PRESS_TYPE;
+  sAdsIkMenc[iL_Counter].sI_PressSet.aC_Unit := sC_Config_I.aC_MENC_PRESS_UNIT;
+  sAdsIkMenc[iL_Counter].sI_PressSet.fC_Min  := sC_Config_I.fL_MENC_PRESS_SET_MIN;
+  sAdsIkMenc[iL_Counter].sI_PressSet.fC_Max  := sC_Config_I.fL_MENC_PRESS_SET_MAX;
+
+  sAdsIkMenc[iL_Counter].sO_PressAct.aC_Type := sC_Config_I.aC_MENC_PRESS_TYPE;
+  sAdsIkMenc[iL_Counter].sO_PressAct.aC_Unit := sC_Config_I.aC_MENC_PRESS_UNIT;
+  sAdsIkMenc[iL_Counter].sO_PressAct.fC_Min  := sC_Config_I.fL_MENC_PRESS_ACT_MIN;
+  sAdsIkMenc[iL_Counter].sO_PressAct.fC_Max  := sC_Config_I.fL_MENC_PRESS_ACT_MAX;
+
+  sAdsIkMenc[iL_Counter].sI_AckPression.bO_CommandExist := TRUE;
+END_FOR;
+
+
+(*SUB MENISCUS*)
+(*************************************************************************************************)
+(*Sub meniscus starts behind the meniscus*)
+(*generate block ads name*)
+FOR iL_CounterSubMenc := 1 TO iCIk_NB_SUB_MENC DO
+  aL_Name := sC_Config_I.aC_SUB_MENC_NAME;
+  IF sC_Config_I.aC_SUB_MENC_NAME_DETAIL[iL_CounterSubMenc] <> '' THEN
+    aL_Name := CONCAT(aL_Name, CONCAT(' - ', sC_Config_I.aC_SUB_MENC_NAME_DETAIL[iL_CounterSubMenc]));
+  ELSE
+    aL_Name := CONCAT(aL_Name, INT_TO_STRING(iCIk_NB_MENC + iL_CounterSubMenc));
+  END_IF
+  sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].aO_Name := aL_Name;
+
+  sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].sI_PressSet.aC_Type := sC_Config_I.aC_SUB_MENC_PRESS_TYPE;
+  sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].sI_PressSet.aC_Unit := sC_Config_I.aC_SUB_MENC_PRESS_UNIT;
+  sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].sI_PressSet.fC_Min  := sC_Config_I.fL_SUB_MENC_PRESS_SET_MIN;
+  sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].sI_PressSet.fC_Max  := sC_Config_I.fL_SUB_MENC_PRESS_SET_MAX;
+
+  sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].sO_PressAct.aC_Type := sC_Config_I.aC_SUB_MENC_PRESS_TYPE;
+  sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].sO_PressAct.aC_Unit := sC_Config_I.aC_SUB_MENC_PRESS_UNIT;
+  sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].sO_PressAct.fC_Min  := sC_Config_I.fL_SUB_MENC_PRESS_ACT_MIN;
+  sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].sO_PressAct.fC_Max  := sC_Config_I.fL_SUB_MENC_PRESS_ACT_MAX;
+
+  sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].sI_AckPression.bO_CommandExist := TRUE;
+
+  //sAdsIkMenc[iCIk_NB_MENC + iL_CounterSubMenc].iO_ColorId          := x;
+END_FOR;
+
+
+(*PURGE*)
+(*************************************************************************************************)
+(*generate block ads name*)
+FOR iL_Counter := 1 TO iCIk_NB_PURGE_CONTR DO
+  aL_Name := sC_Config_I.aC_PURGE_NAME;
+  IF sC_Config_I.aC_PURGE_NAME_DETAIL[iL_Counter] <> '' THEN
+    aL_Name := CONCAT(aL_Name, CONCAT(' - ', sC_Config_I.aC_PURGE_NAME_DETAIL[iL_Counter]));
+  ELSE
+    aL_Name := CONCAT(aL_Name, INT_TO_STRING(iL_Counter));
+  END_IF
+  sAdsIkPurgeController[iL_Counter].aO_Name := aL_Name;
+
+  sAdsIkPurgeController[iL_Counter].sI_ActivatePurge.bO_CommandCanEx := TRUE;
+  sAdsIkPurgeController[iL_Counter].sI_ActivatePurge.bO_CommandExist := TRUE;
+END_FOR;
+
+FOR iL_Counter := 1 TO iCIk_NB_PURGE_GROUP DO
+  (*generate block ads name*)
+  aL_Name := sC_Config_I.aC_PURGE_GROUP_NAME;
+  IF sC_Config_I.aC_PURGE_GROUP_NAME_DETAIL[iL_Counter] <> '' THEN
+    aL_Name := CONCAT(aL_Name, CONCAT(' - ', sC_Config_I.aC_PURGE_GROUP_NAME_DETAIL[iL_Counter]));
+  ELSE
+    aL_Name := CONCAT(aL_Name, INT_TO_STRING(iL_Counter));
+  END_IF
+  sAdsIkPurgeGroup[iL_Counter].aO_Name := aL_Name;
+
+  sAdsIkPurgeGroup[iL_Counter].cO_Status.eO_Avbl      := TRUE;
+  sAdsIkPurgeGroup[iL_Counter].cO_ValveStatus.eO_Avbl := TRUE;
+END_FOR
+
+
+(*INK*)
+(*************************************************************************************************)
+FOR iL_Counter := 1 TO iCIk_NB_INK_PUMPS DO
+  (*generate block ads name*)
+  aL_Name := sC_Config_I.aC_INKPUMP_NAME;
+  IF sC_Config_I.aC_INKPUMP_NAME_DETAIL[iL_Counter] <> '' THEN
+    aL_Name := CONCAT(aL_Name, CONCAT(' - ', sC_Config_I.aC_INKPUMP_NAME_DETAIL[iL_Counter]));
+  ELSE
+    aL_Name := CONCAT(aL_Name, INT_TO_STRING(iL_Counter));
+  END_IF
+  sAdsIkInkPump[iL_Counter].aO_Name := aL_Name;
+
+  sAdsIkInkPump[iL_Counter].sI_InkPumpSpeedSet.aC_Type := sC_Config_I.aC_INKPUMP_SPEED_TYPE;
+  sAdsIkInkPump[iL_Counter].sI_InkPumpSpeedSet.aC_Unit := sC_Config_I.aC_INKPUMP_SPEED_UNIT;
+  sAdsIkInkPump[iL_Counter].sI_InkPumpSpeedSet.lC_Min  := sC_Config_I.lL_INKPUMP_SPEED_SET_MIN;
+  sAdsIkInkPump[iL_Counter].sI_InkPumpSpeedSet.lC_Max  := sC_Config_I.lL_INKPUMP_SPEED_SET_MAX;
+END_FOR
+
+FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK DO
+  (*IF bCIk_HEADERTANK_EXIST[iL_Counter] THEN*)
+    (*generate block ads name*)
+    aL_Name := sC_Config_I.aC_HEADERTANK_NAME;
+    IF sC_Config_I.aC_HEADERTANK_NAME_DETAIL[iL_Counter] <> '' THEN
+      aL_Name := CONCAT(aL_Name, CONCAT(' - ', sC_Config_I.aC_HEADERTANK_NAME_DETAIL[iL_Counter]));
+    ELSE
+      aL_Name := CONCAT(aL_Name, INT_TO_STRING(iL_Counter));
+    END_IF
+    sAdsIkHeaderTank[iL_Counter].aO_Name := aL_Name;
+
+		sAdsIkHeaderTank[iL_Counter].sI_StoragetankAssignment.bC_Exist    := TRUE;
+		sAdsIkHeaderTank[iL_Counter].sO_ActStoragetankAssignment.bC_Exist := TRUE;
+
+		(*un-/fill ink*)
+		sAdsIkHeaderTank[iL_Counter].bO_EnableFillInkCanEn               := bCIk_HEADERTANK_EXIST[iL_Counter];
+		sAdsIkHeaderTank[iL_Counter].bO_EnableUnFillInkCanEn             := bCIk_HEADERTANK_EXIST[iL_Counter];
+		sAdsIkHeaderTank[iL_Counter].cO_StatusFillInk.eO_Avbl            := bCIk_HEADERTANK_EXIST[iL_Counter];
+		sAdsIkHeaderTank[iL_Counter].cO_StatusUnFillInk.eO_Avbl          := bCIk_HEADERTANK_EXIST[iL_Counter];
+
+		sAdsIkHeaderTank[iL_Counter].sI_ActivateCleaner.bO_CommandCanEx  := bCIk_HEADERTANK_FILL_CLEANER[iL_Counter];
+		sAdsIkHeaderTank[iL_Counter].sI_ActivateRefuse.bO_CommandCanEx   := bCIk_HEADERTANK_REFUSE      [iL_Counter];
+		sAdsIkHeaderTank[iL_Counter].sI_ActivateExchange.bO_CommandCanEx := FALSE;
+
+		sAdsIkHeaderTank[iL_Counter].sI_ActivateCleaner.bO_CommandExist	 := bCIk_HEADERTANK_FILL_CLEANER[iL_Counter];
+		sAdsIkHeaderTank[iL_Counter].sI_ActivateRefuse.bO_CommandExist	 := bCIk_HEADERTANK_REFUSE      [iL_Counter];
+		sAdsIkHeaderTank[iL_Counter].sI_ActivateExchange.bO_CommandExist := FALSE;
+
+    sAdsIkHeaderTank[iL_Counter].sI_CommandChange.bO_CommandExist    := bCIk_HEADERTANK_CHANGE      [iL_Counter];
+
+		(*error ack exist*)
+		sAdsIkHeaderTank[iL_Counter].sI_AckFillInk.bO_CommandExist       := TRUE;
+
+		(*tank heater*)
+		sAdsIkHeaderTank[iL_Counter].sI_TankHeaterSet.bC_Exist   := FALSE;
+		sAdsIkHeaderTank[iL_Counter].sI_TankHeaterSet.aC_Type    := sC_Config_I.aC_TEMP_TYPE;
+		sAdsIkHeaderTank[iL_Counter].sI_TankHeaterSet.aC_Unit    := sC_Config_I.aC_TEMP_UNIT;
+		sAdsIkHeaderTank[iL_Counter].sI_TankHeaterSet.fC_Min     := sC_Config_I.fL_TEMP_SET_VAL_MIN;
+		sAdsIkHeaderTank[iL_Counter].sI_TankHeaterSet.fC_Max     := sC_Config_I.fL_TEMP_SET_VAL_MAX;
+
+		sAdsIkHeaderTank[iL_Counter].sO_TankHeaterAct.bC_Exist   := FALSE;
+		sAdsIkHeaderTank[iL_Counter].sO_TankHeaterAct.aC_Type    := sC_Config_I.aC_TEMP_TYPE;
+		sAdsIkHeaderTank[iL_Counter].sO_TankHeaterAct.aC_Unit    := sC_Config_I.aC_TEMP_UNIT;
+    sAdsIkHeaderTank[iL_Counter].sO_TankHeaterAct.fC_Min     := sC_Config_I.fL_TEMP_ACT_VAL_MIN;
+    sAdsIkHeaderTank[iL_Counter].sO_TankHeaterAct.fC_Max     := sC_Config_I.fL_TEMP_ACT_VAL_MAX;
+
+		sAdsIkHeaderTank[iL_Counter].bO_EnableTankHeaterCanEn    := FALSE;
+		sAdsIkHeaderTank[iL_Counter].cO_StatusTankHeater.eO_Avbl := FALSE;
+	(*END_IF*)
+END_FOR
+
+FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK_GROUP DO
+  (*generate block ads name*)
+  aL_Name := sC_Config_I.aC_HEADERTANKGROUP_NAME;
+  IF sC_Config_I.aC_HEADERTANKGROUP_NAME_DETAIL[iL_Counter] <> '' THEN
+    aL_Name := CONCAT(aL_Name, CONCAT(' - ', sC_Config_I.aC_HEADERTANKGROUP_NAME_DETAIL[iL_Counter]));
+  ELSE
+    aL_Name := CONCAT(aL_Name, INT_TO_STRING(iL_Counter));
+  END_IF
+  sAdsIkHeaderTankGroup[iL_Counter].aO_Name := aL_Name;
+
+  sAdsIkHeaderTankGroup[iL_Counter].sI_CommandChangeInk.bO_CommandExist := TRUE;
+  sAdsIkHeaderTankGroup[iL_Counter].sI_CommandChangeInk.bO_CommandCanEx := TRUE;
+  sAdsIkHeaderTankGroup[iL_Counter].sI_CommandEmptyInk.bO_CommandExist  := FALSE;
+  sAdsIkHeaderTankGroup[iL_Counter].sI_CommandEmptyInk.bO_CommandCanEx  := FALSE;
+END_FOR
+
+
+(*TEMP*)
+(*************************************************************************************************)
+FOR iL_Counter := 1 TO iCIk_NB_TEMP_CONTR DO
+  (*generate block ads name*)
+  aL_Name := sC_Config_I.aC_TEMP_NAME;
+  IF sC_Config_I.aC_TEMP_NAME_DETAIL[iL_Counter] <> '' THEN
+    aL_Name := CONCAT(aL_Name, CONCAT(' - ', sC_Config_I.aC_TEMP_NAME_DETAIL[iL_Counter]));
+  ELSE
+    aL_Name := CONCAT(aL_Name, INT_TO_STRING(iL_Counter));
+  END_IF
+  sAdsIkHeater[iL_Counter].aO_Name := aL_Name;
+
+  sAdsIkHeater[iL_Counter].sI_HeaterSet.aC_Type    := sC_Config_I.aC_TEMP_TYPE;
+  sAdsIkHeater[iL_Counter].sI_HeaterSet.aC_Unit    := sC_Config_I.aC_TEMP_UNIT;
+  sAdsIkHeater[iL_Counter].sI_HeaterSet.fC_Min     := sC_Config_I.fL_TEMP_SET_VAL_MIN;
+  sAdsIkHeater[iL_Counter].sI_HeaterSet.fC_Max     := sC_Config_I.fL_TEMP_SET_VAL_MAX;
+
+  sAdsIkHeater[iL_Counter].sO_HeaterAct.aC_Type    := sC_Config_I.aC_TEMP_TYPE;
+  sAdsIkHeater[iL_Counter].sO_HeaterAct.aC_Unit    := sC_Config_I.aC_TEMP_UNIT;
+  sAdsIkHeater[iL_Counter].sO_HeaterAct.fC_Min     := sC_Config_I.fL_TEMP_ACT_VAL_MIN;
+  sAdsIkHeater[iL_Counter].sO_HeaterAct.fC_Max     := sC_Config_I.fL_TEMP_ACT_VAL_MAX;
+
+  sAdsIkHeater[iL_Counter].bO_EnableHeaterCanEn    := TRUE;
+  sAdsIkHeater[iL_Counter].cO_StatusHeater.eO_Avbl := TRUE;
+END_FOR
+
+
+(* STORAGE TANK *)
+(**********************************************************************************)
+FOR iL_Counter := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+  (*generate block ads name*)
+  aL_Name := sC_Config_I.aC_STORAGETANK_NAME;
+  IF sC_Config_I.aC_STORAGETANK_NAME_DETAIL[iL_Counter] <> '' THEN
+    aL_Name := CONCAT(aL_Name, CONCAT(' - ', sC_Config_I.aC_STORAGETANK_NAME_DETAIL[iL_Counter]));
+  ELSE
+    aL_Name := CONCAT(aL_Name, INT_TO_STRING(iL_Counter));
+  END_IF
+  sAdsIkInkStorageTank[iL_Counter].aO_Name := aL_Name;
+
+  (*Special storage tank for conservation*)
+  IF sC_Config_I.aC_STORAGETANK_NAME_DETAIL[iL_Counter] = sC_Config_I.aC_STORAGETANK_CONSERVATION THEN
+    sAdsIkInkStorageTank[iL_Counter].bO_EnableStorageTankCanEn             := FALSE;
+    sAdsIkInkStorageTank[iL_Counter].cO_StatusStorageTank.eO_Avbl          := FALSE;
+    sAdsIkInkStorageTank[iL_Counter].sI_EnableMaintenance.bO_CommandCanEx  := FALSE;
+    sAdsIkInkStorageTank[iL_Counter].sI_EnableMaintenance.bO_CommandExist  := FALSE;
+    sAdsIkInkStorageTank[iL_Counter].fO_StorageTankLevelLiter.bC_Exist     := FALSE;
+    sAdsIkInkStorageTank[iL_Counter].sI_MaintenanceTimeout.bC_Exist        := FALSE;
+    
+    (*Varnish parameter*)
+    sAdsIkInkStorageTank[iL_Counter].bO_InkParameterExist                  := FALSE;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sTemperature.aC_Type  := sC_Config_I.aC_TEMP_TYPE;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sTemperature.aC_Unit  := sC_Config_I.aC_TEMP_UNIT;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sTemperature.fC_Min   := sC_Config_I.fL_TEMP_SET_VAL_MIN;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sTemperature.fC_Max   := sC_Config_I.fL_TEMP_SET_VAL_MAX;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sMeniscus.aC_Type     := sC_Config_I.aC_SUB_MENC_PRESS_TYPE;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sMeniscus.aC_Unit     := sC_Config_I.aC_SUB_MENC_PRESS_UNIT;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sMeniscus.fC_Min      := sC_Config_I.fL_SUB_MENC_PRESS_SET_MIN;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sMeniscus.fC_Max      := sC_Config_I.fL_SUB_MENC_PRESS_SET_MAX;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sDensity.aC_Unit      := sC_Config_I.aC_STORAGETANK_DENSITY;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sViscosity.aC_Unit    := sC_Config_I.aC_STORAGETANK_VISCOSITY;
+
+    sAdsIkInkStorageTank[iL_Counter].sI_EnableBalance.bO_CommandCanEx      := FALSE;
+    sAdsIkInkStorageTank[iL_Counter].sI_EnableBalance.bO_CommandExist      := FALSE;
+    sAdsIkInkStorageTank[iL_Counter].cO_StatusBalance.eO_Avbl              := FALSE;
+    sAdsIkInkStorageTank[iL_Counter].bO_SetZeroCanEx                       := FALSE;
+  ELSE
+    sAdsIkInkStorageTank[iL_Counter].bI_EnableStorageTank                  := TRUE;
+    sAdsIkInkStorageTank[iL_Counter].bO_EnableStorageTankCanEn             := TRUE;
+    sAdsIkInkStorageTank[iL_Counter].cO_StatusStorageTank.eO_Avbl          := FALSE;
+  
+    sAdsIkInkStorageTank[iL_Counter].sI_EnableMaintenance.bO_CommandCanEx  := TRUE;
+    sAdsIkInkStorageTank[iL_Counter].sI_EnableMaintenance.bO_CommandExist  := TRUE;
+  
+    sAdsIkInkStorageTank[iL_Counter].fO_StorageTankLevelLiter.aC_Type      := sC_Config_I.aC_STORAGETANK_TYPE;
+    sAdsIkInkStorageTank[iL_Counter].fO_StorageTankLevelLiter.aC_Unit      := sC_Config_I.aC_STORAGETANK_UNITLITER;
+    sAdsIkInkStorageTank[iL_Counter].fO_StorageTankLevelPercent.aC_Type    := sC_Config_I.aC_STORAGETANK_TYPE;
+    sAdsIkInkStorageTank[iL_Counter].fO_StorageTankLevelPercent.aC_Unit    := sC_Config_I.aC_STORAGETANK_UNITPERCENT;
+  
+    sAdsIkInkStorageTank[iL_Counter].sI_MaintenanceTimeout.aC_Type         := sC_Config_I.aC_STORAGETANK_MAINTENANCE_TYPE;
+    sAdsIkInkStorageTank[iL_Counter].sI_MaintenanceTimeout.aC_Unit         := sC_Config_I.aC_STORAGETANK_MAINTENANCE_UNIT;
+    sAdsIkInkStorageTank[iL_Counter].sI_MaintenanceTimeout.lC_Min          := sC_Config_I.lL_STORAGETANK_MAINTENANCE_SET_MIN;
+    sAdsIkInkStorageTank[iL_Counter].sI_MaintenanceTimeout.lC_Max          := sC_Config_I.lL_STORAGETANK_MAINTENANCE_SET_MAX;
+  
+    (*Varnish parameter*)
+    sAdsIkInkStorageTank[iL_Counter].bO_InkParameterExist                  := TRUE;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sTemperature.aC_Type  := sC_Config_I.aC_TEMP_TYPE;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sTemperature.aC_Unit  := sC_Config_I.aC_TEMP_UNIT;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sTemperature.fC_Min   := sC_Config_I.fL_TEMP_SET_VAL_MIN;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sTemperature.fC_Max   := sC_Config_I.fL_TEMP_SET_VAL_MAX;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sMeniscus.aC_Type     := sC_Config_I.aC_SUB_MENC_PRESS_TYPE;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sMeniscus.aC_Unit     := sC_Config_I.aC_SUB_MENC_PRESS_UNIT;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sMeniscus.fC_Min      := sC_Config_I.fL_SUB_MENC_PRESS_SET_MIN;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sMeniscus.fC_Max      := sC_Config_I.fL_SUB_MENC_PRESS_SET_MAX;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sDensity.aC_Unit      := sC_Config_I.aC_STORAGETANK_DENSITY;
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sViscosity.aC_Unit    := sC_Config_I.aC_STORAGETANK_VISCOSITY;
+  END_IF
+END_FOR;
+
+FOR iL_Counter := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+  (*Varnish parameter*)
+  IF sAdsIkInkStorageTank[iL_Counter].bO_InkParameterExist THEN
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.iScannerId          := sR_RemVar_I.lR_VarParamScannerId[iL_Counter];
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.iIndex              := sR_RemVar_I.iR_VarParamIndex    [iL_Counter];
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sTemperature.fI_Val := sR_RemVar_I.fR_VarParamTemp     [iL_Counter];
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sMeniscus.fI_Val    := sR_RemVar_I.fR_VarParamMenc     [iL_Counter];
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.aWaveform           := sR_RemVar_I.aR_VarParamWaveform [iL_Counter];
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.iTimer              := sR_RemVar_I.iR_VarParamTimer    [iL_Counter];
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sDensity.fI_Val     := sR_RemVar_I.fR_VarParamDensity  [iL_Counter];
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sViscosity.fI_Val   := sR_RemVar_I.fR_VarParamViscosity[iL_Counter];
+    sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.iColorId            := sR_RemVar_I.iR_VarParamColorId  [iL_Counter];
+    FOR iL_Counter2 := 1 TO 10 DO
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.bCompatibility[iL_Counter2] := sR_RemVar_I.bR_VarParamCompatibility[iL_Counter, iL_Counter2];
+    END_FOR;
+  END_IF
+END_FOR;
+
+
+(* BALANCE *)
+(*************************************************************************************************)
+(* -------------- init of the channels -------------------- *)
+FOR iL_Counter := 1 TO iCIk_NB_INKBALANCE DO
+  sAdsIkInkStorageTank[iL_Counter].sI_EnableBalance.bI_Command      := TRUE;
+	sAdsIkInkStorageTank[iL_Counter].sI_EnableBalance.bO_CommandCanEx := TRUE;
+	sAdsIkInkStorageTank[iL_Counter].sI_EnableBalance.bO_CommandExist := TRUE;
+	sAdsIkInkStorageTank[iL_Counter].cO_StatusBalance.eO_Avbl         := TRUE;
+	sAdsIkInkStorageTank[iL_Counter].bO_SetZeroCanEx                  := TRUE;
+
+	sAdsIkInkStorageTank[iL_Counter].sI_InkDensitySet.aC_Type         := sC_Config_I.aC_BALANCE_INKDENSITY_TYPE;
+	sAdsIkInkStorageTank[iL_Counter].sI_InkDensitySet.aC_Unit         := sC_Config_I.aC_BALANCE_INKDENSITY_UNIT;
+	sAdsIkInkStorageTank[iL_Counter].sI_InkDensitySet.fC_Min          := sC_Config_I.aC_BALANCE_INKDENSITY_SET_MIN;
+	sAdsIkInkStorageTank[iL_Counter].sI_InkDensitySet.fC_Max          := sC_Config_I.aC_BALANCE_INKDENSITY_SET_MAX;
+
+	sAdsIkInkStorageTank[iL_Counter].sI_CorrectionValue.aC_Type       := sC_Config_I.aC_BALANCE_CORRECTION_TYPE;
+	sAdsIkInkStorageTank[iL_Counter].sI_CorrectionValue.aC_Unit       := sC_Config_I.aC_BALANCE_CORRECTION_UNIT;
+	sAdsIkInkStorageTank[iL_Counter].sI_CorrectionValue.fC_Min        := sC_Config_I.aC_BALANCE_CORRECTION_SET_MIN;
+	sAdsIkInkStorageTank[iL_Counter].sI_CorrectionValue.fC_Max        := sC_Config_I.aC_BALANCE_CORRECTION_SET_MAX;
+
+	sAdsIkInkStorageTank[iL_Counter].sI_WarningLevelSet.aC_Type       := sC_Config_I.aC_BALANCE_WARNINGLEVEL_TYPE;
+	sAdsIkInkStorageTank[iL_Counter].sI_WarningLevelSet.aC_Unit       := sC_Config_I.aC_BALANCE_WARNINGLEVEL_UNIT;
+	sAdsIkInkStorageTank[iL_Counter].sI_WarningLevelSet.fC_Min        := sC_Config_I.aC_BALANCE_WARNINGLEVEL_SET_MIN;
+	sAdsIkInkStorageTank[iL_Counter].sI_WarningLevelSet.fC_Max        := sC_Config_I.aC_BALANCE_WARNINGLEVEL_SET_MAX;
+
+	sAdsIkInkStorageTank[iL_Counter].sI_ErrorlevelSet.aC_Type         := sC_Config_I.aC_BALANCE_ERRORLEVEL_TYPE;
+	sAdsIkInkStorageTank[iL_Counter].sI_ErrorlevelSet.aC_Unit         := sC_Config_I.aC_BALANCE_ERRORLEVEL_UNIT;
+	sAdsIkInkStorageTank[iL_Counter].sI_ErrorlevelSet.fC_Min          := sC_Config_I.aC_BALANCE_ERRORLEVEL_SET_MIN;
+	sAdsIkInkStorageTank[iL_Counter].sI_ErrorlevelSet.fC_Max          := sC_Config_I.aC_BALANCE_ERRORLEVEL_SET_MAX;
+END_FOR;
+
+
+(*************************************************************************************************)
+(*Function Blocks Init*)
+(*************************************************************************************************)
+
+
+(*neue Lib: new code*)
+(*DEGASSING*)
+(*************************************************************************************************)
+FOR iL_CounterDgas := 1 TO iCIk_NB_DGAS DO
+  PRG_SYSTEMBASE.fbSleep.mRegisterObserver(iObserver := fb_DgasMencContr[iL_CounterDgas]);
+  
+  fb_DgasMencContr[iL_CounterDgas].iRequestMencMinus       := fb_DgasPumpMinus[iL_CounterDgas];
+  fb_DgasMencContr[iL_CounterDgas].iRequestMencPlus        := fb_DgasValvePlus[iL_CounterDgas];
+  fb_DgasMencContr[iL_CounterDgas].iPurgeController        := fb_PurgeControllerDummy;  (*PurgeBusy not relevant*)
+  fb_DgasMencContr[iL_CounterDgas].pConf                   := sC_Config_I.cC_CONF_DGAS_CONTR;
+  fb_DgasMencContr[iL_CounterDgas].mInit( pAdsIf         := ADR(sAdsIkDgas [iL_CounterDgas])        (*> ads reference*)
+                                        , pMap           := ADR(sL_BLK_DGAS[iL_CounterDgas])        (*> mapping definition reference*)
+                                        , pConversionErr := ADR(PRG_SYSTEMBASE.lI_ConversionErr));  (*> counts conversion overflows*)
+  fb_DgasPumpMinus[iL_CounterDgas].mInit( aI_Name        := 'Dgas pump');
+
+  (*MainValve K111*)
+  PRG_SYSTEMBASE.fbSleep.mRegisterObserver(iObserver := fb_DgasMainValve[iL_CounterDgas]);
+  fb_DgasMainValve[iL_CounterDgas].mEnable();
+END_FOR;
+
+(*MENISCUS*)
+(*************************************************************************************************)
+FOR iL_CounterMenc := 1 TO iCIk_NB_MENC DO
+  PRG_SYSTEMBASE.fbSleep.mRegisterObserver(iObserver := fb_MeniscusMencContr[iL_CounterMenc]);
+  
+  fb_MeniscusMencContr[iL_CounterMenc].iRequestMencMinus       := fb_MeniscusValveMinus[iL_CounterMenc];
+  fb_MeniscusMencContr[iL_CounterMenc].iRequestMencPlus        := fb_MeniscusValvePlus [iL_CounterMenc];
+  fb_MeniscusMencContr[iL_CounterMenc].iPurgeController        := fb_PurgeControllerDummy;  (*PurgeBusy not relevant*)
+  fb_MeniscusMencContr[iL_CounterMenc].pConf                   := sC_Config_I.cC_CONF_MENC_CONTR;
+  fb_MeniscusMencContr[iL_CounterMenc].mInit( pAdsIf         := ADR(sAdsIkMenc [iL_CounterMenc])        (*> ads reference*)
+                                            , pMap           := ADR(sL_BLK_MENC[iL_CounterMenc])        (*> mapping definition reference*)
+                                            , pConversionErr := ADR(PRG_SYSTEMBASE.lI_ConversionErr));  (*> counts conversion overflows*)
+END_FOR;
+fb_MeniscusPump.mInit(aI_Name := 'Main meniscus pump');
+
+(*SUB MENISCUS*)
+(*************************************************************************************************)
+FOR iL_CounterSubMenc := 1 TO iCIk_NB_SUB_MENC DO
+  PRG_SYSTEMBASE.fbSleep.mRegisterObserver(iObserver := fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc]);
+  
+  fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].iRequestMencMinus       := fb_MeniscusValveMinus[iCIk_NB_MENC + iL_CounterSubMenc];
+  fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].iRequestMencPlus        := fb_MeniscusValvePlus [iCIk_NB_MENC + iL_CounterSubMenc];
+  fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].iPurgeController        := fb_PurgeControllerDummy;  (*PurgeBusy not relevant*)
+  fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].pConf                   := sC_Config_I.cC_CONF_SUB_MENC_CONTR;
+  fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].mInit( pAdsIf         := ADR(sAdsIkMenc [iCIk_NB_MENC + iL_CounterSubMenc])  (*> ads reference*)
+                                                              , pMap           := ADR(sL_BLK_MENC[iCIk_NB_MENC + iL_CounterSubMenc])  (*> mapping definition reference*)
+                                                              , pConversionErr := ADR(PRG_SYSTEMBASE.lI_ConversionErr));              (*> counts conversion overflows*)
+END_FOR;
+
+
+(*TEMP*)
+(*************************************************************************************************)
+(*Headertank heater*)
+FOR iL_Counter := 1 TO iCIk_NB_TEMP_HYS DO
+  PRG_SYSTEMBASE.fbSleep    .mRegisterObserver(iObserver := fb_TempControllerHys[iL_Counter]);
+  PRG_SYSTEMBASE.fbEmergency.mRegisterObserver(iObserver := fb_TempControllerHys[iL_Counter]);
+
+  fb_TempControllerHys[iL_Counter].mInit( pAdsIf         := ADR(sAdsIkHeater[iL_Counter])           (*> ads reference*)
+                                        , pConversionErr := ADR(PRG_SYSTEMBASE.lI_ConversionErr));  (*> counts conversion overflows*)
+  fb_TempControllerHys[iL_Counter].mEnable();
+END_FOR;
+
+
+(*PURGE*)
+(*************************************************************************************************)
+FOR iL_Counter := 1 TO iCIk_NB_PURGE_CONTR DO
+  fb_PurgeController[iL_Counter].iMachineInk       := PRG_MACHINE.iMachineInk[iL_Counter];
+  fb_PurgeController[iL_Counter].iSubMencNeg       := fb_MeniscusMencContr[bCIk_MAP_PURGE_CONTR_SEQ_MENC_NEG[iL_Counter]];
+  fb_PurgeController[iL_Counter].iSubMencPos       := fb_MeniscusMencContr[bCIk_MAP_PURGE_CONTR_SEQ_MENC_POS[iL_Counter]];
+  fb_PurgeController[iL_Counter].pActivateSequence := bCIk_PURGE_CONTR_SEQUENCE[iL_Counter];
+  fb_PurgeController[iL_Counter].pAirOk            := TRUE;
+  fb_PurgeController[iL_Counter].mInit( pAdsIf         := ADR(sAdsIkPurgeController[iL_Counter])  (*> ads reference*)
+                                      , pMap           := ADR(sL_BLK_PURGE_CONTR   [iL_Counter])  (*> mapping definition reference*)
+                                      , pConversionErr := ADR(PRG_SYSTEMBASE.lI_ConversionErr));  (*> counts conversion overflows*)
+END_FOR
+
+FOR iL_Counter := 1 TO iCIk_NB_PURGE_GROUP DO
+  fb_PurgeGroup     [iL_Counter].mInit( pAdsIf         := ADR(sAdsIkPurgeGroup  [iL_Counter])     (*> ads reference*)
+                                      , pMap           := ADR(sL_BLK_PURGE_GROUP[iL_Counter])     (*> mapping definition reference*)
+                                      , pConversionErr := ADR(PRG_SYSTEMBASE.lI_ConversionErr));  (*> counts conversion overflows*)
+
+  IF cL_State = cL_INIT_PRG THEN
+    fb_PurgeController[cCIk_MAP_PURGE_GROUP_CONTR[iL_Counter]].mRegisterGroup(fb_PurgeGroup[iL_Counter]);
+  END_IF
+END_FOR
+
+
+(*VACUUM PUMP*)
+(*************************************************************************************************)
+
+
+(*INK*)
+(*************************************************************************************************)
+FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK DO
+  fb_FillInkVarnish[iL_Counter].cI_Conf           := sC_Config_I.cC_CONF_INK_SUPPLY_UNIT;
+
+  fb_Headertank[iL_Counter].bI_HeadertankExist    := bCIk_HEADERTANK_EXIST[iL_Counter];
+
+  (*Messaging*)
+  (*Config FB_HEADERTANK_UNIT*)
+  fb_Headertank[iL_Counter].pC_MsgInterface       := ADR(sAdsIkHeaderTank[iL_Counter].sO_Message);
+  fb_Headertank[iL_Counter].iC_BlockId            := eIk_BLK_HEADERTANK;
+  fb_Headertank[iL_Counter].Init();
+
+  (*Config FB_INK_SUPPLY_UNIT*)
+  (*Only dummy, messaging is now handled by fb_Headertank*)
+  fb_FillInkVarnish[iL_Counter].pC_MsgInterface   := ADR(sAdsIkDummy[1].sO_Message);  (*Only dummy, messages are not used in this FB*)
+  fb_FillInkVarnish[iL_Counter].iC_BlockId        := 0;                               (*Messages are not used in this FB*)
+  fb_FillInkVarnish[iL_Counter].Init();
+
+  (*Circulation ink controller*)
+  PRG_SYSTEMBASE.fbSleep.mRegisterObserver(iObserver := fb_CirculationInk[iL_Counter]);
+  
+  fb_CirculationInk[iL_Counter].iPurgeController := fb_PurgeController[iCIk_MAP_HEADERTANK_PURGE_CONTR[iL_Counter]];
+  fb_CirculationInk[iL_Counter].iMencController  := fb_MeniscusMencContr[iCIk_MAP_HEADERTANK_MENC_STA[iL_Counter]];
+  fb_CirculationInk[iL_Counter].pName            := sC_Config_I.aC_HEADERTANK_NAME_DETAIL[iL_Counter];
+END_FOR
+
+
+(* STORAGE TANK *)
+(**********************************************************************************)
+FOR iL_Counter := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+  (*Messaging*)
+  (*Config FB_STORAGETANK_UNIT*)
+  fb_Storagetank[iL_Counter].pC_MsgInterface       := ADR(sAdsIkDummy[1].sO_Message);  (*ADR(sAdsIkInkStorageTank[iL_Counter].sO_Message);*)
+  fb_Storagetank[iL_Counter].iC_BlockId            := eIk_BLK_INKSTORAGE_TANK;
+  fb_Storagetank[iL_Counter].Init();
+
+  (*Messaging*)
+  sL_MsgConfigStorage[iL_Counter].bI_Enable       := TRUE;
+  sL_MsgConfigStorage[iL_Counter].pI_FbMsgHandler := ADR(fB_BalanceMsgHandler[iL_Counter]);
+
+  fB_BalanceMsgHandler[iL_Counter].pI_MsgQueue    := ADR(fB_MsgQueueStorage[iL_Counter]);
+
+  fB_MsgQueueStorage[iL_Counter].pI_MsgInterface  := ADR(sAdsIkInkStorageTank[iL_Counter].sO_Message);
+  fB_MsgQueueStorage[iL_Counter].cI_MaxElement    := 5;
+
+  FOR iL_Counter2 := 1 TO iCIk_NB_BALANCE_MSG DO
+    fB_BalanceMsg[iL_Counter, iL_Counter2].pI_MsgConfig   := ADR(sL_MsgConfigStorage[iL_Counter]);
+    fB_BalanceMsg[iL_Counter, iL_Counter2].iI_MsgLocation := iL_Counter;
+  END_FOR;
+
+  fB_BalanceMsg[iL_Counter,  1].iI_MsgNumber      := eCIk_STOR_BAL_SEND;
+  fB_BalanceMsg[iL_Counter,  2].iI_MsgNumber      := eCIk_STOR_BAL_RECEIVE;
+  fB_BalanceMsg[iL_Counter,  3].iI_MsgNumber      := eCIk_STOR_BAL_MOTION;
+  fB_BalanceMsg[iL_Counter,  4].iI_MsgNumber      := eCIk_STOR_BAL_NOCONNECT;
+  fb_BalanceMsg[iL_Counter,  5].iI_MsgNumber      := eCIk_STOR_BAL_BUFFERFULL;
+  fb_BalanceMsg[iL_Counter,  6].iI_MsgNumber      := eCIk_STOR_BAL_FRAMEFAULT;
+  fb_BalanceMsg[iL_Counter,  7].iI_MsgNumber      := eCIk_STOR_BAL_OVERRUN;
+  fb_BalanceMsg[iL_Counter,  8].iI_MsgNumber      := eCIk_STOR_LVL_WARNING;
+  fb_BalanceMsg[iL_Counter,  9].iI_MsgNumber      := eCIk_STOR_LVL_ERROR;
+  fb_BalanceMsg[iL_Counter, 10].iI_MsgNumber      := eCIk_STOR_TANK_MISSING;
+  fb_BalanceMsg[iL_Counter, 11].iI_MsgNumber      := eCIk_STOR_TANK_MIXER_NOT_WORKING;
+  fb_BalanceMsg[iL_Counter, 12].iI_MsgNumber      := eCIk_STOR_LVL_INFO;
+  fb_BalanceMsg[iL_Counter, 13].iI_MsgNumber      := eCIk_STOR_SCAN_NEED;
+  fb_BalanceMsg[iL_Counter, 14].iI_MsgNumber      := eCIk_STOR_SCAN_FALSE;
+  fb_BalanceMsg[iL_Counter, 15].iI_MsgNumber      := eCIk_STOR_HT_ASSIGNMENT;
+END_FOR;
+
+
+(* BALANCE *)
+(*************************************************************************************************)
+(* -------------- init of the channels -------------------- *)
+FOR iL_Counter := 1 TO iCIk_NB_INKBALANCE DO
+  fb_Balance[iL_Counter].pI_BalanceOffset := ADR(fL_BalanceOffset[iL_Counter]);
+
+  fb_BalanceLink.pI_ZeroPointerErr                 := ADR(PRG_SYSTEMBASE.lI_ZeroPointerErr);
+  fb_BalanceLink.iI_UsedBalanceMux                 := iCIk_NB_BALANCE_MUX;
+  fb_BalanceLink.bI_ZS_SelectedChannel[iL_Counter] := FALSE;
+  fb_BalanceLink.bI_CS_SelectedChannel[iL_Counter] := FALSE;
+
+  fb_BalanceLink( cI_MapBalanceBalanceMux     := cCIk_MAP_BALANCE_BALANCE_MUX
+                , cI_MapBalanceBalanceChannel := cCIk_MAP_BALANCE_BALANCE_CHANNEL);
+  
+END_FOR;
+
+
+  
+(*************************************************************************************************)
+(*ADS blocks mapping*)
+(*************************************************************************************************)
+
+(*Recipe read/write*)
+(*************************************************************************************************)
+IF cL_State = cL_INIT_PRG THEN
+  pFbRecipeMngr := PRG_SYSTEMBASE.fbRecipeAutoMngmt.register(
+    aI_RecipePath           := CONCAT(aC_PlcConfigPath, aC_PlcRecipeSubPath),
+    aI_RecipeDefinitionName := sC_Ads_Info.aType  (*is set in Mapping*)
+  );
+ 
+  (* -- BlockId saving ----------------------------------------------------------------------------*)
+  PRG_SYSTEMBASE.fbBlockIdSave.registerModule(
+    aI_StoragePath := CONCAT(aC_PlcConfigPath, aC_PlcBlockIdSubPath),
+    pI_Ads_Info    := ADR(sC_Ads_Info)
+  );
+END_IF
+
+
+(********************************* END OF ACTION *************************************************)]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="Mapping" Id="{b4c298ef-206d-4e7f-8ff8-e09dc27d129d}">
+      <Implementation>
+        <ST><![CDATA[(*************************************************************************************************)
+(*ADS blocks mapping definition*)
+(*************************************************************************************************)
+(*mapping of each block with his parents, unique type and index*)
+
+(*purge controller*)
+FOR iL_Counter := 1 TO iCIk_NB_PURGE_CONTR DO
+  IF bCIk_PURGE_CONTR_EXIST[iL_Counter] THEN
+    (*purge controller -> root*)
+		sL_BLK_PURGE_CONTR[iL_Counter].iPMaps[1]    := FC_ADD_MAP(eSys_BLK_ROOT, 1);
+  END_IF;
+END_FOR;
+
+(*purge group*)
+FOR iL_Counter := 1 TO iCIk_NB_PURGE_GROUP DO
+  IF bCIk_PURGE_GROUP_EXIST[iL_Counter] THEN
+    (*purge group -> purge controller*)
+    sL_BLK_PURGE_GROUP[iL_Counter].iPMaps[1]      := FC_ADD_MAP(eIk_BLK_PURGE_CONTROLLER, cCIk_MAP_PURGE_GROUP_CONTR[iL_Counter]);
+  END_IF;
+END_FOR;
+
+(*dgas*)
+FOR iL_Counter := 1 TO iCIk_NB_DGAS DO
+  (*dgas -> root*)
+  sL_BLK_DGAS[iL_Counter].iPMaps[1]             := FC_ADD_MAP(eSys_BLK_ROOT, 1);
+  (*dgas -> purge*)
+(*sL_BLK_DGAS[iL_Counter].iPMaps[2]             := FC_ADD_MAP(eIk_BLK_PURGE_CONTROLLER, 1);
+  sL_BLK_DGAS[iL_Counter].iPMaps[3]             := FC_ADD_MAP(eIk_BLK_PURGE_CONTROLLER, 2);*)
+END_FOR;
+
+(*menc*)
+FOR iL_Counter := 1 TO iCIk_NB_MENC DO
+  (*main menc -> root*)
+  sL_BLK_MENC[iL_Counter].iPMaps[1]             := FC_ADD_MAP(eSys_BLK_ROOT, 1);
+END_FOR;
+FOR iL_Counter := 1 TO iCIk_NB_SUB_MENC DO
+  (*sub menc -> menc*)
+  sL_BLK_MENC[iCIk_NB_MENC + iL_Counter].iPMaps[1] := FC_ADD_MAP(eIk_BLK_MENC, iCIk_MAP_SUB_MENC_MAIN_MENC[iL_Counter]);
+  (*sub menc -> header tank group*)
+  sL_BLK_MENC[iCIk_NB_MENC + iL_Counter].iPMaps[2] := FC_ADD_MAP(eIk_BLK_HEADERTANK_GROUP, iCIk_MAP_SUB_MENC_HTG[iL_Counter]);
+END_FOR;
+
+(*ink storage tank*)
+FOR iL_Counter := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+  IF bCIk_INKSTORAGE_TANK_EXIST[iL_Counter] THEN
+    (*ink storage tank -> root*)
+    sL_BLK_INKSTORAGE_TANK[iL_Counter].iPMaps[1] := FC_ADD_MAP(eSys_BLK_ROOT, 1);
+  END_IF;
+END_FOR;
+
+(*header tank group*)
+FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK_GROUP DO
+  (*header tank group -> storage tank*)
+  sL_BLK_HEADERTANK_GROUP[iL_Counter].iPMaps[1]   := FC_ADD_MAP(eIk_BLK_INKSTORAGE_TANK, 1);
+  sL_BLK_HEADERTANK_GROUP[iL_Counter].iPMaps[2]   := FC_ADD_MAP(eIk_BLK_INKSTORAGE_TANK, 2);
+END_FOR;
+
+(*header tank*)
+FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK DO
+  IF bCIk_HEADERTANK_EXIST[iL_Counter] THEN
+    (*header tank -> storage tank*)
+    sL_BLK_HEADERTANK[iL_Counter].iPMaps[1]       := FC_ADD_MAP(eIk_BLK_INKSTORAGE_TANK, 1);
+    sL_BLK_HEADERTANK[iL_Counter].iPMaps[2]       := FC_ADD_MAP(eIk_BLK_INKSTORAGE_TANK, 2);
+
+    (*header tank -> meniscus*)
+    sL_BLK_HEADERTANK[iL_Counter].iPMaps[3]       := FC_ADD_MAP(eIk_BLK_MENC, iCIk_MAP_HEADERTANK_MENC_STA[iL_Counter]);
+
+    (*header tank -> header tank group*)
+    sL_BLK_HEADERTANK[iL_Counter].iPMaps[4]       := FC_ADD_MAP(eIk_BLK_HEADERTANK_GROUP, iCIk_MAP_HEADERTANK_HT_GROUP[iL_Counter]);
+  END_IF;
+END_FOR;
+
+(*heater*)
+FOR iL_Counter := 1 TO iCIk_NB_TEMP_CONTR DO
+  (*heater -> root*)
+  sL_BLK_HEATER[iL_Counter].iPMaps[1]           := FC_ADD_MAP(eSys_BLK_ROOT, 1);
+  (*heater -> group*)
+  sL_BLK_HEATER[iL_Counter].iPMaps[2]           := FC_ADD_MAP(ePr_BLK_PG, iCIk_MAP_TEMP_PG[iL_Counter]);
+END_FOR;
+
+
+(*ADS blocks configuration & information*)
+(*************************************************************************************************)
+sC_Ads_Info.bReady   := FALSE;
+sC_Ads_Info.aType    := 'PRG_INK';
+sC_Ads_Info.iVersion := 010000;        (*1.0.0*)
+sC_Ads_Info.iType    := eMOD_INK;
+
+sMappingInfo.init(lModId:=TO_UINT(eMOD_INK)); 
+sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eIk_BLK_PURGE_CONTROLLER), aAdsBlockName := 'sAdsIkPurgeController', iAdsBlockVersion:= INT_TO_UINT(sAdsIkPurgeController[1].iO_Version), iNbrBlocks := SIZEOF(sL_BLK_PURGE_CONTR)     / SIZEOF(sL_BLK_PURGE_CONTR[1]),     pBlockArray := ADR(sL_BLK_PURGE_CONTR));
+sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eIk_BLK_PURGE_GROUP),      aAdsBlockName := 'sAdsIkPurgeGroup',      iAdsBlockVersion:= INT_TO_UINT(sAdsIkPurgeGroup[1].iO_Version),      iNbrBlocks := SIZEOF(sL_BLK_PURGE_GROUP)     / SIZEOF(sL_BLK_PURGE_GROUP[1]),     pBlockArray := ADR(sL_BLK_PURGE_GROUP));
+sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eIk_BLK_DGAS),             aAdsBlockName := 'sAdsIkDgas',            iAdsBlockVersion:= INT_TO_UINT(sAdsIkDgas[1].iO_Version),            iNbrBlocks := SIZEOF(sL_BLK_DGAS)            / SIZEOF(sL_BLK_DGAS[1]),            pBlockArray := ADR(sL_BLK_DGAS));
+sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eIk_BLK_MENC),             aAdsBlockName := 'sAdsIkMenc',            iAdsBlockVersion:= INT_TO_UINT(sAdsIkMenc[1].iO_Version),            iNbrBlocks := SIZEOF(sL_BLK_MENC)            / SIZEOF(sL_BLK_MENC[1]),            pBlockArray := ADR(sL_BLK_MENC));
+sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eIk_BLK_HEADERTANK_GROUP), aAdsBlockName := 'sAdsIkHeaderTankGroup', iAdsBlockVersion:= INT_TO_UINT(sAdsIkHeaderTankGroup[1].iO_Version), iNbrBlocks := SIZEOF(sL_BLK_HEADERTANK_GROUP)/ SIZEOF(sL_BLK_HEADERTANK_GROUP[1]),pBlockArray := ADR(sL_BLK_HEADERTANK_GROUP));
+sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eIk_BLK_HEADERTANK),       aAdsBlockName := 'sAdsIkHeaderTank',      iAdsBlockVersion:= INT_TO_UINT(sAdsIkHeaderTank[1].iO_Version),      iNbrBlocks := SIZEOF(sL_BLK_HEADERTANK)      / SIZEOF(sL_BLK_HEADERTANK[1]),      pBlockArray := ADR(sL_BLK_HEADERTANK));
+sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eIk_BLK_INKSTORAGE_TANK),  aAdsBlockName := 'sAdsIkInkStorageTank',  iAdsBlockVersion:= INT_TO_UINT(sAdsIkInkStorageTank[1].iO_Version),  iNbrBlocks := SIZEOF(sL_BLK_INKSTORAGE_TANK) / SIZEOF(sL_BLK_INKSTORAGE_TANK[1]), pBlockArray := ADR(sL_BLK_INKSTORAGE_TANK));
+sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eIk_BLK_INKPUMP),          aAdsBlockName := 'sAdsIkInkPump',         iAdsBlockVersion:= INT_TO_UINT(sAdsIkInkPump[1].iO_Version),         iNbrBlocks := SIZEOF(sL_BLK_INKPUMP)         / SIZEOF(sL_BLK_INKPUMP[1]),         pBlockArray := ADR(sL_BLK_INKPUMP));
+sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eIk_BLK_HEATER),           aAdsBlockName := 'sAdsIkHeater',          iAdsBlockVersion:= INT_TO_UINT(sAdsIkHeater[1].iO_Version),          iNbrBlocks := SIZEOF(sL_BLK_HEATER)          / SIZEOF(sL_BLK_HEATER[1]),          pBlockArray := ADR(sL_BLK_HEATER));
+sMappingInfo.bReady := TRUE;
+
+// Register module
+ISystemBase.regModule( pAdsInfo := ADR(sC_Ads_Info)
+                     , pMapInfo := ADR(sMappingInfo) );
+
+(********************************* END OF ACTION *************************************************)]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="RemVar" Id="{411712ed-e22a-4c35-81dc-55a2048f7425}">
+      <Implementation>
+        <ST><![CDATA[(*************************************************************************************************)
+(********************************* READING REMANENT VARIABLES ************************************)
+(*************************************************************************************************)
+IF bL_RemVar_Init THEN
+
+  (*load initial values if pattern was invalid*)
+  IF sR_RemVar_I.aL_Pattern <> 16#ABCD THEN
+
+    (*initial very boot values of project*)
+    sR_RemVar_I.aL_Pattern := 16#ABCD;
+
+    (*TODO add boot/config values*)
+
+    (*DEGASSING*)
+    (*************************************************************************************************)
+    FOR iL_Counter := 1 TO iCIk_NB_DGAS DO
+      sAdsIkDgas[iL_Counter].sI_PressSet.fI_Val             := -400;   (*mbar*)
+    END_FOR;
+
+
+    (*MENISCUS*)
+    (*************************************************************************************************)
+    (*Main*)
+    sAdsIkMenc[1].sI_PressSet.fI_Val                        := sC_Config_I.fL_MENC1_PRESS_INITVAL;       (*mbar*)
+    (*Sub*)
+    sAdsIkMenc[2].sI_PressSet.fI_Val                        := sC_Config_I.fL_SUB_MENC1_PRESS_INITVAL;   (*mbar*)
+    sAdsIkMenc[3].sI_PressSet.fI_Val                        := sC_Config_I.fL_SUB_MENC2_PRESS_INITVAL;   (*mbar*)
+
+    (*Init rem var*)
+    FOR iL_CounterMenc := 1 TO iCIk_NB_MENC DO
+      fb_MeniscusMencContr[iL_CounterMenc].mInitRemVar( IfConvAdsTtLocal := sC_Config_I.fL_MENC_CONV_ADS_TO_LCL
+                                                      , IfPressSetMin    := sC_Config_I.fL_MENC_PRESS_SET_MIN
+                                                      , IfPressSetMax    := sC_Config_I.fL_MENC_PRESS_SET_MAX
+                                                      , IfPressActMin    := sC_Config_I.fL_MENC_PRESS_ACT_MIN
+                                                      , IfPressActMax    := sC_Config_I.fL_MENC_PRESS_ACT_MAX
+                                                      , IfTolSmall       := sC_Config_I.fL_MENC_TOL_SMALL
+                                                      , IfTolBig         := sC_Config_I.fL_MENC_TOL_BIG);
+    END_FOR;
+    FOR iL_CounterSubMenc := 1 TO iCIk_NB_SUB_MENC DO
+      (*Special for sub men white pos*)
+      IF sC_Config_I.aC_SUB_MENC_NAME_DETAIL[iL_CounterSubMenc] = 'Sub White pos' THEN
+        fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].mInitRemVar( IfConvAdsTtLocal := sC_Config_I.fL_SUB_MENC_CONV_ADS_TO_LCL
+                                                                          , IfPressSetMin    :=  -2.0
+                                                                          , IfPressSetMax    := 120.0
+                                                                          , IfPressActMin    :=  -2.0
+                                                                          , IfPressActMax    := 120.0
+                                                                          , IfTolSmall       := sC_Config_I.fL_SUB_MENC_TOL_SMALL
+                                                                          , IfTolBig         := sC_Config_I.fL_SUB_MENC_TOL_BIG);
+      ELSE
+        fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].mInitRemVar( IfConvAdsTtLocal := sC_Config_I.fL_SUB_MENC_CONV_ADS_TO_LCL
+                                                                          , IfPressSetMin    := sC_Config_I.fL_SUB_MENC_PRESS_SET_MIN
+                                                                          , IfPressSetMax    := sC_Config_I.fL_SUB_MENC_PRESS_SET_MAX
+                                                                          , IfPressActMin    := sC_Config_I.fL_SUB_MENC_PRESS_ACT_MIN
+                                                                          , IfPressActMax    := sC_Config_I.fL_SUB_MENC_PRESS_ACT_MAX
+                                                                          , IfTolSmall       := sC_Config_I.fL_SUB_MENC_TOL_SMALL
+                                                                          , IfTolBig         := sC_Config_I.fL_SUB_MENC_TOL_BIG);
+			END_IF
+    END_FOR;
+    
+    (*INK*)
+    (*************************************************************************************************)
+    (*varnish*)
+    FOR iL_Counter:= 1 TO iCIk_NB_HEADERTANK DO
+      sAdsIkHeaderTank[iL_Counter].bI_FillModeAuto          := TRUE;
+      sAdsIkHeaderTank[iL_Counter].bI_EnableRamp            := FALSE;
+    END_FOR
+
+    
+    (*MAINTENANCE*)
+    (*************************************************************************************************)
+    (*VISU SETTINGS*)
+		wIDp_MinSpeedFillInkPumpVarnish                         := 10;     (*%*)
+		wIDp_MaxSpeedFillInkPumpVarnish                         := 100;    (*%*)
+		wIDP_AnalogMinDigitVarnish                              := 0;
+		wIDP_AnalogMaxDigitVarnish                              := 16383;
+
+    lL_TimeReturnFlow                                       := 90;     (*s*)
+    lL_TimeBlowOut                                          := 130;    (*s*)
+    lL_TimeEmptyCleaner                                     := 60;     (*s*)
+    lL_TimeWarnExchange                                     := 6;      (*h*)
+
+    
+    (*TEMP*)
+    (*************************************************************************************************)
+    FOR iL_Counter := 1 TO iCIk_NB_TEMP_CONTR DO
+      sAdsIkHeater[iL_Counter].sI_HeaterSet.fI_Val          := 50;    (*°C*)
+    END_FOR
+
+    
+    (*PURGE*)
+    (*************************************************************************************************)
+    sAdsIkPurgeController[1].bI_Enable                      := TRUE;
+
+    
+		(*BALANCE*)
+		(*************************************************************************************************)
+		bI_EnableBalanceLink                                            := TRUE;
+		fI_CorrectionValue                                              := 1.00;
+		iI_RefreshRate                                                  := 2000;   (*ms*)
+		FOR iL_Counter := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+			sAdsIkInkStorageTank[iL_Counter].sI_EnableBalance.bI_Command  := TRUE;
+
+			sAdsIkInkStorageTank[iL_Counter].sI_InkDensitySet.fI_Val      := 1.07;
+			sAdsIkInkStorageTank[iL_Counter].sI_CorrectionValue.fI_Val    := 1.00;
+			sAdsIkInkStorageTank[iL_Counter].fO_StorageTankSize           := 25.0;   (*l*)
+
+			sAdsIkInkStorageTank[iL_Counter].sI_WarningLevelSet.fI_Val    := 4.0;
+			sAdsIkInkStorageTank[iL_Counter].sI_ErrorlevelSet.fI_Val      := 3.0;
+			sAdsIkInkStorageTank[iL_Counter].sI_MaintenanceTimeout.lI_Val := 5000;
+
+      (*Varnish parameter*)
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.aWaveform           := 'waveform.wav';
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sTemperature.fI_Val := 35.0;
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sMeniscus.fI_Val    := -24.5;
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sDensity.fI_Val     := 1.0;
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sViscosity.fI_Val   := 100.0;
+		END_FOR
+
+		FOR iL_Counter := 1 TO iCIk_NB_INKBALANCE DO
+      fL_BalanceOffset[iL_Counter]                                  := 0;
+
+			sAdsIkInkStorageTank[iL_Counter].aI_CalibrateFrameText1       := 'aaaaaaaa';
+			sAdsIkInkStorageTank[iL_Counter].aI_CalibrateFrameText2       := 'bbbbbbbb';
+		END_FOR;
+		sAdsIkInkStorageTank[1].aI_CalibrateFrameText1                  := '4D5A2406';
+		sAdsIkInkStorageTank[1].aI_CalibrateFrameText2                  := '399128E6';
+		sAdsIkInkStorageTank[2].aI_CalibrateFrameText1                  := '4D5426F9';
+		sAdsIkInkStorageTank[2].aI_CalibrateFrameText2                  := '3991CD5A';
+		sAdsIkInkStorageTank[3].aI_CalibrateFrameText1                  := 'aaaaaaaa';
+		sAdsIkInkStorageTank[3].aI_CalibrateFrameText2                  := 'bbbbbbbb';
+
+    (*Recipe: load and write*)
+    IF pFbRecipeMngr <> 0 THEN
+      pFbRecipeMngr^.mWriteRecipe('');
+      PRG_MACHINE.bI_RecipeValuesLoadedInk := TRUE;
+    END_IF
+
+  ELSE
+
+    sR_RemVar_I.aL_Pattern := sR_RemVar_I.aL_Pattern;  (*TODO remove dummy code*)
+
+    (*DEGASSING*)
+    (*************************************************************************************************)
+    sAdsIkDgas[1].bI_Enable             := sR_RemVar_I.lR_DgasEnable;
+    sAdsIkDgas[1].sI_PressSet.fI_Val    := (sR_RemVar_I.fR_DgasPressStpt * sC_Config_I.fL_DGAS1_CONV_ADS_TO_LCL);
+
+    bIDp_EnableMainDgasValve            := sR_RemVar_I.lR_DgasEnableMainValve;
+    sC_Config_I.lL_DGAS_TIME_ERROR      := sR_RemVar_I.lR_DgasTimeError;
+
+
+    (*MENISCUS*)
+    (*************************************************************************************************)
+    FOR iL_Counter := 1 TO iCIk_NB_MENC DO
+      sAdsIkMenc[iL_Counter].bI_Enable                         := sR_RemVar_I.lR_MencEnable   [iL_Counter];
+      sAdsIkMenc[iL_Counter].sI_PressSet.fI_Val                := sR_RemVar_I.fR_MencPressStpt[iL_Counter];
+    END_FOR;
+
+    sC_Config_I.wL_MENC_TIME_ERROR                             := sR_RemVar_I.wR_MencTimeError;
+    sC_Config_I.wL_SUB_MENC_TIME_ERROR                         := sR_RemVar_I.wR_SubMencTimeError;
+
+
+    (*SUB MENISCUS*)
+    (*************************************************************************************************)
+    (*Sub meniscus starts behind the meniscus*)
+    FOR iL_Counter := 1 TO iCIk_NB_SUB_MENC DO
+      sAdsIkMenc[iCIk_NB_MENC + iL_Counter].bI_Enable          := sR_RemVar_I.lR_SubMencEnable        [iL_Counter];
+      sAdsIkMenc[iCIk_NB_MENC + iL_Counter].sI_PressSet.fI_Val := sR_RemVar_I.fR_SubMencPressStpt     [iL_Counter];
+    END_FOR;
+
+
+    (*INK*)
+    (*************************************************************************************************)
+    (*varnish*)
+    FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK DO
+      sAdsIkHeaderTank[iL_Counter].sI_StoragetankAssignment.lI_Val    := sR_RemVar_I.lR_StoragetankAssignment[iL_Counter];
+      sAdsIkHeaderTank[iL_Counter].sO_ActStoragetankAssignment.lI_Val := sR_RemVar_I.lR_ActStoragetankAssignment[iL_Counter];
+      
+      sAdsIkHeaderTank[iL_Counter].bI_EnableFillInk       := sR_RemVar_I.bI_EnableFillInk[iL_Counter];
+      sAdsIkHeaderTank[iL_Counter].bI_FillModeAuto        := sR_RemVar_I.bI_FillModeAuto[iL_Counter];
+      sAdsIkHeaderTank[iL_Counter].bI_EnableUnFillInk     := sR_RemVar_I.bI_EnableUnFillInk[iL_Counter];
+      sAdsIkHeaderTank[iL_Counter].bI_UnFillModeAuto      := sR_RemVar_I.bI_UnFillModeAuto[iL_Counter];
+
+      sAdsIkInkPump[iL_Counter].sI_InkPumpSpeedSet.lI_Val := WORD_TO_DINT(sR_RemVar_I.wR_StptSpeedFillInkPumpVarnishPercent[iL_Counter]);
+
+      fb_Headertank[iL_Counter].StateHeadertank           := sR_RemVar_I.eR_StateHeadertank[iL_Counter];
+    END_FOR
+
+		wIDp_MinSpeedFillInkPumpVarnish								:= sR_RemVar_I.wR_MinSpeedFillInkPumpVarnish;
+		wIDp_MaxSpeedFillInkPumpVarnish								:= sR_RemVar_I.wR_MaxSpeedFillInkPumpVarnish;
+		wIDP_AnalogMinDigitVarnish 										:= sR_RemVar_I.wR_AnalogMinDigitVarnish;
+		wIDP_AnalogMaxDigitVarnish 										:= sR_RemVar_I.wR_AnalogMaxDigitVarnish;
+		wIDp_PumpTimeOffDelayVarnish									:= sR_RemVar_I.wR_PumpTimeOffDelayVarnish;
+
+    lL_TimeReturnFlow                             := sR_RemVar_I.lR_TimeReturnFlow;
+    lL_TimeBlowOut                                := sR_RemVar_I.lR_TimeBlowOut;
+    lL_TimeEmptyCleaner                           := sR_RemVar_I.lR_TimeEmptyCleaner;
+    lL_TimeWarnExchange                           := sR_RemVar_I.lR_TimeWarnExchange;
+
+    sC_Config_I.wC_INKPUMP_MAX_TIME               := sR_RemVar_I.wR_InkPumpMaxTime;
+    sC_Config_I.wC_CLEANERPUMP_MAX_TIME           := sR_RemVar_I.wR_CleanerPumpMaxTime;
+
+    
+    (*TEMP*)
+    (*************************************************************************************************)
+    FOR iL_Counter :=1 TO iCIk_NB_TEMP_CONTR DO
+      sAdsIkHeater[iL_Counter].bI_EnableHeater     := sR_RemVar_I.bI_EnableHeater  [iL_Counter];
+      sAdsIkHeater[iL_Counter].sI_HeaterSet.fI_Val := sR_RemVar_I.sI_HeaterSetPoint[iL_Counter];
+    END_FOR
+
+
+    (*PURGE*)
+    (*************************************************************************************************)
+    FOR iL_Counter := 1 TO iCIk_NB_PURGE_CONTR DO
+      sAdsIkPurgeController[iL_Counter].bI_Enable         := sR_RemVar_I.bR_PurgeControllerEnable[iL_Counter];
+    END_FOR;
+
+    FOR iL_Counter := 1 TO iCIk_NB_PURGE_GROUP DO
+      sAdsIkPurgeGroup[iL_Counter].bI_EnablePurge         := sR_RemVar_I.bR_PurgeGroupEnable       [iL_Counter];
+      sAdsIkPurgeGroup[iL_Counter].bI_EnableThroughNozzle := sR_RemVar_I.bR_PurgeGroupThroughNozzle[iL_Counter];
+      sAdsIkPurgeGroup[iL_Counter].bI_EnableFlush         := sR_RemVar_I.bR_PurgeGroupFlush        [iL_Counter];
+    END_FOR;
+
+
+		(*BALANCE*)
+		(*************************************************************************************************)
+		bI_EnableBalanceLink    := sR_RemVar_I.bI_EnableBalanceLink;
+		fI_CorrectionValue      := sR_RemVar_I.fI_CorrectionValue;
+		iI_RefreshRate          := sR_RemVar_I.iI_RefreshRate;
+		iI_MaintenanceTimeout   := sR_RemVar_I.iI_MaintenanceTimeout;
+
+		FOR iL_Counter := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+			sAdsIkInkStorageTank[iL_Counter].bI_EnableStorageTank        := sR_RemVar_I.bI_EnableStorageTank[iL_Counter];
+			sAdsIkInkStorageTank[iL_Counter].lO_InkColorId               := sR_RemVar_I.lO_InkColorId[iL_Counter];
+			sAdsIkInkStorageTank[iL_Counter].fO_StorageTankSize          := sR_RemVar_I.fO_StorageTankSize[iL_Counter];
+		END_FOR;
+
+		FOR iL_Counter := 1 TO iCIk_NB_INKBALANCE DO
+			sAdsIkInkStorageTank[iL_Counter].sI_EnableBalance.bI_Command := sR_RemVar_I.bI_EnableBalance[iL_Counter];
+			sAdsIkInkStorageTank[iL_Counter].sI_InkDensitySet.fI_Val     := sR_RemVar_I.sI_InkDensitySet[iL_Counter];
+			sAdsIkInkStorageTank[iL_Counter].sI_CorrectionValue.fI_Val   := sR_RemVar_I.sI_CorrectionValue[iL_Counter];
+			sAdsIkInkStorageTank[iL_Counter].sI_WarningLevelSet.fI_Val   := sR_RemVar_I.sI_WarningLevelSet[iL_Counter];
+			sAdsIkInkStorageTank[iL_Counter].sI_ErrorlevelSet.fI_Val     := sR_RemVar_I.sI_ErrorlevelSet[iL_Counter];
+
+      (*Varnish parameter*)
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.iScannerId          := sR_RemVar_I.lR_VarParamScannerId[iL_Counter];
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.iIndex              := sR_RemVar_I.iR_VarParamIndex[iL_Counter];
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sTemperature.fI_Val := sR_RemVar_I.fR_VarParamTemp[iL_Counter];
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sMeniscus.fI_Val    := sR_RemVar_I.fR_VarParamMenc[iL_Counter];
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.aWaveform           := sR_RemVar_I.aR_VarParamWaveform[iL_Counter];
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.iTimer              := sR_RemVar_I.iR_VarParamTimer[iL_Counter];
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sDensity.fI_Val     := sR_RemVar_I.fR_VarParamDensity[iL_Counter];
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sViscosity.fI_Val   := sR_RemVar_I.fR_VarParamViscosity[iL_Counter];
+      sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.iColorId            := sR_RemVar_I.iR_VarParamColorId[iL_Counter];
+      FOR iL_Counter2 := 1 TO 10 DO
+        sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.bCompatibility[iL_Counter2] := sR_RemVar_I.bR_VarParamCompatibility[iL_Counter, iL_Counter2];
+      END_FOR;
+
+			sAdsIkInkStorageTank[iL_Counter].aI_CalibrateFrameText1      := sR_RemVar_I.aI_CalibrateFrameText1[iL_Counter];
+			sAdsIkInkStorageTank[iL_Counter].aI_CalibrateFrameText2      := sR_RemVar_I.aI_CalibrateFrameText2[iL_Counter];
+
+      fL_BalanceOffset[iL_Counter] := sR_RemVar_I.fR_BalanceOffset[iL_Counter];
+		END_FOR;
+
+  END_IF
+
+
+  bL_RemVar_Init := FALSE;
+
+
+
+(*************************************************************************************************)
+(********************************* WRITING REMANENT VARIABLES ************************************)
+(*************************************************************************************************)
+ELSE
+
+(*GENERAL*)
+(*************************************************************************************************)
+  sR_RemVar_I.aL_Pattern := 16#ABCD;
+
+(*DEGASSING*)
+(*************************************************************************************************)
+  sR_RemVar_I.lR_DgasEnable           := sAdsIkDgas[1].bI_Enable;
+  sR_RemVar_I.fR_DgasPressStpt        := sAdsIkDgas[1].sI_PressSet.fI_Val;
+
+  sR_RemVar_I.lR_DgasEnableMainValve  := bIDp_EnableMainDgasValve;
+  sR_RemVar_I.lR_DgasTimeError        := sC_Config_I.lL_DGAS_TIME_ERROR;
+
+(*MENISCUS*)
+(*************************************************************************************************)
+  FOR iL_Counter := 1 TO iCIk_NB_MENC DO
+    sR_RemVar_I.fR_MencPressStpt[iL_Counter]      := sAdsIkMenc[iL_Counter].sI_PressSet.fI_Val;
+    sR_RemVar_I.lR_MencEnable   [iL_Counter]      := sAdsIkMenc[iL_Counter].bI_Enable;
+  END_FOR;
+
+  sR_RemVar_I.wR_MencTimeError                    := sC_Config_I.wL_MENC_TIME_ERROR;
+  sR_RemVar_I.wR_SubMencTimeError                 := sC_Config_I.wL_SUB_MENC_TIME_ERROR;
+
+(*SUB MENISCUS*)
+(*************************************************************************************************)
+  (*Sub meniscus starts behind the meniscus*)
+  FOR iL_Counter := 1 TO iCIk_NB_SUB_MENC DO
+    sR_RemVar_I.fR_SubMencPressStpt     [iL_Counter] := sAdsIkMenc[iCIk_NB_MENC + iL_Counter].sI_PressSet.fI_Val;
+    sR_RemVar_I.lR_SubMencEnable        [iL_Counter] := sAdsIkMenc[iCIk_NB_MENC + iL_Counter].bI_Enable;
+  END_FOR;
+
+(*PURGE - GLOBAL*)
+(*************************************************************************************************)
+  FOR iL_Counter := 1 TO iCIk_NB_PURGE_CONTR DO
+    sR_RemVar_I.bR_PurgeControllerEnable  [iL_Counter] := sAdsIkPurgeController[iL_Counter].bI_Enable;
+  END_FOR;
+
+  FOR iL_Counter := 1 TO iCIk_NB_PURGE_GROUP DO
+    sR_RemVar_I.bR_PurgeGroupEnable       [iL_Counter] := sAdsIkPurgeGroup[iL_Counter].bI_EnablePurge;
+    sR_RemVar_I.bR_PurgeGroupThroughNozzle[iL_Counter] := sAdsIkPurgeGroup[iL_Counter].bI_EnableThroughNozzle;
+    sR_RemVar_I.bR_PurgeGroupFlush        [iL_Counter] := sAdsIkPurgeGroup[iL_Counter].bI_EnableFlush;
+  END_FOR;
+
+
+(*INK*)
+(*************************************************************************************************)
+  (*varnish*)
+  FOR iL_Counter:= 1 TO iCIk_NB_HEADERTANK DO
+    sR_RemVar_I.lR_StoragetankAssignment   [iL_Counter]           := sAdsIkHeaderTank[iL_Counter].sI_StoragetankAssignment.lI_Val;
+    sR_RemVar_I.lR_ActStoragetankAssignment[iL_Counter]           := sAdsIkHeaderTank[iL_Counter].sO_ActStoragetankAssignment.lI_Val;
+      
+    sR_RemVar_I.bI_EnableFillInk  [iL_Counter]                    := sAdsIkHeaderTank[iL_Counter].bI_EnableFillInk;
+    sR_RemVar_I.bI_FillModeAuto   [iL_Counter]                    := sAdsIkHeaderTank[iL_Counter].bI_FillModeAuto;
+    sR_RemVar_I.bI_EnableUnFillInk[iL_Counter]                    := sAdsIkHeaderTank[iL_Counter].bI_EnableUnFillInk;
+    sR_RemVar_I.bI_UnFillModeAuto [iL_Counter]                    := sAdsIkHeaderTank[iL_Counter].bI_UnFillModeAuto;
+
+    sR_RemVar_I.wR_StptSpeedFillInkPumpVarnishPercent[iL_Counter] := DINT_TO_WORD(sAdsIkInkPump[iL_Counter].sI_InkPumpSpeedSet.lI_Val);
+    
+    sR_RemVar_I.eR_StateHeadertank[iL_Counter]                    := fb_Headertank[iL_Counter].StateHeadertank;
+  END_FOR
+
+	sR_RemVar_I.wR_MinSpeedFillInkPumpVarnish 				:= wIDp_MinSpeedFillInkPumpVarnish;
+	sR_RemVar_I.wR_MaxSpeedFillInkPumpVarnish					:= wIDp_MaxSpeedFillInkPumpVarnish;
+	sR_RemVar_I.wR_AnalogMinDigitVarnish 							:= wIDP_AnalogMinDigitVarnish;
+	sR_RemVar_I.wR_AnalogMaxDigitVarnish 							:= wIDP_AnalogMaxDigitVarnish;
+	sR_RemVar_I.wR_PumpTimeOffDelayVarnish 						:= wIDp_PumpTimeOffDelayVarnish;
+
+  sR_RemVar_I.lR_TimeReturnFlow                     := lL_TimeReturnFlow;
+  sR_RemVar_I.lR_TimeBlowOut                        := lL_TimeBlowOut;
+  sR_RemVar_I.lR_TimeEmptyCleaner                   := lL_TimeEmptyCleaner;
+  sR_RemVar_I.lR_TimeWarnExchange                   := lL_TimeWarnExchange;
+
+  sR_RemVar_I.wR_InkPumpMaxTime                     := sC_Config_I.wC_INKPUMP_MAX_TIME;
+  sR_RemVar_I.wR_CleanerPumpMaxTime                 := sC_Config_I.wC_CLEANERPUMP_MAX_TIME;
+
+
+(*RAMPE*)
+(*************************************************************************************************)
+
+
+(*TEMP*)
+(*************************************************************************************************)
+  FOR iL_Counter := 1 TO iCIk_NB_TEMP_CONTR DO
+    sR_RemVar_I.bI_EnableHeater  [iL_Counter] := sAdsIkHeater[iL_Counter].bI_EnableHeater;
+    sR_RemVar_I.sI_HeaterSetPoint[iL_Counter] := sAdsIkHeater[iL_Counter].sI_HeaterSet.fI_Val;
+  END_FOR
+
+  
+(*INKSTORAGE_TANK*)
+(*************************************************************************************************)
+  FOR iL_Counter := 1 TO iCIk_NB_INKSTORAGE_TANK DO
+    sR_RemVar_I.bI_EnableStorageTank[iL_Counter] := sAdsIkInkStorageTank[iL_Counter].bI_EnableStorageTank;
+    sR_RemVar_I.lO_InkColorId[iL_Counter]        := sAdsIkInkStorageTank[iL_Counter].lO_InkColorId;
+    sR_RemVar_I.fO_StorageTankSize[iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].fO_StorageTankSize;
+  END_FOR;
+
+	(*BALANCE*)
+	sR_RemVar_I.bI_EnableBalanceLink  := bI_EnableBalanceLink;
+	sR_RemVar_I.fI_CorrectionValue    := fI_CorrectionValue;
+	sR_RemVar_I.iI_RefreshRate        := iI_RefreshRate;
+	sR_RemVar_I.iI_MaintenanceTimeout := iI_MaintenanceTimeout;
+
+  FOR iL_Counter := 1 TO iCIk_NB_INKBALANCE DO
+    sR_RemVar_I.bI_EnableBalance    [iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_EnableBalance.bI_Command;
+    sR_RemVar_I.sI_InkDensitySet    [iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_InkDensitySet.fI_Val;
+    sR_RemVar_I.sI_CorrectionValue  [iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_CorrectionValue.fI_Val;
+    sR_RemVar_I.sI_WarningLevelSet  [iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_WarningLevelSet.fI_Val;
+    sR_RemVar_I.sI_ErrorlevelSet    [iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_ErrorlevelSet.fI_Val;
+
+    (*Varnish parameter*)
+    sR_RemVar_I.lR_VarParamScannerId[iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.iScannerId;
+    sR_RemVar_I.iR_VarParamIndex    [iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.iIndex;
+    sR_RemVar_I.fR_VarParamTemp     [iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sTemperature.fI_Val;
+    sR_RemVar_I.fR_VarParamMenc     [iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sMeniscus.fI_Val;
+    sR_RemVar_I.aR_VarParamWaveform [iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.aWaveform;
+    sR_RemVar_I.iR_VarParamTimer    [iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.iTimer;
+    sR_RemVar_I.fR_VarParamDensity  [iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sDensity.fI_Val;
+    sR_RemVar_I.fR_VarParamViscosity[iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.sViscosity.fI_Val;
+    sR_RemVar_I.iR_VarParamColorId  [iL_Counter]   := sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.iColorId;
+    FOR iL_Counter2 := 1 TO 10 DO
+      sR_RemVar_I.bR_VarParamCompatibility[iL_Counter, iL_Counter2] := sAdsIkInkStorageTank[iL_Counter].sI_InkParameter.bCompatibility[iL_Counter2];
+    END_FOR;
+
+    sR_RemVar_I.aI_CalibrateFrameText1[iL_Counter] := sAdsIkInkStorageTank[iL_Counter].aI_CalibrateFrameText1;
+    sR_RemVar_I.aI_CalibrateFrameText2[iL_Counter] := sAdsIkInkStorageTank[iL_Counter].aI_CalibrateFrameText2;
+
+    sR_RemVar_I.fR_BalanceOffset[iL_Counter] := fL_BalanceOffset[iL_Counter];
+  END_FOR;
+
+END_IF;]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="Simulate" Id="{508ed5c3-b0e3-425a-a7cb-2e0393f6db76}">
+      <Implementation>
+        <ST><![CDATA[FOR iL_CounterDgas := 1 TO iCIk_NB_DGAS DO
+  fb_DgasMencContr[iL_CounterDgas].iI_ActValue := LREAL_TO_INT(fb_DgasMencContr[iL_CounterDgas].pSetValue * fb_DgasMencContr[iL_CounterDgas].fR_ConvAdsToLocal);
+
+  sAdsIkDgas[iL_CounterDgas].bI_Enable := TRUE;
+END_FOR
+
+FOR iL_CounterMenc := 1 TO iCIk_NB_MENC_STA DO
+  fb_MeniscusMencContr[iL_CounterMenc].iI_ActValue := LREAL_TO_INT(fb_MeniscusMencContr[iL_CounterMenc].pSetValue * fb_MeniscusMencContr[iL_CounterMenc].fR_ConvAdsToLocal);
+
+  sAdsIkMenc[iL_CounterMenc].bI_Enable := TRUE;
+END_FOR
+
+bIKn_TankCleanerLevelEmpty := TRUE;
+bIKn_TankRefuseLevelFull   := TRUE;
+
+FOR iL_Counter := 1 TO iCIk_NB_TEMP_HYS DO
+  fb_TempControllerHys[iL_Counter].iI_ActValue := DINT_TO_INT(fb_TempControllerHys[iL_Counter].pSetValue);
+END_FOR
+]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="Visu" Id="{6ca6bb5d-a511-4764-b7c7-2f50776ed47f}">
+      <Implementation>
+        <ST><![CDATA[(*call visu controls*)
+fb_VisuDgasMencController    (sI_Ary_Fb := fb_DgasMencContr    , sI_Ary_Ads := sAdsIkDgas);
+fb_VisuMeniscusMencController(sI_Ary_Fb := fb_MeniscusMencContr, sI_Ary_Ads := sAdsIkMenc);
+]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="PRG_INK">
+      <LineId Id="79307" Count="15" />
+      <LineId Id="79330" Count="4" />
+      <LineId Id="89037" Count="1" />
+      <LineId Id="89041" Count="0" />
+      <LineId Id="89039" Count="0" />
+      <LineId Id="89646" Count="0" />
+      <LineId Id="89644" Count="1" />
+      <LineId Id="89040" Count="0" />
+      <LineId Id="79335" Count="1" />
+      <LineId Id="85591" Count="0" />
+      <LineId Id="87291" Count="2" />
+      <LineId Id="79338" Count="3" />
+      <LineId Id="82085" Count="2" />
+      <LineId Id="79342" Count="6" />
+      <LineId Id="95649" Count="0" />
+      <LineId Id="95652" Count="0" />
+      <LineId Id="95655" Count="0" />
+      <LineId Id="95657" Count="0" />
+      <LineId Id="95651" Count="0" />
+      <LineId Id="95658" Count="1" />
+      <LineId Id="95662" Count="0" />
+      <LineId Id="79349" Count="0" />
+      <LineId Id="96267" Count="0" />
+      <LineId Id="79367" Count="0" />
+      <LineId Id="96264" Count="0" />
+      <LineId Id="96266" Count="0" />
+      <LineId Id="96265" Count="0" />
+      <LineId Id="79376" Count="1" />
+      <LineId Id="80922" Count="1" />
+      <LineId Id="79380" Count="2" />
+      <LineId Id="79387" Count="11" />
+      <LineId Id="95046" Count="0" />
+      <LineId Id="90833" Count="1" />
+      <LineId Id="79402" Count="7" />
+      <LineId Id="95047" Count="0" />
+      <LineId Id="79410" Count="19" />
+      <LineId Id="83267" Count="0" />
+      <LineId Id="83270" Count="0" />
+      <LineId Id="83272" Count="0" />
+      <LineId Id="83268" Count="0" />
+      <LineId Id="83851" Count="4" />
+      <LineId Id="83857" Count="9" />
+      <LineId Id="83877" Count="0" />
+      <LineId Id="86716" Count="0" />
+      <LineId Id="86715" Count="0" />
+      <LineId Id="93244" Count="1" />
+      <LineId Id="93243" Count="0" />
+      <LineId Id="83879" Count="1" />
+      <LineId Id="83878" Count="0" />
+      <LineId Id="83881" Count="7" />
+      <LineId Id="83897" Count="0" />
+      <LineId Id="83889" Count="0" />
+      <LineId Id="83898" Count="0" />
+      <LineId Id="88446" Count="0" />
+      <LineId Id="83891" Count="0" />
+      <LineId Id="83269" Count="0" />
+      <LineId Id="79430" Count="4" />
+      <LineId Id="79436" Count="30" />
+      <LineId Id="92643" Count="0" />
+      <LineId Id="92642" Count="0" />
+      <LineId Id="79467" Count="0" />
+      <LineId Id="82658" Count="0" />
+      <LineId Id="79468" Count="0" />
+      <LineId Id="90239" Count="0" />
+      <LineId Id="79470" Count="12" />
+      <LineId Id="96268" Count="0" />
+      <LineId Id="79483" Count="4" />
+      <LineId Id="96269" Count="0" />
+      <LineId Id="79488" Count="22" />
+      <LineId Id="96865" Count="2" />
+      <LineId Id="79512" Count="9" />
+      <LineId Id="87864" Count="0" />
+      <LineId Id="87863" Count="0" />
+      <LineId Id="79522" Count="2" />
+      <LineId Id="87865" Count="0" />
+      <LineId Id="79525" Count="3" />
+      <LineId Id="87867" Count="0" />
+      <LineId Id="79529" Count="3" />
+      <LineId Id="87866" Count="0" />
+      <LineId Id="79533" Count="59" />
+      <LineId Id="85022" Count="0" />
+      <LineId Id="86144" Count="0" />
+      <LineId Id="85023" Count="10" />
+      <LineId Id="86145" Count="0" />
+      <LineId Id="85034" Count="1" />
+      <LineId Id="79593" Count="16" />
+      <LineId Id="85006" Count="0" />
+      <LineId Id="79611" Count="69" />
+      <LineId Id="91433" Count="0" />
+      <LineId Id="79681" Count="9" />
+      <LineId Id="81488" Count="1" />
+      <LineId Id="79692" Count="0" />
+      <LineId Id="81490" Count="1" />
+      <LineId Id="79694" Count="10" />
+      <LineId Id="87873" Count="4" />
+      <LineId Id="79710" Count="4" />
+      <LineId Id="79721" Count="0" />
+      <LineId Id="86717" Count="0" />
+      <LineId Id="86721" Count="1" />
+      <LineId Id="79722" Count="5" />
+      <LineId Id="86723" Count="0" />
+      <LineId Id="79728" Count="4" />
+      <LineId Id="89043" Count="0" />
+      <LineId Id="79733" Count="2" />
+      <LineId Id="91429" Count="0" />
+      <LineId Id="79736" Count="0" />
+      <LineId Id="89044" Count="0" />
+      <LineId Id="79737" Count="6" />
+      <LineId Id="89045" Count="0" />
+      <LineId Id="79744" Count="0" />
+      <LineId Id="94446" Count="0" />
+      <LineId Id="79746" Count="1" />
+      <LineId Id="89046" Count="0" />
+      <LineId Id="79748" Count="2" />
+      <LineId Id="87872" Count="0" />
+      <LineId Id="89049" Count="0" />
+      <LineId Id="89048" Count="0" />
+      <LineId Id="79752" Count="1" />
+      <LineId Id="79755" Count="0" />
+      <LineId Id="89047" Count="0" />
+      <LineId Id="79756" Count="2" />
+      <LineId Id="89050" Count="0" />
+      <LineId Id="79759" Count="20" />
+      <LineId Id="93846" Count="0" />
+      <LineId Id="79780" Count="14" />
+      <LineId Id="93847" Count="0" />
+      <LineId Id="93845" Count="0" />
+      <LineId Id="79795" Count="1" />
+      <LineId Id="79798" Count="0" />
+      <LineId Id="95646" Count="0" />
+      <LineId Id="79799" Count="0" />
+      <LineId Id="95647" Count="0" />
+      <LineId Id="79800" Count="43" />
+      <LineId Id="79866" Count="53" />
+      <LineId Id="92031" Count="0" />
+      <LineId Id="92033" Count="0" />
+      <LineId Id="79920" Count="3" />
+      <LineId Id="92042" Count="0" />
+      <LineId Id="79924" Count="5" />
+      <LineId Id="84451" Count="0" />
+      <LineId Id="87868" Count="0" />
+      <LineId Id="92043" Count="0" />
+      <LineId Id="79930" Count="1" />
+      <LineId Id="83246" Count="0" />
+      <LineId Id="79932" Count="1" />
+      <LineId Id="83245" Count="0" />
+      <LineId Id="83226" Count="3" />
+      <LineId Id="89051" Count="0" />
+      <LineId Id="83230" Count="0" />
+      <LineId Id="83248" Count="1" />
+      <LineId Id="87870" Count="0" />
+      <LineId Id="83250" Count="0" />
+      <LineId Id="83236" Count="0" />
+      <LineId Id="83253" Count="8" />
+      <LineId Id="92038" Count="1" />
+      <LineId Id="83251" Count="1" />
+      <LineId Id="84452" Count="0" />
+      <LineId Id="83239" Count="2" />
+      <LineId Id="84453" Count="0" />
+      <LineId Id="83231" Count="0" />
+      <LineId Id="79936" Count="0" />
+      <LineId Id="81493" Count="0" />
+      <LineId Id="79943" Count="0" />
+      <LineId Id="87869" Count="0" />
+      <LineId Id="79951" Count="0" />
+      <LineId Id="79954" Count="52" />
+      <LineId Id="94447" Count="0" />
+      <LineId Id="80008" Count="60" />
+      <LineId Id="89052" Count="0" />
+      <LineId Id="80070" Count="9" />
+      <LineId Id="81494" Count="19" />
+      <LineId Id="80082" Count="249" />
+      <LineId Id="95663" Count="0" />
+      <LineId Id="80332" Count="20" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_INK.AutoFlushingDevice">
+      <LineId Id="2" Count="0" />
+      <LineId Id="95" Count="0" />
+      <LineId Id="4" Count="3" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="86" Count="1" />
+      <LineId Id="90" Count="0" />
+      <LineId Id="94" Count="0" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="74" Count="1" />
+      <LineId Id="150" Count="0" />
+      <LineId Id="76" Count="1" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="145" Count="4" />
+      <LineId Id="1" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="96" Count="1" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="107" Count="0" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="144" Count="0" />
+      <LineId Id="122" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="25" Count="1" />
+      <LineId Id="98" Count="1" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="27" Count="1" />
+      <LineId Id="52" Count="0" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="123" Count="0" />
+      <LineId Id="138" Count="1" />
+      <LineId Id="124" Count="2" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="100" Count="1" />
+      <LineId Id="53" Count="0" />
+      <LineId Id="56" Count="1" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="108" Count="3" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="102" Count="1" />
+      <LineId Id="31" Count="1" />
+      <LineId Id="64" Count="0" />
+      <LineId Id="152" Count="0" />
+      <LineId Id="151" Count="0" />
+      <LineId Id="65" Count="2" />
+      <LineId Id="127" Count="0" />
+      <LineId Id="140" Count="1" />
+      <LineId Id="128" Count="2" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="104" Count="1" />
+      <LineId Id="63" Count="0" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="83" Count="1" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="79" Count="0" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="118" Count="0" />
+      <LineId Id="142" Count="1" />
+      <LineId Id="119" Count="2" />
+      <LineId Id="112" Count="1" />
+      <LineId Id="115" Count="0" />
+      <LineId Id="133" Count="0" />
+      <LineId Id="137" Count="0" />
+      <LineId Id="154" Count="0" />
+      <LineId Id="136" Count="0" />
+      <LineId Id="117" Count="0" />
+      <LineId Id="114" Count="0" />
+      <LineId Id="131" Count="1" />
+      <LineId Id="135" Count="0" />
+      <LineId Id="116" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="47" Count="0" />
+      <LineId Id="46" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_INK.Init">
+      <LineId Id="1287" Count="2" />
+      <LineId Id="1306" Count="0" />
+      <LineId Id="507" Count="6" />
+      <LineId Id="1307" Count="15" />
+      <LineId Id="514" Count="1" />
+      <LineId Id="1242" Count="0" />
+      <LineId Id="1732" Count="0" />
+      <LineId Id="1241" Count="0" />
+      <LineId Id="516" Count="32" />
+      <LineId Id="1545" Count="1" />
+      <LineId Id="1588" Count="1" />
+      <LineId Id="1723" Count="1" />
+      <LineId Id="1552" Count="1" />
+      <LineId Id="549" Count="76" />
+      <LineId Id="1543" Count="1" />
+      <LineId Id="626" Count="0" />
+      <LineId Id="1200" Count="0" />
+      <LineId Id="627" Count="0" />
+      <LineId Id="629" Count="32" />
+      <LineId Id="668" Count="66" />
+      <LineId Id="1570" Count="0" />
+      <LineId Id="1572" Count="7" />
+      <LineId Id="1582" Count="2" />
+      <LineId Id="1586" Count="1" />
+      <LineId Id="1581" Count="0" />
+      <LineId Id="1580" Count="0" />
+      <LineId Id="735" Count="12" />
+      <LineId Id="749" Count="26" />
+      <LineId Id="1453" Count="7" />
+      <LineId Id="1591" Count="12" />
+      <LineId Id="1590" Count="0" />
+      <LineId Id="1475" Count="4" />
+      <LineId Id="776" Count="0" />
+      <LineId Id="1180" Count="0" />
+      <LineId Id="777" Count="13" />
+      <LineId Id="1604" Count="12" />
+      <LineId Id="1480" Count="0" />
+      <LineId Id="804" Count="1" />
+      <LineId Id="1617" Count="17" />
+      <LineId Id="806" Count="0" />
+      <LineId Id="1421" Count="3" />
+      <LineId Id="1733" Count="0" />
+      <LineId Id="1425" Count="3" />
+      <LineId Id="1635" Count="19" />
+      <LineId Id="1449" Count="2" />
+      <LineId Id="845" Count="2" />
+      <LineId Id="1051" Count="1" />
+      <LineId Id="1056" Count="0" />
+      <LineId Id="1079" Count="0" />
+      <LineId Id="1127" Count="0" />
+      <LineId Id="1065" Count="0" />
+      <LineId Id="1057" Count="6" />
+      <LineId Id="1134" Count="0" />
+      <LineId Id="1064" Count="0" />
+      <LineId Id="1158" Count="0" />
+      <LineId Id="1130" Count="3" />
+      <LineId Id="1066" Count="0" />
+      <LineId Id="1054" Count="0" />
+      <LineId Id="1080" Count="0" />
+      <LineId Id="1128" Count="0" />
+      <LineId Id="1067" Count="8" />
+      <LineId Id="1135" Count="0" />
+      <LineId Id="1076" Count="0" />
+      <LineId Id="1159" Count="0" />
+      <LineId Id="1077" Count="0" />
+      <LineId Id="1081" Count="0" />
+      <LineId Id="1129" Count="0" />
+      <LineId Id="1084" Count="0" />
+      <LineId Id="1086" Count="7" />
+      <LineId Id="1136" Count="0" />
+      <LineId Id="1085" Count="0" />
+      <LineId Id="1151" Count="0" />
+      <LineId Id="1538" Count="0" />
+      <LineId Id="1099" Count="0" />
+      <LineId Id="1126" Count="0" />
+      <LineId Id="1150" Count="0" />
+      <LineId Id="1100" Count="0" />
+      <LineId Id="1112" Count="0" />
+      <LineId Id="1114" Count="0" />
+      <LineId Id="1113" Count="0" />
+      <LineId Id="1103" Count="0" />
+      <LineId Id="1137" Count="0" />
+      <LineId Id="1107" Count="0" />
+      <LineId Id="1102" Count="0" />
+      <LineId Id="1486" Count="0" />
+      <LineId Id="1542" Count="0" />
+      <LineId Id="913" Count="1" />
+      <LineId Id="1207" Count="0" />
+      <LineId Id="1224" Count="0" />
+      <LineId Id="1482" Count="1" />
+      <LineId Id="1485" Count="0" />
+      <LineId Id="1481" Count="0" />
+      <LineId Id="1209" Count="2" />
+      <LineId Id="1208" Count="0" />
+      <LineId Id="1203" Count="0" />
+      <LineId Id="1212" Count="2" />
+      <LineId Id="1220" Count="2" />
+      <LineId Id="1215" Count="0" />
+      <LineId Id="1223" Count="0" />
+      <LineId Id="1216" Count="1" />
+      <LineId Id="1204" Count="0" />
+      <LineId Id="928" Count="6" />
+      <LineId Id="1249" Count="1" />
+      <LineId Id="937" Count="1" />
+      <LineId Id="941" Count="4" />
+      <LineId Id="1251" Count="5" />
+      <LineId Id="1725" Count="6" />
+      <LineId Id="952" Count="0" />
+      <LineId Id="1706" Count="1" />
+      <LineId Id="1655" Count="42" />
+      <LineId Id="1708" Count="7" />
+      <LineId Id="1722" Count="0" />
+      <LineId Id="1716" Count="4" />
+      <LineId Id="1559" Count="0" />
+      <LineId Id="1420" Count="0" />
+      <LineId Id="1007" Count="3" />
+      <LineId Id="1021" Count="3" />
+      <LineId Id="1283" Count="0" />
+      <LineId Id="1026" Count="1" />
+      <LineId Id="1323" Count="5" />
+      <LineId Id="1028" Count="0" />
+      <LineId Id="1277" Count="0" />
+      <LineId Id="1271" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_INK.Mapping">
+      <LineId Id="2" Count="14" />
+      <LineId Id="192" Count="0" />
+      <LineId Id="17" Count="1" />
+      <LineId Id="193" Count="0" />
+      <LineId Id="19" Count="1" />
+      <LineId Id="155" Count="16" />
+      <LineId Id="317" Count="1" />
+      <LineId Id="175" Count="3" />
+      <LineId Id="203" Count="0" />
+      <LineId Id="201" Count="1" />
+      <LineId Id="204" Count="0" />
+      <LineId Id="181" Count="1" />
+      <LineId Id="310" Count="6" />
+      <LineId Id="242" Count="2" />
+      <LineId Id="319" Count="2" />
+      <LineId Id="323" Count="2" />
+      <LineId Id="322" Count="0" />
+      <LineId Id="245" Count="1" />
+      <LineId Id="261" Count="1" />
+      <LineId Id="290" Count="0" />
+      <LineId Id="183" Count="3" />
+      <LineId Id="289" Count="0" />
+      <LineId Id="326" Count="0" />
+      <LineId Id="188" Count="0" />
+      <LineId Id="88" Count="6" />
+      <LineId Id="216" Count="0" />
+      <LineId Id="213" Count="2" />
+      <LineId Id="218" Count="1" />
+      <LineId Id="239" Count="0" />
+      <LineId Id="327" Count="0" />
+      <LineId Id="221" Count="3" />
+      <LineId Id="229" Count="0" />
+      <LineId Id="240" Count="0" />
+      <LineId Id="265" Count="3" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_INK.RemVar">
+      <LineId Id="588" Count="22" />
+      <LineId Id="1098" Count="0" />
+      <LineId Id="614" Count="0" />
+      <LineId Id="1099" Count="0" />
+      <LineId Id="1190" Count="0" />
+      <LineId Id="1134" Count="0" />
+      <LineId Id="1154" Count="0" />
+      <LineId Id="1135" Count="0" />
+      <LineId Id="1175" Count="6" />
+      <LineId Id="1153" Count="0" />
+      <LineId Id="1155" Count="0" />
+      <LineId Id="1204" Count="1" />
+      <LineId Id="1223" Count="6" />
+      <LineId Id="1222" Count="0" />
+      <LineId Id="1208" Count="6" />
+      <LineId Id="1207" Count="0" />
+      <LineId Id="1173" Count="0" />
+      <LineId Id="618" Count="7" />
+      <LineId Id="1348" Count="0" />
+      <LineId Id="626" Count="2" />
+      <LineId Id="632" Count="0" />
+      <LineId Id="1116" Count="4" />
+      <LineId Id="664" Count="3" />
+      <LineId Id="1347" Count="0" />
+      <LineId Id="668" Count="2" />
+      <LineId Id="678" Count="2" />
+      <LineId Id="1346" Count="0" />
+      <LineId Id="681" Count="2" />
+      <LineId Id="691" Count="0" />
+      <LineId Id="1345" Count="0" />
+      <LineId Id="693" Count="0" />
+      <LineId Id="1230" Count="16" />
+      <LineId Id="1268" Count="0" />
+      <LineId Id="1247" Count="17" />
+      <LineId Id="1267" Count="0" />
+      <LineId Id="1101" Count="5" />
+      <LineId Id="726" Count="49" />
+      <LineId Id="1121" Count="3" />
+      <LineId Id="1126" Count="0" />
+      <LineId Id="1125" Count="0" />
+      <LineId Id="789" Count="8" />
+      <LineId Id="808" Count="1" />
+      <LineId Id="830" Count="3" />
+      <LineId Id="1108" Count="0" />
+      <LineId Id="839" Count="12" />
+      <LineId Id="863" Count="0" />
+      <LineId Id="1271" Count="39" />
+      <LineId Id="905" Count="53" />
+      <LineId Id="967" Count="0" />
+      <LineId Id="970" Count="16" />
+      <LineId Id="1127" Count="1" />
+      <LineId Id="1130" Count="1" />
+      <LineId Id="1133" Count="0" />
+      <LineId Id="1132" Count="0" />
+      <LineId Id="1000" Count="6" />
+      <LineId Id="1114" Count="0" />
+      <LineId Id="1015" Count="6" />
+      <LineId Id="1038" Count="4" />
+      <LineId Id="1047" Count="7" />
+      <LineId Id="1311" Count="0" />
+      <LineId Id="1313" Count="31" />
+      <LineId Id="1312" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_INK.Simulate">
+      <LineId Id="11" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="16" Count="1" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="21" Count="2" />
+      <LineId Id="30" Count="1" />
+      <LineId Id="47" Count="0" />
+      <LineId Id="46" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_INK.Visu">
+      <LineId Id="5" Count="0" />
+      <LineId Id="3" Count="1" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

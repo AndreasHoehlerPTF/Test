@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <GVL Name="Definitions" Id="{b1e2f023-9af0-4663-a1f8-d114142fdd31}">
+    <Declaration><![CDATA[{attribute 'Tc2GvlVarNames'}
+VAR_GLOBAL CONSTANT
+(*************************************************************************************************)
+(*  FILENAME:    DEFINTIONS.EXP                                                                  *)
+(*  PROJECT:     CALMAR PUPLC                                                                    *)
+(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2016)            *)
+(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
+(*  VERSION:     <version>                                                                       *)
+(*************************************************************************************************)
+(*  DESCRIPTION:                                                                   <description> *)
+(*    Global variable constant.                                                                  *)
+(*                                                                                </description> *)
+(*************************************************************************************************)
+
+  aC_NAME_PROJECT               : STRING   := 'DP-ST-1026-WEU2';
+  aC_NAME_PRODUCT               : STRING   := 'WEU';
+  aC_VERSION_PRODUCT            : STRING   := '01.000.000';
+  iC_VERSION_PRODUCT            : INT      := 010000;
+
+  sC_AMSNETID_LOCALHOST         : STRING   := '172.21.10.11.1.1';   (* AMS_NET_ID of Localhost *)
+  sC_AMSNETID_IO                : STRING   := '172.21.10.11.2.1';   (* AMS_NET_ID of IO *)
+
+  aC_WifagDataPath              : STRING[255] := 'C:\ProgramData\WifagPolytype\';     (*Path of Wifag ProgramData*)
+  aC_PlcSubPath                 : STRING[255] := 'PrintUnitPlc\02_Plc\';              (*Sub path to 02_PLC*)
+  aC_RecipeSubPath              : STRING[255] := 'Recipe\';                           (*Sub path to recipe*)
+
+  aC_PlcConfigPath              : STRING   := 'C:\ProgramData\WifagPolytype\WEUPrintUnitPlc\';   (*Plc config / report data path*)
+  aC_PlcFlashFileSubPath        : STRING   := '03_Flash\';     (*firmware file sub-directory*)
+  aC_PlcWaveformFileSubPath     : STRING   := '04_Waveform\';  (*waveform file sub-directory*)
+  aC_PlcMaskFileSubPath         : STRING   := '05_Mask\';      (*stiching mask file sub-directory*)
+  aC_PlcMapFileSubPath          : STRING   := '06_Map\';       (*correction map file sub-directory*)
+  aC_PlcRecipeSubPath           : STRING   := '02_Plc\Recipe\';(*recipe file sub-directory*)  
+  aC_PlcBlockIdSubPath          : STRING   := '02_Plc\BlockId\';(*blockId file sub-directory*)  
+
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

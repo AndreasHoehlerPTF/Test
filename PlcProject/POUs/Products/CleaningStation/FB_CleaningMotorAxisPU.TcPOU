@@ -1,0 +1,1059 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <POU Name="FB_CleaningMotorAxisPU" Id="{08ec1bb9-dff2-4245-8d56-ab3d5396e7fc}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_CleaningMotorAxisPU EXTENDS FB_CleanDevice
+VAR_INPUT
+  bI_SafeToMove                        : BOOL;
+	fI_SheetThickness                    : REAL := 0.000; (*Sheet thickness (Production Mode) [mm]*)
+  
+  //Limit switches
+  bI_SensorTop                  AT %I* : BOOL;  (*Physical sensor feedback for top position*)
+  bI_SensorBottom               AT %I* : BOOL;  (*Physical sensor feedback for bottom position*)
+  
+  //Inputs from EL7201 Terminal
+  wI_StatusWord                 AT %I* : UINT; (*Status word: 6041:0*)
+  lI_EncoderValue               AT %I* : DINT; (*Encoder value*)
+  bI_DeviceOnline               AT %I* : BOOL; (*Check link to device*)
+  
+  fB_Axis                              : FB_EL7201;    //Axis controller
+  
+  //References
+  pC_MsgInterface                      : POINTER TO ST_ADS_MSG_IF;
+  iC_BlockId                           : INT;
+END_VAR
+
+VAR_OUTPUT
+  //Outputs to EL7201 Terminal
+  wO_ControlWord                AT %Q* : UINT;                         (*Control word:  6040:0*)
+  iO_TargetVelocity             AT %Q* : DINT;                         (*Target velocity:  60FF:0*)
+END_VAR
+
+VAR
+  fb_TonDeviceOnline                   : TON;
+	bIDp_DeviceReset                     : BOOL := FALSE;
+	fb_RTrigDeviceReset                  : R_TRIG;
+  fb_RFTrigPrintEnabled                : RF_TRIG;
+
+  bL_DriveToWaitPos                    : BOOL;
+  bL_DriveToPrintPos                   : BOOL;
+
+
+  bL_SafeRunningCondition              : BOOL;
+  bL_SafeMoveNeg                       : BOOL;
+  bL_SafeMovePos                       : BOOL;
+  bL_FirstRun                          : BOOL := TRUE;
+
+  fL_PrintPosition                     : REAL;  (*[m]*)
+  fL_PrintPositionMM                   : REAL;  (*[mm]*)
+  bL_InPosService                      : BOOL;
+  bL_InPosClean1                       : BOOL;
+  bL_InPosClean2                       : BOOL;
+  bL_InPosWait                         : BOOL;
+  bL_InPosPrint                        : BOOL;
+  bL_HigherPosWait                     : BOOL;
+  bL_HigherPosC1                       : BOOL;
+  
+  bL_MemSensorTop                      : BOOL;
+  bL_MemSensorBottom                   : BOOL;
+  wL_ErrorCode                         : WORD;
+  
+  (*Messaging*)
+  fB_MsgQueue                          : FB_MSG_QUEUE;
+  fB_MsgHandler                        : FB_MSG_HANDLER;
+  sL_MsgConfig                         : ST_MSG_CONFIG;
+  fB_Msg                               : ARRAY [1..iC_NUM_MSG] OF FB_MESSAGE;
+END_VAR
+
+VAR PERSISTENT
+  fI_PositionService                   : REAL;  (*[mm]*)
+  fI_PositionWait                      : REAL;  (*[mm]*)
+  fI_PositionClean1                    : REAL;  (*[mm]*)
+  fI_PositionClean2                    : REAL;  (*[mm]*)
+  fI_PositionPrint                     : REAL;  (*[mm]*)
+  fL_SetPositionValue                  : REAL := 10;      (*[mm]*)
+  fI_PositionTolerance                 : REAL := 0.0001;  (*[m]*)
+  fI_PositionTolerance2                : REAL := 0.005;   (*[m]*)
+  sI_SpeedDef                          : ST_SPEEDS;  (*Speed defs [mm/s]*)
+END_VAR
+
+VAR CONSTANT
+  iC_NUM_MSG                           : INT  := 1;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*----------------------------------------------------------------------------------------------------------------------------------------------- *)
+(*Running Conditions for Cleaning Head  *)
+(*----------------------------------------------------------------------------------------------------------------------------------------------- *)
+IF I_MachineStatus.pSafetyOk AND I_MachineStatus.pMachineReady AND (wL_ErrorCode = 0 OR wL_ErrorCode.5)THEN  (*Dont check limit switch here*)
+  bL_SafeRunningCondition := TRUE;
+ELSE
+  bL_SafeRunningCondition := FALSE;
+END_IF;
+
+bL_SafeMoveNeg := bL_SafeRunningCondition AND bI_SensorBottom AND bI_SafeToMove;
+bL_SafeMovePos := bL_SafeRunningCondition AND bI_SensorTop;
+
+(*Because the WcState sets an error for on cycle, we use this timer to check if the bus is down.*)
+fb_TonDeviceOnline(IN := bI_DeviceOnline, PT := T#20MS);
+fb_RTrigDeviceReset(CLK := bIDp_DeviceReset);
+IF fb_TonDeviceOnline.Q OR fb_RTrigDeviceReset.Q THEN
+  bL_RefKnown    := FALSE;        (*Reset Reference when link to device is lost, e.g. when machine power off*)
+	wL_ErrorCode.9 := TRUE;
+END_IF;
+
+(*----------------------------------------------------------------------------------------------------------------------------------------------- *)
+(*Position detection*)
+(*----------------------------------------------------------------------------------------------------------------------------------------------- *)
+fL_PrintPositionMM := fI_PositionPrint + fI_SheetThickness;
+fL_PrintPosition   := (fL_PrintPositionMM / 1000);
+
+IF     fB_Axis.fO_ActualPosition >= ((fI_PositionWait / 1000) - (fI_PositionTolerance / 1000))
+   AND fB_Axis.fO_ActualPosition <= ((fI_PositionWait / 1000) + (fI_PositionTolerance / 1000))
+THEN
+  bL_InPosService := FALSE;
+  bL_InPosClean1  := FALSE;
+  bL_InPosClean2  := FALSE;
+  bL_InPosWait    := TRUE;
+  bL_InPosPrint   := FALSE;
+ELSIF  fB_Axis.fO_ActualPosition >= (fL_PrintPosition - fI_PositionTolerance)
+   AND fB_Axis.fO_ActualPosition <= (fL_PrintPosition + fI_PositionTolerance)
+THEN
+  bL_InPosService := FALSE;
+  bL_InPosClean1  := FALSE;
+  bL_InPosClean2  := FALSE;
+  bL_InPosWait    := FALSE;
+  bL_InPosPrint   := TRUE;
+ELSIF  fB_Axis.fO_ActualPosition >= ((fI_PositionService / 1000) - fI_PositionTolerance)
+   AND fB_Axis.fO_ActualPosition <= ((fI_PositionService / 1000) + fI_PositionTolerance)
+THEN
+  bL_InPosService := TRUE;
+  bL_InPosClean1  := FALSE;
+  bL_InPosClean2  := FALSE;
+  bL_InPosWait    := FALSE;
+  bL_InPosPrint   := FALSE;
+ELSIF  fB_Axis.fO_ActualPosition >= ((fI_PositionClean1 / 1000) - fI_PositionTolerance)
+   AND fB_Axis.fO_ActualPosition <= ((fI_PositionClean1 / 1000) + fI_PositionTolerance)
+THEN
+  bL_InPosService := FALSE;
+  bL_InPosClean1  := TRUE;
+  bL_InPosClean2  := FALSE;
+  bL_InPosWait    := FALSE;
+  bL_InPosPrint   := FALSE;
+ELSIF  fB_Axis.fO_ActualPosition >= ((fI_PositionClean2 / 1000) - fI_PositionTolerance)
+   AND fB_Axis.fO_ActualPosition <= ((fI_PositionClean2 / 1000) + fI_PositionTolerance)
+THEN
+  bL_InPosService := FALSE;
+  bL_InPosClean1  := FALSE;
+  bL_InPosClean2  := TRUE;
+  bL_InPosWait    := FALSE;
+  bL_InPosPrint   := FALSE;
+ELSE
+  bL_InPosService := FALSE;
+  bL_InPosClean1  := FALSE;
+  bL_InPosClean2  := FALSE;
+  bL_InPosWait    := FALSE;
+  bL_InPosPrint   := FALSE;
+END_IF;
+bL_HigherPosWait := fB_Axis.fO_ActualPosition >= ((fI_PositionWait   / 1000) + fI_PositionTolerance2);
+bL_HigherPosC1   := fB_Axis.fO_ActualPosition >= ((fI_PositionClean1 / 1000));
+
+(*----------------------------------------------------------------------------------------------------------------------------------------------- *)
+(* Axis control  *)
+(*----------------------------------------------------------------------------------------------------------------------------------------------- *)
+fB_Axis.bI_RegActive        := bL_SafeRunningCondition AND NOT bL_Error; //Activate controller
+fB_Axis.bI_EStop            := I_MachineStatus.pSafetyOk;                //negative logic for bI_EStop
+fB_Axis.fI_SetPositionValue := fL_SetPositionValue / 1000;
+
+fB_Axis(wI_StatusWord := wI_StatusWord ,lI_EncoderValue := lI_EncoderValue);
+
+fB_Axis.bI_FaultReset := FALSE;
+
+wO_ControlWord    := fB_Axis.wO_ControlWord;
+iO_TargetVelocity := fB_Axis.iO_TargetVelocity;
+
+IF fB_Axis.fL_OffsetEncoder > 0 THEN
+	bL_RefKnown := TRUE;
+ELSE
+	bL_RefKnown := FALSE;
+END_IF;
+
+
+(*----------------------------------------------------------------------------------------------------------------------------------------------- *)
+(* Supervision  *)
+(*----------------------------------------------------------------------------------------------------------------------------------------------- *)
+(*
+TODO: Supervisor
+tL_TimerSurv.PT := T#3S;
+tL_TimerSurv();
+tL_TimerSensor.PT := T#105s  ;  (* 1meter at 10mm*)
+tL_TimerSensor();*)
+
+IF bL_FirstRun THEN
+  bL_FirstRun     := FALSE;
+END_IF;
+
+(*----------------------------------------------------------------------------------------------------------------------- *)
+(*--------------------------------- Fault Diagnosis and Management  ----------------------------------------------------- *)
+(*----------------------------------------------------------------------------------------------------------------------- *)
+mErrorHandling();
+
+(*----------------------------------------------------------------------------------------------------------------------- *)
+(* Messaging                                                                                                              *)
+(*----------------------------------------------------------------------------------------------------------------------- *)
+fB_MsgHandler();
+fB_Msg[1](bI_Status := bL_Error);
+fB_MsgQueue();
+]]></ST>
+    </Implementation>
+    <Method Name="mAckError" Id="{7d36cfd1-4780-4b15-a42d-73305957c5f7}">
+      <Declaration><![CDATA[METHOD mAckError 
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[wL_ErrorCode := 0;
+mErrorHandling();
+fB_Axis.bI_FaultReset := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mCapping" Id="{d1e0fc3d-eada-4f1c-b940-526c4feca620}">
+      <Declaration><![CDATA[METHOD mCapping : BOOL
+VAR_INPUT
+  iI_Step    : INT;
+  bI_ExitCap : BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Abort: Stop whereever axis is and return
+IF bL_AbortReq THEN
+  fB_Axis.bI_MoveEnable := FALSE;
+  bL_Busy  := FALSE;
+  bL_Ready := TRUE;
+
+  RETURN;
+END_IF
+
+//Normal operation
+bL_Ready := FALSE;
+CASE iI_Step OF
+	0: //Init - Check if axis is not activated, restore safety
+    fB_Axis.bI_MoveEnable := FALSE;
+		bL_Busy               := FALSE;
+
+  1: //Wait for PU axis to lift
+    mAckError();
+    fB_Axis.fI_TargetPosition := (fI_PositionClean1 / 1000);
+    fB_Axis.fI_SpeedLimit     := sI_SpeedDef.fP_PlaceSpeed / 1000;
+    
+    IF bL_InPosClean1 THEN
+      fB_Axis.bI_MoveEnable := FALSE;
+      bL_Busy               := FALSE;
+      bL_Ready              := TRUE;  //Operation complete
+    ELSE
+      fB_Axis.bI_MoveEnable := bL_SafeMovePos;
+      bL_Busy               := TRUE;
+    END_IF
+    
+  2: //Wait for CU axis to move in
+    fB_Axis.bI_MoveEnable   := FALSE;
+    bL_Busy                 := FALSE;
+    
+  3: //Move CH to park positiom 
+    fB_Axis.bI_MoveEnable   := FALSE;
+    bL_Busy                 := FALSE;
+    
+  4: //Wait for PU axis to lower
+    mAckError();
+    IF NOT bI_ExitCap THEN
+      fB_Axis.fI_TargetPosition := (fI_PositionClean2 / 1000);
+      fB_Axis.fI_SpeedLimit     := sI_SpeedDef.fP_PlaceSpeed / 1000;
+      
+      IF bL_InPosClean2 THEN
+        fB_Axis.bI_MoveEnable := FALSE;
+        bL_Busy               := FALSE;
+        bL_Ready              := TRUE;  //Operation complete
+      ELSE
+        fB_Axis.bI_MoveEnable := bL_SafeMoveNeg;
+        bL_Busy               := TRUE;
+      END_IF
+    ELSE
+      fB_Axis.bI_MoveEnable := FALSE;
+      bL_Busy               := FALSE;
+    END_IF
+    
+	5: //End - Do nothing, capping process active
+    mAckError();
+		bL_Busy  := FALSE;
+    bL_Ready := TRUE;  //Operation complete
+
+	ELSE
+		bL_Busy  := FALSE;		
+    bL_Ready := TRUE;  //Operation complete
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mCleaning" Id="{41efd74c-353f-4876-a2be-976ea2907c45}">
+      <Declaration><![CDATA[METHOD mCleaning : BOOL
+VAR_INPUT
+  iI_Step : INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Abort: Stop whereever axis is and return
+IF bL_AbortReq THEN
+  fB_Axis.bI_MoveEnable := FALSE;
+  bL_Busy  := FALSE;
+  bL_Ready := TRUE;
+
+  RETURN;
+END_IF
+
+//Normal operation
+bL_Ready := FALSE;
+CASE iI_Step OF
+  0: //Init - Check if axis is not activated, restore safety
+    bL_Busy := FALSE;
+
+  1: //Wait for PU axis to lift
+    mAckError();
+    fB_Axis.fI_TargetPosition := (fI_PositionClean1 / 1000);
+    fB_Axis.fI_SpeedLimit     := sI_SpeedDef.fP_PlaceSpeed / 1000;
+    
+    IF bL_InPosClean1 THEN
+      fB_Axis.bI_MoveEnable := FALSE;
+      bL_Busy               := FALSE;
+      bL_Ready              := TRUE;  //Operation complete
+    ELSE
+      fB_Axis.bI_MoveEnable := bL_SafeMovePos;
+      bL_Busy               := TRUE;
+    END_IF
+    
+  2: //Wait for CU axis to move in
+    fB_Axis.bI_MoveEnable   := FALSE;
+    bL_Busy                 := FALSE;
+    
+  3: //Wait for PU axis to lower
+    mAckError();
+    fB_Axis.fI_TargetPosition := (fI_PositionClean2 / 1000);
+    fB_Axis.fI_SpeedLimit     := sI_SpeedDef.fP_PlaceSpeed / 1000;
+    
+    IF bL_InPosClean2 THEN
+      fB_Axis.bI_MoveEnable := FALSE;
+      bL_Busy               := FALSE;
+      bL_Ready              := TRUE;  //Operation complete
+    ELSE
+      fB_Axis.bI_MoveEnable := bL_SafeMoveNeg;
+      bL_Busy               := TRUE;
+    END_IF
+    
+  4: //Ensure CH axis is at starting position
+    fB_Axis.bI_MoveEnable   := FALSE;
+    bL_Busy                 := FALSE;
+    
+  5: //Move CH to clean start position
+    fB_Axis.bI_MoveEnable   := FALSE;
+    bL_Busy                 := FALSE;
+
+  6: //Wait until cleaning equipment ready
+    fB_Axis.bI_MoveEnable   := FALSE;
+    bL_Busy                 := FALSE;
+    
+  7: //Cleaning
+    fB_Axis.bI_MoveEnable   := FALSE;
+    bL_Busy                 := FALSE;  
+    
+  8: //Wait until cleaning equipment ready
+    fB_Axis.bI_MoveEnable   := FALSE;
+    bL_Busy                 := FALSE;
+    
+  9: //Move CH to end position
+    fB_Axis.bI_MoveEnable   := FALSE;
+    bL_Busy                 := FALSE;  
+    
+  10: //Wait for PU axis to lift
+    mAckError();
+    fB_Axis.fI_TargetPosition := (fI_PositionClean1 / 1000);
+    fB_Axis.fI_SpeedLimit     := sI_SpeedDef.fP_PlaceSpeed / 1000;
+    
+    IF bL_InPosClean1 THEN
+      fB_Axis.bI_MoveEnable := FALSE;
+      bL_Busy               := FALSE;
+      bL_Ready              := TRUE;  //Operation complete
+    ELSE
+      fB_Axis.bI_MoveEnable := bL_SafeMovePos;
+      bL_Busy               := TRUE;
+    END_IF
+  
+  11: //Move CH back to start 
+    fB_Axis.bI_MoveEnable   := FALSE;
+    bL_Busy                 := FALSE;  
+
+  12: //Wait for PU axis to lower
+    mAckError();
+    fB_Axis.fI_TargetPosition := (fI_PositionClean2 / 1000);
+    fB_Axis.fI_SpeedLimit     := sI_SpeedDef.fP_PlaceSpeed / 1000;
+    
+    IF bL_InPosClean2 THEN
+      fB_Axis.bI_MoveEnable := FALSE;
+      bL_Busy               := FALSE;
+      bL_Ready              := TRUE;  //Operation complete
+    ELSE
+      fB_Axis.bI_MoveEnable := bL_SafeMoveNeg;
+      bL_Busy               := TRUE;
+    END_IF
+    
+  13: //End
+    fB_Axis.bI_MoveEnable   := FALSE;
+    bL_Busy                 := FALSE;  
+    bL_Ready                := TRUE;  //Operation complete
+  
+  ELSE
+    bL_Busy  := FALSE;    
+    bL_Ready := TRUE;  //Operation complete
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mErrorHandling" Id="{c7ef6b59-9b4f-4695-ad4a-aded6e164fd5}">
+      <Declaration><![CDATA[METHOD PRIVATE mErrorHandling
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[fB_Msg[1].bI_Status := FALSE;
+
+IF NOT bL_RefKnown THEN
+	wL_ErrorCode.1 := TRUE;						(* Axis has lost its value *)
+END_IF;
+
+IF (NOT bI_SensorTop AND NOT bI_SensorBottom) THEN      (* Sensor Fault : SensorTop and SensorBottom can't be active at the same time *)
+	wL_ErrorCode.2 := TRUE;
+END_IF;
+
+IF (NOT bI_SensorTop AND bL_MemSensorTop) THEN          (* Safety Fault : Limit Switch Top activated *)
+	wL_ErrorCode.3 := TRUE;
+END_IF;
+bL_MemSensorTop := bI_SensorTop;
+
+IF (NOT bI_SensorBottom AND bL_MemSensorBottom) THEN    (* Safety Fault : Limit Switch Bottom activated *)
+	wL_ErrorCode.4 := TRUE;
+END_IF;
+bL_MemSensorBottom := bI_SensorBottom;
+
+IF (sI_SpeedDef.fP_PlaceSpeed=0) OR  (sI_SpeedDef.fP_WorkSpeed=0) OR (sI_SpeedDef.fP_ServiceSpeed=0) THEN	(* Speed Configuration not done *)
+	wL_Errorcode.6 := TRUE;
+END_IF;
+
+IF (fI_PositionService = 0) OR (fI_PositionWait = 0) OR (fI_PositionClean1 = 0) OR (fI_PositionClean2 = 0) THEN		(* Position Configuration not done *)
+	wL_ErrorCode.7 := TRUE;
+END_IF;
+
+IF fB_Axis.eO_EL7201Status = eFault  THEN
+	wL_ErrorCode.8 := TRUE;						(* EL7342 module fault *)
+	fB_Msg[1].bI_Status := TRUE;
+END_IF;
+
+
+IF wl_ErrorCode = 0 THEN
+	bL_Error := FALSE;
+ELSE
+	bL_Error := TRUE;
+END_IF;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mErrorRecovery" Id="{850a852b-3956-42bf-aafc-603d4b6d21c2}">
+      <Declaration><![CDATA[METHOD mErrorRecovery : BOOL
+VAR_INPUT
+    iI_Step : INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Do nothing
+bL_Busy  := FALSE;
+bL_Ready := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mInit" Id="{58a20df0-9d0b-4357-abbd-13b20d535972}">
+      <Declaration><![CDATA[METHOD mInit
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[	(*Messages*)
+	sL_MsgConfig.bI_Enable       := TRUE;
+	sL_MsgConfig.pI_FbMsgHandler := ADR(fB_MsgHandler);
+	fB_MsgHandler.pI_MsgQueue    := ADR(fB_MsgQueue);
+	fB_MsgQueue.pI_MsgInterface  := pC_MsgInterface;
+	fB_MsgQueue.cI_MaxElement    := 5;
+
+	fB_Msg[1].iI_MsgLocation     := iC_BlockId;
+	fB_Msg[1].pI_MsgConfig       := ADR(sL_MsgConfig);
+	fB_Msg[1].iI_MsgNumber       := eCMa_AxisErrorZ;
+
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mManuellMove" Id="{6634ce9d-6363-4276-b8e8-b871672d175e}">
+      <Declaration><![CDATA[METHOD mManuellMove : BOOL
+VAR_INPUT
+  bI_Do                  : BOOL;
+  fI_TargetPosition      : REAL;
+  fL_ManualMoveTolerance : REAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF fB_Axis.fO_ActualPosition < (fI_PositionWait / 1000) THEN
+  fB_Axis.fI_SpeedLimit   := sI_SpeedDef.fP_WorkSpeed / 1000;
+ELSE
+  fB_Axis.fI_SpeedLimit   := sI_SpeedDef.fP_ServiceSpeed / 1000;
+END_IF
+fB_Axis.fI_TargetPosition := fI_TargetPosition / 1000;
+IF fB_Axis.fI_TargetPosition > fB_Axis.fO_ActualPosition THEN
+  fB_Axis.bI_MoveEnable   := bI_Do AND bL_SafeMovePos;
+ELSIF fB_Axis.fI_TargetPosition < fB_Axis.fO_ActualPosition THEN
+  fB_Axis.bI_MoveEnable   := bI_Do AND bL_SafeMoveNeg;
+ELSE
+  fB_Axis.bI_MoveEnable   := bI_Do;
+END_IF
+
+bL_Busy  := ABS(fB_Axis.fI_TargetPosition - fB_Axis.fO_ActualPosition) > fL_ManualMoveTolerance;
+bL_Ready := NOT (ABS(fB_Axis.fI_TargetPosition - fB_Axis.fO_ActualPosition) > fL_ManualMoveTolerance);  //Operation complete
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mPrintPos" Id="{a4353bbb-abdf-458a-acb9-8ceadcb8fcd1}">
+      <Declaration><![CDATA[METHOD mPrintPos : BOOL
+VAR_INPUT
+  bI_PrintEnabled        : BOOL;
+  bI_PrintFinsihed       : BOOL;
+END_VAR
+
+VAR
+  bDriveToWaitPos        : BOOL;
+  bDriveToPrintPos       : BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[fb_RFTrigPrintEnabled(CLK := bI_PrintEnabled);
+IF fb_RFTrigPrintEnabled.RT THEN bL_DriveToPrintPos := TRUE; bL_DriveToWaitPos  := FALSE; END_IF
+IF fb_RFTrigPrintEnabled.FT THEN bL_DriveToWaitPos  := TRUE; bL_DriveToPrintPos := FALSE; END_IF
+
+IF NOT pHigherPosWait AND bL_Ready THEN
+  //IF fb_RFTrigPrintEnabled.RT THEN bL_DriveToPrintPos := TRUE; END_IF
+  IF bL_DriveToPrintPos THEN
+    fB_Axis.fI_TargetPosition := (fL_PrintPosition);
+    fB_Axis.fI_SpeedLimit     := sI_SpeedDef.fP_WorkSpeed / 1000;
+    
+    IF bL_InPosPrint THEN
+      fB_Axis.bI_MoveEnable := FALSE;
+      bL_Busy               := FALSE;
+      bL_DriveToPrintPos    := FALSE;
+      bL_Ready              := TRUE;  //Operation complete
+    ELSE
+      fB_Axis.bI_MoveEnable := bL_SafeMoveNeg;
+      bL_Busy               := TRUE;
+    END_IF
+  END_IF
+
+  //IF fb_RFTrigPrintEnabled.FT THEN bL_bDriveToWaitPos := TRUE; END_IF
+  IF bL_DriveToWaitPos AND bI_PrintFinsihed THEN
+    fB_Axis.fI_TargetPosition := (fI_PositionWait / 1000);
+    fB_Axis.fI_SpeedLimit     := sI_SpeedDef.fP_PlaceSpeed / 1000;
+    
+    IF bL_InPosWait THEN
+      fB_Axis.bI_MoveEnable := FALSE;
+      bL_Busy               := FALSE;
+      bL_DriveToWaitPos     := FALSE;
+      bL_Ready              := TRUE;  //Operation complete
+    ELSE
+      fB_Axis.bI_MoveEnable := bL_SafeMovePos;
+      bL_Busy               := TRUE;
+    END_IF
+  END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mProduction" Id="{3b866fc4-c71e-477d-a4b4-8f6f1116cd7b}">
+      <Declaration><![CDATA[METHOD mProduction : BOOL
+VAR_INPUT
+  iI_Step : INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Abort: Stop whereever axis is and return
+IF bL_AbortReq THEN
+  fB_Axis.bI_MoveEnable := FALSE;
+  bL_Busy  := FALSE;
+  bL_Ready := TRUE;
+
+  RETURN;
+END_IF
+
+//Normal operation
+bL_Ready := FALSE;
+CASE iI_Step OF
+  0: //Init - Check if axis is not activated, restore safety
+    bL_Busy := FALSE;
+
+  1: //Wait for PU axis to lift
+    mAckError();
+    fB_Axis.fI_TargetPosition := (fI_PositionClean1 / 1000);
+    fB_Axis.fI_SpeedLimit     := sI_SpeedDef.fP_PlaceSpeed / 1000;
+    
+    IF bL_InPosClean1 THEN
+      fB_Axis.bI_MoveEnable := FALSE;
+      bL_Busy               := FALSE;
+      bL_Ready              := TRUE;  //Operation complete
+    ELSE
+      fB_Axis.bI_MoveEnable := bL_SafeMovePos;
+      bL_Busy               := TRUE;
+    END_IF
+    
+  2: //Wait for CU axis to move out
+    fB_Axis.bI_MoveEnable   := FALSE;
+    bL_Busy                 := FALSE;
+    
+  3: //Wait for PU axis to lower
+    mAckError();
+    fB_Axis.fI_TargetPosition := (fI_PositionWait / 1000);
+    fB_Axis.fI_SpeedLimit     := sI_SpeedDef.fP_PlaceSpeed / 1000;
+    
+    IF bL_InPosWait THEN
+      fB_Axis.bI_MoveEnable := FALSE;
+      bL_Busy               := FALSE;
+      bL_Ready              := TRUE;  //Operation complete
+    ELSE
+      fB_Axis.bI_MoveEnable := bL_SafeMoveNeg;
+      bL_Busy               := TRUE;
+    END_IF
+    
+  4: //End
+    fB_Axis.bI_MoveEnable := FALSE;
+    bL_Busy               := FALSE;  
+    bL_Ready              := TRUE;  //Operation complete
+
+  ELSE
+    bL_Busy  := FALSE;    
+    bL_Ready := TRUE;  //Operation complete
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mService" Id="{c897185d-974c-4912-8476-d071244bfe1a}">
+      <Declaration><![CDATA[METHOD mService : BOOL
+VAR_INPUT
+  iI_Step : INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Abort: Stop whereever axis is and return
+IF bL_AbortReq THEN
+  fB_Axis.bI_MoveEnable := FALSE;
+  bL_Busy  := FALSE;
+  bL_Ready := TRUE;
+
+  RETURN;
+END_IF
+
+//Normal operation
+bL_Ready := FALSE;
+CASE iI_Step OF
+  0: //Init - Check if axis is not activated, restore safety
+    bL_Busy := FALSE;
+
+  1: //Wait for PU axis to lift to ExitCapping
+    mAckError();
+    fB_Axis.fI_TargetPosition := (fI_PositionClean1 / 1000);
+    fB_Axis.fI_SpeedLimit     := sI_SpeedDef.fP_PlaceSpeed / 1000;
+    
+    IF bL_InPosClean1 THEN
+      fB_Axis.bI_MoveEnable := FALSE;
+      bL_Busy               := FALSE;
+    ELSE
+      fB_Axis.bI_MoveEnable := bL_SafeMovePos;
+      bL_Busy               := TRUE;
+    END_IF
+        
+  2: //Wait for PU to reach Service (CU moves out)
+    mAckError();
+    fB_Axis.fI_TargetPosition := (fI_PositionService / 1000);
+    fB_Axis.fI_SpeedLimit     := sI_SpeedDef.fP_PlaceSpeed / 1000;
+    
+    IF bL_InPosService THEN
+      fB_Axis.bI_MoveEnable := FALSE;
+      bL_Busy               := FALSE;
+      bL_Ready              := TRUE;  //Operation complete
+    ELSE
+      fB_Axis.bI_MoveEnable := bL_SafeMovePos;
+      bL_Busy               := TRUE;
+    END_IF
+    
+  3: //End
+    fB_Axis.bI_MoveEnable := FALSE;
+    bL_Busy               := FALSE; 
+    bL_Ready              := TRUE; 
+  
+  ELSE
+    bL_Busy  := FALSE;    
+    bL_Ready := TRUE;  //Operation complete
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mStartup" Id="{c014f361-65b8-45ea-83f5-adc22d7de3c9}">
+      <Declaration><![CDATA[METHOD mStartup : BOOL
+VAR_INPUT
+  iI_Step : INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE iI_Step OF
+	0: //Init - Check if axis is not activated, restore safety
+		bL_Busy := FALSE;
+
+  1: //Wait for PU axis to lift
+    mAckError();
+    fB_Axis.fI_TargetPosition := (fI_PositionClean1 / 1000);
+    fB_Axis.fI_SpeedLimit     := sI_SpeedDef.fP_PlaceSpeed / 1000;
+    
+    IF bL_InPosClean1 OR bL_HigherPosC1 THEN
+      fB_Axis.bI_MoveEnable := FALSE;
+      bL_Busy               := FALSE;
+      bL_Ready              := TRUE;  //Operation complete
+    ELSE
+      fB_Axis.bI_MoveEnable := bL_SafeMovePos;
+      bL_Busy               := TRUE;
+    END_IF
+    
+	2,3,4: //End
+		bL_Busy  := FALSE;		
+    bL_Ready := TRUE;  //Operation complete
+
+	ELSE
+		bL_Busy  := FALSE;		
+    bL_Ready := TRUE;  //Operation complete
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="pHigherPosC1" Id="{bc3349c0-107b-4097-b271-cffea4f95cd4}">
+      <Declaration><![CDATA[{attribute 'monitoring' := 'call'}
+PROPERTY pHigherPosC1 : bool]]></Declaration>
+      <Get Name="Get" Id="{99176f57-f92d-4b00-9a19-cc82298650c9}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[pHigherPosC1 := bL_HigherPosC1;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="pHigherPosWait" Id="{91af4fdc-9405-4efa-9c85-7a9c78a5139a}">
+      <Declaration><![CDATA[{attribute 'monitoring' := 'call'}
+PROPERTY pHigherPosWait : bool]]></Declaration>
+      <Get Name="Get" Id="{ad6c7463-1550-462e-b7b0-c9b66a6f4f3a}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[pHigherPosWait := bL_HigherPosWait;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="pInPosClean1" Id="{5c66b354-0628-4fb5-a9a6-45658f081006}">
+      <Declaration><![CDATA[{attribute 'monitoring' := 'call'}
+PROPERTY pInPosClean1 : bool]]></Declaration>
+      <Get Name="Get" Id="{364f892d-1f17-4fb8-a936-24905d8e5d04}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[pInPosClean1 := bL_InPosClean1;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="pInPosClean2" Id="{e4baa58d-3e9a-46fa-b971-ef7dc530299e}">
+      <Declaration><![CDATA[{attribute 'monitoring' := 'call'}
+PROPERTY pInPosClean2 : bool]]></Declaration>
+      <Get Name="Get" Id="{abc676d3-dfa0-4cf8-9741-7bbec9557c03}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[pInPosClean2 := bL_InPosClean2;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="pInPosPrint" Id="{49bfe5cd-8841-4683-b4b9-a943394d38b1}">
+      <Declaration><![CDATA[{attribute 'monitoring' := 'call'}
+PROPERTY pInPosPrint : bool]]></Declaration>
+      <Get Name="Get" Id="{ea4a2bff-0650-4ec3-8c82-1f4390e31eea}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[pInPosPrint := bL_InPosPrint;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="pInPosService" Id="{0ec61067-6b5e-477f-88c5-5895b26bb833}">
+      <Declaration><![CDATA[{attribute 'monitoring' := 'call'}
+PROPERTY pInPosService : bool]]></Declaration>
+      <Get Name="Get" Id="{56f9dc4f-2fdc-4f92-ab85-2bbec09b48fd}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[pInPosService := bL_InPosService;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="pInPosWait" Id="{416f097e-0826-472d-9854-f535afa42953}">
+      <Declaration><![CDATA[{attribute 'monitoring' := 'call'}
+PROPERTY pInPosWait : bool]]></Declaration>
+      <Get Name="Get" Id="{63c9b57e-dd12-40b9-b4f2-d2ea48718368}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[pInPosWait := bL_InPosWait;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="pPositionPrint" Id="{25917b14-1740-441c-b00e-a776c4c2bba5}">
+      <Declaration><![CDATA[PROPERTY pPositionPrint : REAL]]></Declaration>
+      <Get Name="Get" Id="{c60c19a8-6ed5-40b3-ae3e-8b020a1d7f5b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[pPositionPrint := fI_PositionPrint;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{2d149918-a968-43a4-878e-556d6cbef718}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[fI_PositionPrint := pPositionPrint;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <LineIds Name="FB_CleaningMotorAxisPU">
+      <LineId Id="733" Count="22" />
+      <LineId Id="1079" Count="0" />
+      <LineId Id="756" Count="48" />
+      <LineId Id="925" Count="0" />
+      <LineId Id="805" Count="7" />
+      <LineId Id="1002" Count="0" />
+      <LineId Id="813" Count="6" />
+      <LineId Id="846" Count="5" />
+      <LineId Id="820" Count="25" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.mAckError">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.mCapping">
+      <LineId Id="175" Count="9" />
+      <LineId Id="167" Count="0" />
+      <LineId Id="89" Count="5" />
+      <LineId Id="121" Count="6" />
+      <LineId Id="168" Count="0" />
+      <LineId Id="128" Count="4" />
+      <LineId Id="98" Count="0" />
+      <LineId Id="133" Count="2" />
+      <LineId Id="147" Count="3" />
+      <LineId Id="111" Count="0" />
+      <LineId Id="136" Count="0" />
+      <LineId Id="156" Count="0" />
+      <LineId Id="137" Count="5" />
+      <LineId Id="169" Count="0" />
+      <LineId Id="143" Count="2" />
+      <LineId Id="157" Count="3" />
+      <LineId Id="146" Count="0" />
+      <LineId Id="114" Count="3" />
+      <LineId Id="166" Count="0" />
+      <LineId Id="118" Count="2" />
+      <LineId Id="190" Count="0" />
+      <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.mCleaning">
+      <LineId Id="204" Count="9" />
+      <LineId Id="303" Count="0" />
+      <LineId Id="214" Count="4" />
+      <LineId Id="273" Count="6" />
+      <LineId Id="304" Count="0" />
+      <LineId Id="280" Count="3" />
+      <LineId Id="221" Count="1" />
+      <LineId Id="284" Count="1" />
+      <LineId Id="234" Count="0" />
+      <LineId Id="286" Count="7" />
+      <LineId Id="305" Count="0" />
+      <LineId Id="294" Count="4" />
+      <LineId Id="235" Count="24" />
+      <LineId Id="311" Count="11" />
+      <LineId Id="262" Count="4" />
+      <LineId Id="327" Count="13" />
+      <LineId Id="267" Count="2" />
+      <LineId Id="306" Count="0" />
+      <LineId Id="270" Count="2" />
+      <LineId Id="341" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.mErrorHandling">
+      <LineId Id="3" Count="1" />
+      <LineId Id="45" Count="3" />
+      <LineId Id="41" Count="3" />
+      <LineId Id="52" Count="2" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="57" Count="4" />
+      <LineId Id="9" Count="11" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="22" Count="4" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.mErrorRecovery">
+      <LineId Id="6" Count="0" />
+      <LineId Id="11" Count="1" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.mInit">
+      <LineId Id="3" Count="12" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.mManuellMove">
+      <LineId Id="21" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="36" Count="2" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="44" Count="1" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.mPrintPos">
+      <LineId Id="61" Count="0" />
+      <LineId Id="118" Count="1" />
+      <LineId Id="62" Count="0" />
+      <LineId Id="50" Count="1" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="71" Count="5" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="107" Count="0" />
+      <LineId Id="77" Count="3" />
+      <LineId Id="70" Count="0" />
+      <LineId Id="84" Count="0" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="85" Count="7" />
+      <LineId Id="108" Count="0" />
+      <LineId Id="93" Count="4" />
+      <LineId Id="52" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.mProduction">
+      <LineId Id="138" Count="0" />
+      <LineId Id="130" Count="0" />
+      <LineId Id="154" Count="0" />
+      <LineId Id="133" Count="0" />
+      <LineId Id="137" Count="0" />
+      <LineId Id="155" Count="0" />
+      <LineId Id="139" Count="0" />
+      <LineId Id="134" Count="0" />
+      <LineId Id="131" Count="1" />
+      <LineId Id="209" Count="0" />
+      <LineId Id="3" Count="2" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="99" Count="0" />
+      <LineId Id="180" Count="6" />
+      <LineId Id="211" Count="0" />
+      <LineId Id="187" Count="3" />
+      <LineId Id="102" Count="1" />
+      <LineId Id="191" Count="1" />
+      <LineId Id="106" Count="0" />
+      <LineId Id="169" Count="0" />
+      <LineId Id="193" Count="6" />
+      <LineId Id="210" Count="0" />
+      <LineId Id="200" Count="3" />
+      <LineId Id="175" Count="0" />
+      <LineId Id="122" Count="3" />
+      <LineId Id="208" Count="0" />
+      <LineId Id="85" Count="1" />
+      <LineId Id="216" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.mService">
+      <LineId Id="138" Count="0" />
+      <LineId Id="130" Count="0" />
+      <LineId Id="154" Count="0" />
+      <LineId Id="133" Count="0" />
+      <LineId Id="137" Count="0" />
+      <LineId Id="155" Count="0" />
+      <LineId Id="139" Count="0" />
+      <LineId Id="134" Count="0" />
+      <LineId Id="131" Count="1" />
+      <LineId Id="208" Count="0" />
+      <LineId Id="3" Count="2" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="99" Count="0" />
+      <LineId Id="180" Count="10" />
+      <LineId Id="102" Count="0" />
+      <LineId Id="169" Count="0" />
+      <LineId Id="193" Count="6" />
+      <LineId Id="214" Count="0" />
+      <LineId Id="200" Count="3" />
+      <LineId Id="175" Count="0" />
+      <LineId Id="122" Count="2" />
+      <LineId Id="209" Count="0" />
+      <LineId Id="125" Count="0" />
+      <LineId Id="85" Count="1" />
+      <LineId Id="219" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.mStartup">
+      <LineId Id="62" Count="3" />
+      <LineId Id="100" Count="7" />
+      <LineId Id="117" Count="0" />
+      <LineId Id="108" Count="4" />
+      <LineId Id="96" Count="1" />
+      <LineId Id="119" Count="0" />
+      <LineId Id="118" Count="0" />
+      <LineId Id="98" Count="1" />
+      <LineId Id="124" Count="0" />
+      <LineId Id="61" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.pHigherPosC1.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.pHigherPosWait.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.pInPosClean1.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.pInPosClean2.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.pInPosPrint.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.pInPosService.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.pInPosWait.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.pPositionPrint.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CleaningMotorAxisPU.pPositionPrint.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

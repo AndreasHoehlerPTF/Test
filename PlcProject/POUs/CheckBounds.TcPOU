@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="CheckBounds" Id="{9a87b348-8614-4aab-bd2c-8c3fb6806d33}" SpecialFunc="CheckBounds">
+    <Declaration><![CDATA[// Implicitly generated code : DO NOT EDIT
+FUNCTION CheckBounds : DINT
+(*************************************************************************************************)
+(*  FILENAME:    CHECKBOUNDS.EXP                                                                 *)
+(*  PROJECT:     CALMAR PUPLC                                                                    *)
+(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2016)            *)
+(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
+(*  VERSION:     <version>                                                                       *)
+(*************************************************************************************************)
+(*  DESCRIPTION:                                                                   <description> *)
+(*     This function checks `index` with the limits `lower` and `upper`.                         *)
+(*     If the limits are exceeded the value is set to the limit and returned by this FC.         *)
+(*     In case of a conversion error the debug counter `PRG_SYSTEM.lI_BoundsErr` will be sum up. *)
+(*                                                                                </description> *)
+(*************************************************************************************************)
+
+VAR_INPUT
+	index, lower, upper: DINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// Implicitly generated code : Only an Implementation suggestion
+{noflow}
+IF  index < lower THEN
+  CheckBounds := lower;
+  PRG_SYSTEMBASE.lI_BoundsErr := PRG_SYSTEMBASE.lI_BoundsErr + 1;
+ELSIF  index > upper THEN
+  CheckBounds := upper;
+  PRG_SYSTEMBASE.lI_BoundsErr := PRG_SYSTEMBASE.lI_BoundsErr + 1;
+ELSE  
+  CheckBounds := index;
+END_IF
+{flow}]]></ST>
+    </Implementation>
+    <LineIds Name="CheckBounds">
+      <LineId Id="3" Count="10" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

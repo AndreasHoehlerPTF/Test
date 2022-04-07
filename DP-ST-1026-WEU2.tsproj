@@ -1,0 +1,591 @@
+<?xml version="1.0"?>
+<TcSmProject xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4024.17">
+	<DataTypes>
+		<DataType>
+			<Name GUID="{85DC3E7A-8ADA-435B-9479-25573909A7DB}" Namespace="AX5000" TcBaseType="true">E_AX5000_P_0275_ActiveFeedbackAndMemory</Name>
+			<BitSize>8</BitSize>
+			<BaseType GUID="{18071995-0000-0000-0000-000000000001}">BYTE</BaseType>
+			<EnumInfo>
+				<Text><![CDATA[EAX5000_P_0275_MEMORY_NONE]]></Text>
+				<Enum>0</Enum>
+			</EnumInfo>
+			<EnumInfo>
+				<Text><![CDATA[EAX5000_P_0275_FEEDBACK1_MEMORY_ENCODER]]></Text>
+				<Enum>1</Enum>
+			</EnumInfo>
+			<EnumInfo>
+				<Text><![CDATA[EAX5000_P_0275_FEEDBACK1_MEMORY_DRIVE]]></Text>
+				<Enum>2</Enum>
+			</EnumInfo>
+			<EnumInfo>
+				<Text><![CDATA[EAX5000_P_0275_FEEDBACK2_MEMORY_ENCODER]]></Text>
+				<Enum>8</Enum>
+			</EnumInfo>
+			<EnumInfo>
+				<Text><![CDATA[EAX5000_P_0275_FEEDBACK2_MEMORY_DRIVE]]></Text>
+				<Enum>16</Enum>
+			</EnumInfo>
+			<Hides>
+				<Hide GUID="{F1A82E04-2D76-4E5D-BB15-437337214D25}"/>
+			</Hides>
+		</DataType>
+		<DataType>
+			<Name GUID="{D7D16A25-71D5-48E0-882D-56AB4D826BC2}" Namespace="AX5000" PersistentType="true">ST_AX5000_P_0275</Name>
+			<BitSize>16</BitSize>
+			<SubItem>
+				<Name>ActiveFeedbackAndMemory</Name>
+				<Type GUID="{85DC3E7A-8ADA-435B-9479-25573909A7DB}" Namespace="AX5000">E_AX5000_P_0275_ActiveFeedbackAndMemory</Type>
+				<BitSize>8</BitSize>
+				<BitOffs>0</BitOffs>
+			</SubItem>
+			<SubItem>
+				<Name>InitializationErrorBehavior</Name>
+				<Type GUID="{18071995-0000-0000-0000-000000000010}">BIT</Type>
+				<BitSize>1</BitSize>
+				<BitOffs>8</BitOffs>
+			</SubItem>
+			<Hides>
+				<Hide GUID="{0D1A14D3-018F-4F48-88A7-90B490A317B5}"/>
+				<Hide GUID="{43B3CFF1-FA94-4CC1-8B03-C73EF940373B}"/>
+				<Hide GUID="{81B09CD0-943C-4070-AA5B-0A6818251CEB}"/>
+				<Hide GUID="{B6598B95-DC2C-454C-9B12-DE628B32D897}"/>
+			</Hides>
+		</DataType>
+	</DataTypes>
+	<Project ProjectGUID="{8A6C9239-8845-48A0-A810-8F0CEB941B60}" Target64Bit="true" BootFileEncryption="1" ShowHideConfigurations="#x1c7">
+		<UserDB FileIdentifier="16eda78d86ea665ee8f95c418d91dab6912c30eb" Name="Steinemann_UserDB"/>
+		<System>
+			<Settings MaxCpus="4" NonWinCpus="1"/>
+			<Licenses IgnoreProjectLicenses="true">
+				<Target BkhfOrder="00173632" CustomOrder="700.004">
+					<CustomComment><![CDATA[DP-ST-1026-WEU2  / Demo]]></CustomComment>
+					<ManualSelect>{BDCC0070-42D5-49AE-ABF1-1D4434813D60}</ManualSelect>
+					<ManualSelect>{66689887-CCBD-452C-AC9A-039D997C6E66}</ManualSelect>
+				</Target>
+			</Licenses>
+			<Tasks>
+				<Task Id="2" Priority="20" CycleTime="20000" AmsPort="350">
+					<Name>PrgPrint</Name>
+				</Task>
+				<Task Id="3" Priority="21" CycleTime="50000" AmsPort="351">
+					<Name>PrgMachine</Name>
+				</Task>
+				<Task Id="4" Priority="22" CycleTime="100000" AmsPort="352">
+					<Name>PrgInk</Name>
+				</Task>
+				<Task Id="5" Priority="23" CycleTime="100000" AmsPort="353">
+					<Name>PrgSystem</Name>
+				</Task>
+			</Tasks>
+		</System>
+		<Plc>
+			<Project File="PlcProject.xti"/>
+		</Plc>
+		<Io>
+			<Device File="Device 1 -A301 (EtherCAT).xti" Id="4"/>
+			<Device File="Device 2 (EtherCAT Automation Protocol).xti" Id="2"/>
+			<Device Id="1" DevType="57" AmsPort="28673">
+				<Name>Device 1 (USB)</Name>
+				<Image Id="4" AddrType="1" ImageType="3">
+					<Name>Image</Name>
+				</Image>
+				<Box Id="21" BoxType="9591" AmsPort="28160">
+					<Name>Box 0 (CPX8XX)</Name>
+					<ImageId>88</ImageId>
+					<Vars VarGrpType="1">
+						<Name>Inputs</Name>
+						<Var>
+							<Name>PanelState</Name>
+							<Type>BITARR32</Type>
+						</Var>
+						<Var>
+							<Name>CouplerState</Name>
+							<Comment><![CDATA[0x0000 = No error
+0x0001 = Terminal bus error
+0x0002 = Configuration error]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>32</BitOffs>
+						</Var>
+						<Var>
+							<Name>BoxState</Name>
+							<Comment><![CDATA[0x0000 = No error
+0x0001 = No actual inputs
+0x0004 = Not found
+]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>88</BitOffs>
+						</Var>
+						<Var>
+							<Name>MissedCnt</Name>
+							<Comment><![CDATA[Incremented each time new
+inputs missed]]></Comment>
+							<Type>UINT</Type>
+							<BitOffs>104</BitOffs>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2">
+						<Name>Outputs</Name>
+						<Var>
+							<Name>PanelCtrl</Name>
+							<Comment><![CDATA[PanelCtrl[5] = Back Light Off
+]]></Comment>
+							<Type>BITARR32</Type>
+						</Var>
+					</Vars>
+					<BusCoupler ComplexTermSupport="true" NewHardware="true">
+						<Flags SupportVirtualTerms="true" HasNoEndTerm="true"/>
+						<Term Id="1" TermType="#x3ea" Fieldbus="9">
+							<Name>Term 1 (KL1002)</Name>
+							<ImageId>7</ImageId>
+							<Vars VarGrpType="3">
+								<Name>Channel 1</Name>
+								<Var>
+									<Name>Input</Name>
+									<Type>BIT</Type>
+									<BitOffs>48</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+							</Vars>
+							<Vars VarGrpType="3">
+								<Name>Channel 2</Name>
+								<Var>
+									<Name>Input</Name>
+									<Type>BIT</Type>
+									<BitOffs>49</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+							</Vars>
+						</Term>
+						<Term Id="2" TermType="#x370026ac" Fieldbus="9">
+							<Name>Term 2 (CPx9xx-8)</Name>
+							<ImageId>62</ImageId>
+							<Vars VarGrpType="3">
+								<Name>Channel 1</Name>
+								<Var>
+									<Name>Key 1</Name>
+									<Type>BIT</Type>
+									<BitOffs>50</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 2</Name>
+									<Type>BIT</Type>
+									<BitOffs>51</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 3</Name>
+									<Type>BIT</Type>
+									<BitOffs>52</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 4</Name>
+									<Type>BIT</Type>
+									<BitOffs>53</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 5</Name>
+									<Type>BIT</Type>
+									<BitOffs>54</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 6</Name>
+									<Type>BIT</Type>
+									<BitOffs>55</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 7</Name>
+									<Type>BIT</Type>
+									<BitOffs>56</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 8</Name>
+									<Type>BIT</Type>
+									<BitOffs>57</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>LED 1</Name>
+									<Type>BIT</Type>
+									<BitOffs>32</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 2</Name>
+									<Type>BIT</Type>
+									<BitOffs>33</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 3</Name>
+									<Type>BIT</Type>
+									<BitOffs>34</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 4</Name>
+									<Type>BIT</Type>
+									<BitOffs>35</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 5</Name>
+									<Type>BIT</Type>
+									<BitOffs>36</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 6</Name>
+									<Type>BIT</Type>
+									<BitOffs>37</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 7</Name>
+									<Type>BIT</Type>
+									<BitOffs>38</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 8</Name>
+									<Type>BIT</Type>
+									<BitOffs>39</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+							</Vars>
+						</Term>
+						<Term Id="3" TermType="#x370026ac" Fieldbus="9">
+							<Name>Term 3 (CPx9xx-8)</Name>
+							<ImageId>62</ImageId>
+							<Vars VarGrpType="3">
+								<Name>Channel 1</Name>
+								<Var>
+									<Name>Key 1</Name>
+									<Type>BIT</Type>
+									<BitOffs>58</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 2</Name>
+									<Type>BIT</Type>
+									<BitOffs>59</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 3</Name>
+									<Type>BIT</Type>
+									<BitOffs>60</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 4</Name>
+									<Type>BIT</Type>
+									<BitOffs>61</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 5</Name>
+									<Type>BIT</Type>
+									<BitOffs>62</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 6</Name>
+									<Type>BIT</Type>
+									<BitOffs>63</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 7</Name>
+									<Type>BIT</Type>
+									<BitOffs>64</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 8</Name>
+									<Type>BIT</Type>
+									<BitOffs>65</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>LED 1</Name>
+									<Type>BIT</Type>
+									<BitOffs>40</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 2</Name>
+									<Type>BIT</Type>
+									<BitOffs>41</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 3</Name>
+									<Type>BIT</Type>
+									<BitOffs>42</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 4</Name>
+									<Type>BIT</Type>
+									<BitOffs>43</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 5</Name>
+									<Type>BIT</Type>
+									<BitOffs>44</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 6</Name>
+									<Type>BIT</Type>
+									<BitOffs>45</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 7</Name>
+									<Type>BIT</Type>
+									<BitOffs>46</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 8</Name>
+									<Type>BIT</Type>
+									<BitOffs>47</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+							</Vars>
+						</Term>
+						<Term Id="4" TermType="#x370026ac" Fieldbus="9">
+							<Name>Term 4 (CPx9xx-8)</Name>
+							<ImageId>62</ImageId>
+							<Vars VarGrpType="3">
+								<Name>Channel 1</Name>
+								<Var>
+									<Name>Key 1</Name>
+									<Type>BIT</Type>
+									<BitOffs>66</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 2</Name>
+									<Type>BIT</Type>
+									<BitOffs>67</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 3</Name>
+									<Type>BIT</Type>
+									<BitOffs>68</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 4</Name>
+									<Type>BIT</Type>
+									<BitOffs>69</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 5</Name>
+									<Type>BIT</Type>
+									<BitOffs>70</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 6</Name>
+									<Type>BIT</Type>
+									<BitOffs>71</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 7</Name>
+									<Type>BIT</Type>
+									<BitOffs>72</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 8</Name>
+									<Type>BIT</Type>
+									<BitOffs>73</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>LED 1</Name>
+									<Type>BIT</Type>
+									<BitOffs>48</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 2</Name>
+									<Type>BIT</Type>
+									<BitOffs>49</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 3</Name>
+									<Type>BIT</Type>
+									<BitOffs>50</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 4</Name>
+									<Type>BIT</Type>
+									<BitOffs>51</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 5</Name>
+									<Type>BIT</Type>
+									<BitOffs>52</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 6</Name>
+									<Type>BIT</Type>
+									<BitOffs>53</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 7</Name>
+									<Type>BIT</Type>
+									<BitOffs>54</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 8</Name>
+									<Type>BIT</Type>
+									<BitOffs>55</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+							</Vars>
+						</Term>
+						<Term Id="5" TermType="#x370026ac" Fieldbus="9">
+							<Name>Term 5 (CPx9xx-8)</Name>
+							<ImageId>62</ImageId>
+							<Vars VarGrpType="3">
+								<Name>Channel 1</Name>
+								<Var>
+									<Name>Key 1</Name>
+									<Type>BIT</Type>
+									<BitOffs>74</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 2</Name>
+									<Type>BIT</Type>
+									<BitOffs>75</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 3</Name>
+									<Type>BIT</Type>
+									<BitOffs>76</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 4</Name>
+									<Type>BIT</Type>
+									<BitOffs>77</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 5</Name>
+									<Type>BIT</Type>
+									<BitOffs>78</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 6</Name>
+									<Type>BIT</Type>
+									<BitOffs>79</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 7</Name>
+									<Type>BIT</Type>
+									<BitOffs>80</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>Key 8</Name>
+									<Type>BIT</Type>
+									<BitOffs>81</BitOffs>
+									<InOut>0</InOut>
+								</Var>
+								<Var>
+									<Name>LED 1</Name>
+									<Type>BIT</Type>
+									<BitOffs>56</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 2</Name>
+									<Type>BIT</Type>
+									<BitOffs>57</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 3</Name>
+									<Type>BIT</Type>
+									<BitOffs>58</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 4</Name>
+									<Type>BIT</Type>
+									<BitOffs>59</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 5</Name>
+									<Type>BIT</Type>
+									<BitOffs>60</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 6</Name>
+									<Type>BIT</Type>
+									<BitOffs>61</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 7</Name>
+									<Type>BIT</Type>
+									<BitOffs>62</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+								<Var>
+									<Name>LED 8</Name>
+									<Type>BIT</Type>
+									<BitOffs>63</BitOffs>
+									<InOut>1</InOut>
+								</Var>
+							</Vars>
+						</Term>
+					</BusCoupler>
+					<Usb DeviceHandle="\\?\usb#vid_0978&amp;pid_2801#6&amp;169f1ffb&amp;0&amp;1#{7e0092ca-e39e-4116-85d5-b32dfc26eeda}" Divider="9" AutoDivider="true"/>
+				</Box>
+				<Usb VirtualDeviceName="true"/>
+			</Device>
+		</Io>
+	</Project>
+	<Mappings>
+		<MappingInfo Identifier="{00000000-2001-0850-0020-500813000403}" Id="#x02030090"/>
+		<MappingInfo Identifier="{00000000-2001-0850-0020-500850000403}" Id="#x02030010"/>
+		<MappingInfo Identifier="{00000000-2001-0850-0020-500860000403}" Id="#x02030020"/>
+		<MappingInfo Identifier="{00000000-2002-0850-0120-500821000403}" Id="#x02030030"/>
+		<MappingInfo Identifier="{00000000-2002-0850-0120-500840000403}" Id="#x020300b0"/>
+		<MappingInfo Identifier="{00000000-2003-0850-0220-500832000403}" Id="#x02030060"/>
+		<MappingInfo Identifier="{08502002-0050-0304-0020-500850000403}" Id="#x02030050" Watchdog="00000000000000000000000000000000"/>
+		<MappingInfo Identifier="{08502002-0060-0304-0020-500860000403}" Id="#x020300a0" Watchdog="00000000000000000000000000000000"/>
+		<MappingInfo Identifier="{08502003-0020-0304-0020-500820000403}" Id="#x02030040" Watchdog="00000000000000000000000000000000"/>
+		<MappingInfo Identifier="{08502004-0030-0304-0020-500830000403}" Id="#x02030070" Watchdog="04000000040000000400000004000000"/>
+		<MappingInfo Identifier="{08502004-0050-0304-0020-500850000403}" Id="#x02030080" Watchdog="00000000000000000000000000000000"/>
+	</Mappings>
+</TcSmProject>

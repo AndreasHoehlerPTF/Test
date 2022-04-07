@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <Task Name="PrgInk" Id="{395071aa-e372-4cac-b03d-20cb982e7096}">
+    <!--CycleTime in micro seconds.-->
+    <CycleTime>10000</CycleTime>
+    <Priority>22</Priority>
+    <PouCall>
+      <Name>PRG_INK</Name>
+    </PouCall>
+    <TaskFBGuid>{fb55db27-f34b-49ff-9fdd-689aef412e14}</TaskFBGuid>
+    <Fb_init>{bc409976-3858-4e1c-aa90-bfd72d22232b}</Fb_init>
+    <Fb_exit>{93a30975-85d4-4f72-b12b-00bab3c161d7}</Fb_exit>
+    <CycleUpdate>{4bd7dc53-f159-41e5-9419-2921f5166d4b}</CycleUpdate>
+    <PostCycleUpdate>{dffe79f1-040d-48c5-abe7-4d332c5f6a13}</PostCycleUpdate>
+  </Task>
+</TcPlcObject>

@@ -1,0 +1,335 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="FB_PrgPrint_test" Id="{6437269a-fd39-489f-80d8-8f72b2e62aa4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_PrgPrint_test EXTENDS FB_BasePrint
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+  
+  // config
+  _pAdsPu : POINTER TO ST_ADS_PU;
+  
+ (*test fb&data instances*)
+  fb_JobManagement      : FB_JobManagement;  (*for VISU_JOB_MANAGENT*)
+  sJobConfig            : ST_JobSettings; 
+
+	(*StartUp*)
+	bStartUp              : BOOL:=TRUE;   (*run trigger*)
+	iL_StartUp_State			: INT := 0;     (*start-up fsm state variable*)
+  iL_ExtPcSelector      : DINT;
+	iL_Devices            : UINT;         (*loop variable*)
+	cL_DEVS               : UINT := 1;    (*number of test PC devices*)
+  
+  (*helper*)
+  bRet                  : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF NOT bInitialized THEN RETURN; END_IF
+
+(*** Test setup for developping ***)
+{IF defined (variable: GVL_TestCfg.do_TestStartUp)}
+  IF bStartUp THEN bRet := test_StartUp(); END_IF
+  IF NOT bRet THEN bStartUp := FALSE; END_IF  // reset command when done 
+{END_IF}
+
+
+(****  Job Management in ComponentsPrints ****)
+fb_JobManagement(sI_Ary_Fb_Pc:=PRG_PRINT.FB_PC);
+]]></ST>
+    </Implementation>
+    <Property Name="bReady" Id="{c9cc332b-d6a1-4ec4-ad5d-98da39087955}">
+      <Declaration><![CDATA[PROPERTY bReady : BOOL]]></Declaration>
+      <Get Name="Get" Id="{8ea2ad0e-5478-4b50-a36a-77955bec1d98}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bReady := bInitialized;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="ConfigStartMachine" Id="{acb99436-7628-4116-893e-3c0f719e8fc8}">
+      <Declaration><![CDATA[METHOD ConfigStartMachine : BOOL
+
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[LogWarning('TBD: Start and config machine for test startUp');
+
+
+(*
+  bL_TestMode := TRUE;
+	fb_VEncoder.bI_Simulate := TRUE;
+	fb_Ph_Master[ePr_PG_GROUP_1].bI_Simulate := TRUE;
+	bL_ForceMachineReady := TRUE;
+	bL_PrintOK := TRUE;
+	bL_SimulateFeeder := TRUE;
+	bL_SimulateFeederLogic := TRUE;
+  bL_SimSuccessFeedback := TRUE;
+  fb_StartPosDetect[ePr_PG_GROUP_1].bI_Simulate := FALSE;      // Start Running machine
+  fb_StartPosDetect[ePr_PG_GROUP_1].iI_TimeSimulate := 1000;  // 
+  bL_PrintEnableOverride := FALSE;                            // deactivae PrintEnable (FireVoltages)
+*)]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Init" Id="{64d5efce-105b-462b-a674-4598370099ea}">
+      <Declaration><![CDATA[METHOD Init : BOOL
+VAR_INPUT
+  pAdsPu  : POINTER TO ST_ADS_PU;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF pAdsPu = 0 THEN
+  LogError('Invalid init parameter');
+  RETURN;
+END_IF
+
+_pAdsPu := pAdsPu;
+
+(*init JobManager*)
+setupJob();
+
+// or default job // sJobConfig := fb_JobManagement.getJobSettings();
+fb_JobManagement.Init(aI_AmsNetId_Io:=sC_AMSNETID_IO, pI_JobSettings:=ADR(sJobConfig));
+
+bInitialized := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="LoadTestJob" Id="{f3876b6b-a231-42f4-b8c5-e823bd09495a}">
+      <Declaration><![CDATA[(*
+  Load a test job
+  :return: TRUE as long command is busy
+*)
+METHOD LoadTestJob : BOOL
+VAR_INST
+  bBusy : BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT bBusy THEN
+  // config and start job load
+  // - config job settings
+  setupJob();
+  
+  // - load job
+  fb_JobManagement.LoadJob(aI_AmsNetId_Io:=sC_AMSNETID_IO, pI_JobSettings:=ADR(sJobConfig));
+  
+  // - setup PU job
+  _pAdsPu^.sI_JobSettings := sJobConfig;  
+  
+  bBusy := TRUE;
+ELSE
+  bBusy := fb_JobManagement.bO_Busy; 
+END_IF
+
+LoadTestJob := bBusy;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setupJob" Id="{66d76575-aac0-45ff-92ab-d880c6d8e5f4}">
+      <Declaration><![CDATA[METHOD PRIVATE setupJob
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[sJobConfig.aI_JobId := '123456780-1111-1111-1111-999999999999';
+sJobConfig.lI_StartPage := 1; // obsolete
+sJobConfig.lI_EndPage := 1;  // obsolete
+sJobConfig.lI_ImageDepth := 300_000; //um
+sJobConfig.lI_ImageWidth := 100_000; //um
+sJobConfig.lI_ProductionImageCount := 1;
+sJobConfig.lI_MaintenanceImageCount := 0;
+sJobConfig.lI_NumberOfCopies := 0;
+sJobConfig.lI_PrintMode := 16#830200;   //bit set: 9,17,23 + endless;
+sJobConfig.lI_PrePostBlankDepth := 333;
+sJobConfig.lI_SubPixelResolution := 32;
+sJobConfig.lI_ResolutionX := 600;
+sJobConfig.aI_JobDescription := 'i1';
+sJobConfig.aI_JobName := 'PRG_TEST_job';]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StartJob" Id="{08419ff5-fef9-4c7f-a588-23b26c1ac0ff}">
+      <Declaration><![CDATA[METHOD StartJob : BOOL
+VAR_INPUT
+END_VAR
+VAR_INST
+  bBusy : BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT _pAdsPu^.sI_Start.bI_Command THEN
+  _pAdsPu^.sI_Start.bI_Command := TRUE;
+  bBusy := TRUE;
+ELSE    
+  _pAdsPu^.sI_Start.bI_Command := FALSE;
+  bBusy := FALSE;
+END_IF
+
+StartJob := bBusy;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="test_StartUp" Id="{37e1c6c6-8d61-4c96-95ae-c4e28edff988}">
+      <Declaration><![CDATA[(*
+  :return: TRUE if busy
+*)
+METHOD test_StartUp : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(*-------------------------------------------*)
+(* This initialize all necessary modules prior to test start*)
+
+(*Setup Testing VarData*)
+CASE iL_StartUp_State OF
+
+(*======> Start and Init*)
+0: (*--- IDLE/START ---*)
+	IF bStartUp THEN
+		iL_Devices := cL_DEVS;   // set number of pc devices
+    fb_JobManagement.setExtSelect(pI_Selector:=ADR(iL_ExtPcSelector));
+    iL_StartUp_State := 1;
+	END_IF
+
+1: (*--- Started ---*)
+	IF bStartUp OR iL_Devices > 0 THEN
+	  iL_StartUp_State := 10;
+		iL_ExtPcSelector := iL_Devices;
+	END_IF
+
+(*======> Load initial job*)
+10: (*start load default job and wait until not busy*)
+  IF NOT LoadTestJob() THEN 
+    iL_StartUp_State := 30;
+  END_IF
+
+(*=======> command PRG_PRINT*)
+30: (*--- write PU job settings ---*)
+  IF NOT WritePUSettings() THEN
+    iL_StartUp_State := 40;    
+	END_IF
+
+40: (*--- configure machine and print ---*)
+  IF NOT ConfigStartMachine() THEN
+  	iL_StartUp_State := 50;
+  END_IF
+  
+50: (*--- start Job ---*)
+  IF NOT StartJob() THEN
+  	iL_StartUp_State := 99;
+  END_IF
+
+98: (*Error*)
+	iL_StartUp_State := 99;
+
+99: (*Done*)
+	iL_Devices := iL_Devices - 1;
+	bStartUp := FALSE;
+  IF iL_Devices > 0 THEN
+    iL_StartUp_State := 1;
+  ELSE
+    iL_StartUp_State := 0;
+	END_IF
+
+END_CASE
+
+test_StartUp := SEL(iL_StartUp_State=0, TRUE, FALSE);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="WritePUSettings" Id="{8049eaec-cce1-49bb-9109-41afef1ee429}">
+      <Declaration><![CDATA[(*
+  :return: TRUE if busy
+*)
+METHOD WritePUSettings : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_pAdsPU^.sI_JobSettings := sJobConfig;
+
+WritePUSettings := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_PrgPrint_test">
+      <LineId Id="29" Count="0" />
+      <LineId Id="34" Count="3" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="20" Count="1" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrgPrint_test.bReady.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrgPrint_test.ConfigStartMachine">
+      <LineId Id="6" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="8" Count="11" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="20" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrgPrint_test.Init">
+      <LineId Id="28" Count="1" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="6" Count="1" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="23" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="25" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrgPrint_test.LoadTestJob">
+      <LineId Id="30" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="46" Count="2" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="31" Count="1" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="35" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrgPrint_test.setupJob">
+      <LineId Id="33" Count="12" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrgPrint_test.StartJob">
+      <LineId Id="6" Count="1" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="15" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrgPrint_test.test_StartUp">
+      <LineId Id="7" Count="24" />
+      <LineId Id="36" Count="3" />
+      <LineId Id="76" Count="0" />
+      <LineId Id="74" Count="0" />
+      <LineId Id="44" Count="1" />
+      <LineId Id="77" Count="2" />
+      <LineId Id="51" Count="1" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="56" Count="13" />
+      <LineId Id="71" Count="1" />
+      <LineId Id="87" Count="0" />
+      <LineId Id="86" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrgPrint_test.WritePUSettings">
+      <LineId Id="5" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="6" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

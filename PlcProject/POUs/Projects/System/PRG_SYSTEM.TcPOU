@@ -1,0 +1,180 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="PRG_SYSTEM" Id="{aa0ca443-15e5-42a0-a398-481694de7e3b}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM PRG_SYSTEM
+(*************************************************************************************************)
+(*  FILENAME:    PRG_SYSTEM.EXP                                                                  *)
+(*  PROJECT:     CALMAR PUPLC                                                                    *)
+(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2016)            *)
+(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
+(*  VERSION:     <version>                                                                       *)
+(*************************************************************************************************)
+(*  DESCRIPTION:                                                                   <description> *)
+(*    Controls the system functionalities.                                                       *)
+(*    Main functions: register the module blocks, ADS block generation, ADS module mapping.      *)
+(*                                                                                </description> *)
+(*************************************************************************************************)
+
+VAR
+  sC_Ads_Info                : ST_ADS_INFO;
+  sC_Ads_System              : ST_ADS_SYSTEM;
+  ISystemBase                : I_SystemBase;     // reference to system base
+
+  bL_InitOK                  : BOOL := FALSE;
+  iL_Ctr                     : INT;
+  
+  sI_Modules                 : ARRAY[1..4] OF ST_MODULE_DEFINITION;
+  iL_NumOfModules            : INT := 0;
+
+	bL_MessageReset            : BOOL;
+	bL_MessageResetPart1       : BOOL;
+	bL_MessageResetPart2       : BOOL;
+  fb_RTrigMsgResetRequest    : R_TRIG;                      (*Rising edge of message reset request*)
+  fb_TonMsgResetRequest1     : TON;                         (*Timeout for message reset request*)
+  fb_TonMsgResetRequest2     : TON;                         (*Timeout for message reset request*)
+
+  stProgramVersion           : ST_LibVersion;               (*version information of project from TwinCAT dialog entry*)
+  aCurrentDateTime           : STRING;
+
+  (*Recipe read/write*)
+  bL_CheckRecipeDirDone      : BOOL := FALSE;               (*Check if recipe directory exists.*)
+  aL_RecipePath              : STRING[255] := '';           (*Path of recipe*)
+  fb_CreateRecipeDir         : FB_CreateDir;                (*Create directory for recipe*)
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*************************************************************************************************)
+(*Call init*)
+IF NOT bL_InitOK THEN
+  Init();
+END_IF;
+
+
+(*Infos from other tasks*)
+
+fb_RTrigMsgResetRequest(CLK := PRG_MACHINE.IbEAP_MessageReset);
+
+(*Some errors in the PLC needs to reset twice to clear the error completely.*)
+(*Message reset from Gallus will be send twice to the PUC.*)
+IF fb_RTrigMsgResetRequest.Q THEN
+  bL_MessageReset      := TRUE;
+  bL_MessageResetPart1 := TRUE;
+  bL_MessageResetPart2 := TRUE;
+END_IF
+
+fb_TonMsgResetRequest1( IN := bL_MessageResetPart1
+                      , PT := T#5S);
+fb_TonMsgResetRequest2( IN := bL_MessageResetPart2
+                      , PT := T#10S);
+
+IF bL_MessageResetPart1 THEN
+  IF sC_Ads_System.sO_CommandMsgReset.bI_CommandExec THEN
+    bL_MessageReset := FALSE;
+  END_IF
+  IF fb_TonMsgResetRequest1.Q THEN
+    bL_MessageReset      := TRUE;
+    bL_MessageResetPart1 := FALSE;
+  END_IF
+ELSIF bL_MessageResetPart2 THEN
+  IF sC_Ads_System.sO_CommandMsgReset.bI_CommandExec THEN
+    bL_MessageReset      := FALSE;
+    bL_MessageResetPart2 := FALSE;
+  END_IF
+  IF fb_TonMsgResetRequest2.Q THEN
+    bL_MessageReset      := FALSE;
+    bL_MessageResetPart1 := FALSE;
+    bL_MessageResetPart2 := FALSE;
+  END_IF
+ELSE
+  bL_MessageReset := FALSE;
+END_IF
+
+(*Get current time*)
+aCurrentDateTime := F_Concat3(F_TimeGetDate(), ' ', F_TimeGetTime()); 
+
+(*Call system base*)
+PRG_SYSTEMBASE.bI_MsgResetRequest := bL_MessageReset;
+PRG_SYSTEMBASE();
+
+(********************************* END OF PRG ****************************************************)]]></ST>
+    </Implementation>
+    <Action Name="Init" Id="{04362747-00ea-4552-b3f9-e147026f4bfa}">
+      <Implementation>
+        <ST><![CDATA[(*--- init call only once*)
+IF bL_InitOK = TRUE THEN RETURN; END_IF
+
+// Get system reference
+ISystemBase := PRG_SYSTEMBASE.getSystemBaseInterface();
+IF ISystemBase = 0 THEN RETURN; END_IF
+// Wait until system(base) is booted
+IF ISystemBase.bBooting THEN RETURN; END_IF
+
+
+// System specific setup
+sC_Ads_System.aMachine        := aC_NAME_PRODUCT;
+sC_Ads_System.aProject        := aC_NAME_PROJECT;
+sC_Ads_System.aProjectVersion := aC_VERSION_PRODUCT;
+sC_Ads_System.iVersion        := iC_VERSION_PRODUCT;
+
+// module specific setup
+PRG_SYSTEMBASE.setup( pI_Ads_Info               := ADR(sC_Ads_Info)
+                    , pI_Ads_System             := ADR(sC_Ads_System)
+                    , bI_EStopInputNegativLogic := bCSYS_EStopInputNegativLogic);
+// --> done in PRG_SYSTEMBASE
+
+
+
+//PRG_SYSTEMBASE.sI_AppInfo := _AppInfo;
+
+
+(*--- set library and project versions*)
+PRG_SYSTEMBASE.SetVersion(aI_Name:='Tc2_System', stLibVersion_Tc2_System);
+
+stProgramVersion := F_GetVersion();
+stProgramVersion.sVersion := F_BuildVersionString(F_GetVersion());
+PRG_SYSTEMBASE.SetVersion(aI_Name:='PlcProject', stProgramVersion);
+
+{IF defined (variable: stLibVersion_CalmarLibConfig)}
+  PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarLibConfig', stLibVersion_CalmarLibConfig);
+{END_IF}
+{IF defined (variable: stLibVersion_CalmarCommons)}
+  PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarCommons', stLibVersion_CalmarCommons);
+{END_IF}
+{IF defined (variable: stLibVersion_CalmarCompSystem)}
+  PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarCompSystem', stLibVersion_CalmarCompSystem);
+{END_IF}
+{IF defined (variable: stLibVersion_CalmarCompPrint)}
+  PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarCompPrint', stLibVersion_CalmarCompPrint);
+{END_IF}
+{IF defined (variable: stLibVersion_CalmarCompMachine)}
+  PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarCompMachine', stLibVersion_CalmarCompMachine);
+{END_IF}
+{IF defined (variable: stLibVersion_CalmarCompInkSystem)}
+  PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarCompInk', stLibVersion_CalmarCompInkSystem);
+{END_IF}
+
+(*--- done*)
+bL_InitOK := TRUE;]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="PRG_SYSTEM">
+      <LineId Id="928" Count="0" />
+      <LineId Id="930" Count="0" />
+      <LineId Id="1028" Count="2" />
+      <LineId Id="932" Count="0" />
+      <LineId Id="934" Count="0" />
+      <LineId Id="1103" Count="38" />
+      <LineId Id="1183" Count="1" />
+      <LineId Id="1142" Count="0" />
+      <LineId Id="986" Count="0" />
+      <LineId Id="1095" Count="0" />
+      <LineId Id="988" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_SYSTEM.Init">
+      <LineId Id="931" Count="17" />
+      <LineId Id="986" Count="1" />
+      <LineId Id="952" Count="33" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

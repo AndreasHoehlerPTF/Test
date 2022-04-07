@@ -1,0 +1,367 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <POU Name="FB_WorkerWeu" Id="{3650ee95-10b0-4788-8cb9-9677368dce0d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ABSTRACT FB_WorkerWeu EXTENDS FB_Worker
+VAR_OUTPUT
+  bError        : BOOL;       // an error is active
+  nError        : UDINT;      // error code if error active, =0 else
+END_VAR
+VAR
+  // config
+  _pCtManager       : POINTER TO FB_CTManagerWeu;  // CT Manager reference
+  _nTrackPosDomain  : E_PosDomain;    // Tracking position domain 
+  _fPrintResolution : LREAL := 1;     // print(head) resolution in [dpi]
+  _fSubPxResolution : LREAL := 1;     // SubPixel resolution [SubPx], resolution factor (fI_PrintResolution*fI_SubPxResolution=>Output resolution
+  _name             : STRING;         // Worker name
+  _sVisuName        : STRING := 'VISU_WorkerWeu'; // Worker visu instance name
+  _pEcSrc           : POINTER TO T_ErrSrc;       // Error source definition
+
+  // job
+  _bJobActive       : BOOL;           // a job is active
+  // ct
+  _pAttachedCt      : POINTER TO FB_ContainerWeu;  // currently attached container
+  fCtPosition       : LREAL;          // Container position relative to worker position in [SubPx (E_PosDomain.master_pos)]
+  _bForceRelease    : BOOL;
+END_VAR
+VAR_STAT
+  // static variables, same for all Workers
+  _fImageWidthM     : LREAL;          // image width in [m]
+  _fImageDepthM     : LREAL;          // image depth in [m]
+  _fCtSecurityReleasePos : LREAL := 0;     // [SubPx] position where to release current ct at last (security release)
+END_VAR
+VAR PERSISTENT
+  _fWorkerPosition  : LREAL;          // worker position relative to X0 in [m]
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="Abort" Id="{ce16643b-cda2-4181-95e0-0beb74e4ff08}">
+      <Declaration><![CDATA[(*
+  Generic abort implementation of DefGrid CT.
+*)
+METHOD Abort
+VAR_INPUT
+  iCT       : I_CT;
+  sReason   : STRING;
+END_VAR
+VAR
+  _pCt   : POINTER TO FB_ContainerWeu;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF getCtInst(iCT:=iCT, pCT=>_pCt) <> 0 THEN  // get specific container
+  // Do generic known aborts on CT
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Attach" Id="{ff11ad4e-4599-4f27-9b16-1afbb01604bb}">
+      <Declaration><![CDATA[METHOD PROTECTED  Attach : BOOL
+VAR_INPUT
+  iCT       : I_CT;            (*container at triggered event position*)
+END_VAR
+VAR
+  _pNewCt   : POINTER TO FB_ContainerWeu;
+
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF iCT = 0 THEN
+  LogError(Msg:='attach failed -> not ct given');
+  
+ELSIF bEnable AND _pAttachedCt = 0 THEN           // enabled and free to attach
+  IF getCtInst(iCT:=iCT, pCT=>_pNewCt) <> 0 THEN  // get specific container
+    _pAttachedCt := _pNewCt;
+    Attach:=TRUE;                                 // attach new
+  ELSE
+    LogError(Msg:='attach failed');
+  END_IF
+  
+ELSIF bEnable AND _pAttachedCt <> 0 THEN    // enabled and already a CT attached
+  LogError(Msg:='another container already attached -> ignore new (set error)');
+  Abort(iCT:=iCT, sReason:='attach failed');  // abort new CT
+    
+ELSIF NOT bEnable AND _pAttachedCt <> 0 THEN // disabled and already a CT attached
+  // force release if any hanging, and ignore attach
+  Release(iCT:=_pAttachedCt^);
+
+ELSIF NOT bEnable AND _pAttachedCt = 0 THEN  
+  ;   // nothing to do, ignore attach
+
+ELSE      // unspecified (error)case just log it
+  LogError(Msg:='not tracked case');
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="bAttached" Id="{d663ef8d-4de3-4339-bb43-068fdf551e47}">
+      <Declaration><![CDATA[{attribute 'monitoring':='call'}
+PROPERTY bAttached : BOOL]]></Declaration>
+      <Get Name="Get" Id="{cd9d1402-1732-4771-9946-0d79e6a33389}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[IF _pAttachedCt <> 0 THEN
+  bAttached := TRUE;
+END_IF]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="fPosition" Id="{72aed42f-b4ca-40a5-97ba-45c8273c2d69}">
+      <Declaration><![CDATA[{attribute 'monitoring':='call'}
+PROPERTY fPosition : LREAL]]></Declaration>
+      <Get Name="Get" Id="{51945fb5-84aa-4146-a54c-5ffa8bf43d5f}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[fPosition := _fWorkerPosition;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{e687135f-8e2b-4dfe-a646-527a4aad1ba2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[_fWorkerPosition := fPosition;
+setupPosition();]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="fPrintResolution" Id="{39f2141b-2045-4059-903a-840a31528ff2}">
+      <Declaration><![CDATA[{attribute 'monitoring':='call'}
+PROPERTY fPrintResolution : LREAL]]></Declaration>
+      <Get Name="Get" Id="{fcd98918-f086-498a-ab5b-eef26fbb0553}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[fPrintResolution := _fPrintResolution;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{328c41ca-e4ea-4935-ac6b-801319153723}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[_fPrintResolution := fPrintResolution;
+setupPosition();]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Method Name="getCtInst" Id="{5f5eb595-b978-4be3-8880-cabf095f9d48}">
+      <Declaration><![CDATA[(*
+  Get specific container from interface.
+  Returns specific container in return value and output parameter.
+*)
+METHOD INTERNAL getCtInst : POINTER TO FB_ContainerWeu
+VAR_INPUT
+  iCT              : I_CT;                         (*container at triggered event position*)
+END_VAR
+VAR_OUTPUT
+  pCT              : POINTER TO FB_ContainerWeu;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pCT := 0;
+IF _pCtManager <> 0 THEN
+  getCtInst := _pCtManager^.GetContainerInstance(iCT);   // get real ct fb inst
+  IF getCtInst <> 0 THEN
+    pCT := getCtInst;   // OK all good
+  ELSE
+    LogError(Msg:='specific container not found');
+	END_IF
+ELSE
+  LogError(Msg:='no container manager');
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Init" Id="{d856b57f-d00a-4db7-9b79-38cb4ce2b8d2}">
+      <Declaration><![CDATA[METHOD Init
+VAR_INPUT
+  pCtManager : POINTER TO FB_CTManagerWeu;       // CTManager
+  fPrintResolution : LREAL := 1;                 // print(head) resolution in [dpi]
+  fSubPxResolution : LREAL := 1;                 // SubPixel resolution [SubPx], resolution factor (fI_PrintResolution*fI_SubPxResolution=>Output resolution)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_pAttachedCt:=0;
+
+IF pCtManager = 0 THEN
+  LogError(Msg:='Init: invalid parameter');
+  RETURN;
+END_IF
+
+// save config
+_pCtManager := pCtManager; 
+_fPrintResolution := fPrintResolution;
+_fSubPxResolution := fSubPxResolution;
+_fCtSecurityReleasePos := 0;
+setupPosition();
+
+setName('');
+
+// register worker CTManager/Tracker event subject
+_nTrackPosDomain := E_PosDomain.master_pos;
+_pCtManager^.RegisterPosition(nPosDomain:=_nTrackPosDomain, iPositionEvent:=THIS^);
+
+// init error source reference
+_pEcSrc := ErrorCodes.fbErrCodeMngr.registerErrSource(
+ nLocId := 0,
+ aInstPath := InstanceName,
+ aLocDescr := _name
+);
+IF _pEcSrc = 0 THEN LogError('could not register error source'); END_IF
+
+bInitialized := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mJobStart" Id="{c627219d-988f-43f2-9b2d-62671e653543}">
+      <Declaration><![CDATA[METHOD  ABSTRACT mJobStart
+VAR_INPUT
+	sJobDef	: CalmarCompPrint.I_JobDefinition;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mJobStop" Id="{d1727830-648d-4092-ac5b-0913487c823b}">
+      <Declaration><![CDATA[METHOD ABSTRACT mJobStop
+VAR_INPUT
+	sStatus	: CalmarCompPrint.I_JobStatus;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Release" Id="{93d9817b-e0fc-453a-98a3-5fa1fab9a696}">
+      <Declaration><![CDATA[(*
+  Release CT from Worker.
+  :return: TRUE if CT was released, FALSE if no CT was registered 
+*)
+METHOD Release : BOOL
+VAR_INPUT
+  iCT              : I_CT;                         (*container at triggered event position*)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF iCT <> 0 AND _pAttachedCt <> 0 THEN Release := TRUE; END_IF
+_pAttachedCt:=0;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setName" Id="{f4399b02-f69d-4f1d-8a54-2e3c9b492253}">
+      <Declaration><![CDATA[METHOD PRIVATE setName : BOOL
+VAR_INPUT
+  sName : STRING;
+END_VAR
+VAR
+  nIdx : INT;
+  bDone : BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF sName = '' THEN
+  // generate worker name
+  _name := THIS^.InstanceName;
+  WHILE NOT bDone DO
+    nIdx := FIND(_name, '_');
+    IF nIdx = 0 THEN bDone := TRUE; EXIT; 
+    ELSE
+      _name := RIGHT(_name,LEN(_name)-nIdx);
+    END_IF 
+  END_WHILE
+ELSE
+  _name := sName;  
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setupPosition" Id="{6e3bb9fc-2b58-4b26-9d9f-a6a1876a11c6}">
+      <Declaration><![CDATA[METHOD PROTECTED setupPosition
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_nTrackOffset := F_MeterToSubPixel(fPosMeter:=fPosition, fResoSubPx:=_fPrintResolution*_fSubPxResolution);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="work" Id="{39f716aa-387e-47c7-bab0-59397ba81c1f}">
+      <Declaration><![CDATA[METHOD  work]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Work only with attached container
+IF _pAttachedCt <> 0 THEN 
+  
+  // update CT position
+  fCtPosition := _pAttachedCt^.GetPos(nPosDomain:=E_PosDomain.master_pos) - _nTrackOffset; 
+
+  // release CT (manually and security)
+  IF _bForceRelease THEN
+    LogWarning(F_Concat2('Manually realease CTId=', TO_STRING(_pAttachedCt^.pCT^.iId)));
+    Release(iCT:=_pAttachedCt^);
+  ELSIF _fCtSecurityReleasePos > 0 AND (fCtPosition > _fCtSecurityReleasePos) THEN
+    LogError(F_Concat2('Security released CTId=', TO_STRING(_pAttachedCt^.pCT^.iId)));
+    Release(iCT:=_pAttachedCt^);
+  END_IF
+  
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_WorkerWeu">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.Abort">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.Attach">
+      <LineId Id="3" Count="23" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.bAttached.Get">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.fPosition.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.fPosition.Set">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.fPrintResolution.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.fPrintResolution.Set">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.getCtInst">
+      <LineId Id="3" Count="9" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.Init">
+      <LineId Id="3" Count="8" />
+      <LineId Id="14" Count="18" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.mJobStart">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.mJobStop">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.Release">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.setName">
+      <LineId Id="3" Count="12" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.setupPosition">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerWeu.work">
+      <LineId Id="3" Count="15" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

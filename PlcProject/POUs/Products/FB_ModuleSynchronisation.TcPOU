@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <POU Name="FB_ModuleSynchronisation" Id="{d15b863b-b805-4196-93cd-3d8d167778ad}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_ModuleSynchronisation
+VAR_INPUT
+  IbEnable              : BOOL;             (*enable funcion*)
+  IbEngaged             : ARRAY [1..iCPr_NB_PM] OF BOOL;
+  IbPrintEnabled        : ARRAY [1..iCPr_NB_PM] OF BOOL;
+  InFormatLength        : DINT;             (*format length [µm]*)
+  InModule2ToModule3    : DINT;             (*distance between Module 2 and 3 [µm]*)
+  IbFormatTrig          : BOOL;             (*format trigger*)
+END_VAR
+
+VAR_OUTPUT
+  ObPrintEnabled        : ARRAY [1..iCPr_NB_PM] OF BOOL;
+END_VAR
+
+VAR
+  fb_RFTrigPrintEnabled : RF_TRIG;
+  fb_RTrigFormatTrig    : R_TRIG;
+  _FormatTrigDelay      : DINT;             (*format trigger delay*)
+  _FormatTrigCounter    : DINT;             (*format trigger counter*)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*To start and stop printing of both modules synchronical the ObPrintEnabled of the second module must be delayed.*)
+IF NOT IbEnable THEN
+  ObPrintEnabled[1] := IbPrintEnabled[1];
+  ObPrintEnabled[2] := IbPrintEnabled[2];
+  RETURN;
+END_IF
+
+(*Trigger delay calculation*)
+IF InFormatLength <> 0 THEN
+  _FormatTrigDelay := InModule2ToModule3 / InFormatLength;
+ELSE
+  _FormatTrigDelay := 0;
+END_IF
+
+IF IbEngaged[1] THEN   (*Module2 active*)
+  ObPrintEnabled[1] := IbPrintEnabled[1];   (*Module2 will print directly*)
+  fb_RFTrigPrintEnabled(CLK := IbPrintEnabled[1]);
+  IF fb_RFTrigPrintEnabled.RT THEN  (*Print start*)
+    _FormatTrigCounter := 0;
+    ObPrintEnabled[2] := FALSE;
+  END_IF
+  IF fb_RFTrigPrintEnabled.FT THEN  (*Print stop*)
+    _FormatTrigCounter := 0;
+  END_IF
+  fb_RTrigFormatTrig(CLK := IbFormatTrig);
+  IF fb_RTrigFormatTrig.Q THEN
+    _FormatTrigCounter := _FormatTrigCounter + 1;
+  END_IF
+  IF _FormatTrigCounter >= _FormatTrigDelay THEN
+    ObPrintEnabled[2] := IbPrintEnabled[2];     (*Module3 print is delayed*)
+  END_IF
+ELSE   (*Module3 can print directly*)
+  ObPrintEnabled[1] := IbPrintEnabled[1];
+  ObPrintEnabled[2] := IbPrintEnabled[2];
+END_IF]]></ST>
+    </Implementation>
+    <LineIds Name="FB_ModuleSynchronisation">
+      <LineId Id="251" Count="3" />
+      <LineId Id="256" Count="3" />
+      <LineId Id="285" Count="0" />
+      <LineId Id="260" Count="0" />
+      <LineId Id="287" Count="1" />
+      <LineId Id="286" Count="0" />
+      <LineId Id="261" Count="7" />
+      <LineId Id="281" Count="1" />
+      <LineId Id="284" Count="0" />
+      <LineId Id="269" Count="5" />
+      <LineId Id="277" Count="3" />
+      <LineId Id="20" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

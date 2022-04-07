@@ -1,0 +1,151 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <POU Name="FB_MOTION_INTERLOCK" Id="{dee16365-4f9d-4b79-bd18-29460b8c236d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_MOTION_INTERLOCK
+(******************************************************************************************)
+(*	FILENAME:	FB_MOTION_INTERLOCK								*)
+(*	PROJECT:	Steinemann												*)
+(*	COPYRIGHT:	Wifag-Polytype									*)
+(*	ENVIRONMENT:	TwinCat2, v2.11								*)
+(*	VERSION:	1.0																*)
+(*	DESCRIPTION:																*)
+(*		Interlock for X,Y and Z axis					 		*)
+(*	AUTHOR:	FAF																	*)
+(*																*)
+(******************************************************************************************)
+(*	Changes:													*)
+(******************************************************************************************)
+(*	Date	Authtor	Descriptons																															*)
+(******************************************************************************************)
+VAR_INPUT
+	fICU_Position	: REAL;		(*X: Cleaning Unit Position*)
+	fIPU_Position	: REAL;		(*Z: Print Unit Position*)
+	bICU_PositionUnknown : BOOL:=TRUE;	(*X: Position Unknown*)
+	bIPU_PositionUnknown : BOOL:=TRUE;	(*Z: Position Unknown*)
+
+	fCCU_Tolerance		: REAL:=0.001;				 (*CU Positioning Tolerance*)
+	fCPU_Tolerance		: REAL:=0.0005;				 (*PU Positioning Tolerance*)
+	fCCU_SafePosition	: ARRAY[1..3] OF REAL; (*Safe Operating Area from -INF to this value*)
+	fCPU_SafePosition	: ARRAY[1..2] OF REAL; (*Safe Operating Area from this Value to +INF*)
+	fCCU_CleaningPosition	: REAL;
+END_VAR
+
+VAR_OUTPUT
+	bOPU_MoveAuth	: BOOL;	(*Move authorized*)
+	bOCU_MoveAuth	: BOOL;	(*Move authorized*)
+	bOCH_MoveAuth	: BOOL;	(*Move authorized*)
+	bO_InterlockActive : BOOL;
+END_VAR
+VAR
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*Print Unit Interlock ----------------------------------------------------------------*)
+IF fICU_Position < fCCU_SafePosition[1] + fCCU_Tolerance THEN		(*Cleaning Unit not in collision area*)
+	bOPU_MoveAuth:=TRUE;
+
+//ELSIF fICU_Position < fCCU_SafePosition[2] - fCCU_Tolerance THEN	(*Cleaning Unit in collision area*)
+ELSIF fICU_Position < fCCU_CleaningPosition - fCCU_Tolerance THEN	(*Cleaning Unit in collision area*)
+	IF fIPU_Position > fCPU_SafePosition[2] THEN
+		bOPU_MoveAuth:=TRUE;
+	ELSE
+		bOPU_MoveAuth:=FALSE;
+	END_IF;
+
+ELSIF fICU_Position < fCCU_SafePosition[3] + fCCU_Tolerance THEN	(*Cleaning Unit in Cleaning Position*)
+	IF fIPU_Position > fCPU_SafePosition[1] THEN
+		bOPU_MoveAuth:=TRUE;
+	ELSE
+		bOPU_MoveAuth:=FALSE;
+	END_IF;
+
+ELSE																						(*Cleaning Unit in collision area*)
+	IF fIPU_Position > fCPU_SafePosition[2] THEN
+		bOPU_MoveAuth:=TRUE;
+	ELSE
+		bOPU_MoveAuth:=FALSE;
+	END_IF;
+END_IF;
+
+IF bICU_PositionUnknown THEN	(*No movement allowed when X-Pos unknown*)
+	bOPU_MoveAuth:=FALSE;
+END_IF;
+
+(*Clean Unit/Head Interlock ----------------------------------------------------------------*)
+
+IF fICU_Position < fCCU_SafePosition[1] THEN		(*Cleaning Unit not in collision area*)
+	bOCU_MoveAuth:=TRUE;
+	bOCH_MoveAuth:=TRUE;
+
+//ELSIF fICU_Position < fCCU_SafePosition[2] THEN	(*Cleaning Unit in collision area*)
+ELSIF fICU_Position < fCCU_CleaningPosition - fCCU_Tolerance THEN	(*Cleaning Unit in collision area*)
+	IF fIPU_Position > fCPU_SafePosition[2]-fCPU_Tolerance THEN
+		bOCU_MoveAuth:=TRUE;
+		bOCH_MoveAuth:=TRUE;
+	ELSE
+		bOCU_MoveAuth:=FALSE;
+    IF fICU_Position = fCCU_SafePosition[1] THEN		(*Cleaning outside of machine*)
+		  bOCH_MoveAuth:=TRUE;
+    ELSE
+		  bOCH_MoveAuth:=FALSE;
+    END_IF;
+  END_IF;
+
+ELSIF fICU_Position < fCCU_SafePosition[3] + fCCU_Tolerance THEN	(*Cleaning Unit in Cleaning Position*)
+	IF fIPU_Position > fCPU_SafePosition[2] - fCPU_Tolerance THEN
+		bOCU_MoveAuth:=TRUE;
+	ELSE
+		bOCU_MoveAuth:=FALSE;
+	END_IF;
+
+	(*CU must be in Cleaning Position for the CH to move*)
+	IF ABS(fCCU_CleaningPosition - fICU_Position) < 2*fCCU_Tolerance THEN
+		bOCH_MoveAuth:=TRUE;
+	ELSE
+
+//		IF fIPU_Position > fCPU_SafePosition[2] - fCPU_Tolerance THEN
+//			bOCH_MoveAuth:=TRUE;
+//		ELSE
+//			bOCH_MoveAuth:=FALSE;
+//		END_IF;
+	END_IF;
+
+ELSE																						(*Cleaning Unit in collision area*)
+	IF fIPU_Position > fCPU_SafePosition[2] - fCPU_Tolerance THEN
+		bOCU_MoveAuth:=TRUE;
+		bOCH_MoveAuth:=TRUE;
+	ELSE
+		bOCU_MoveAuth:=FALSE;
+		bOCH_MoveAuth:=FALSE;
+	END_IF;
+END_IF;
+
+IF (bICU_PositionUnknown AND (fIPU_Position < (fCPU_SafePosition[2] - fCPU_Tolerance))) OR bIPU_PositionUnknown THEN	(*No movement allowed when X-Pos unknown*)
+	bOCU_MoveAuth:=FALSE;
+	bOCH_MoveAuth:=FALSE;
+END_IF;
+
+
+
+bO_InterlockActive:=NOT(bOCU_MoveAuth AND bOPU_MoveAuth AND bOCH_MoveAuth);]]></ST>
+    </Implementation>
+    <LineIds Name="FB_MOTION_INTERLOCK">
+      <LineId Id="3" Count="4" />
+      <LineId Id="201" Count="0" />
+      <LineId Id="8" Count="31" />
+      <LineId Id="203" Count="0" />
+      <LineId Id="40" Count="4" />
+      <LineId Id="124" Count="0" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="125" Count="0" />
+      <LineId Id="127" Count="0" />
+      <LineId Id="126" Count="0" />
+      <LineId Id="46" Count="1" />
+      <LineId Id="240" Count="0" />
+      <LineId Id="49" Count="8" />
+      <LineId Id="60" Count="7" />
+      <LineId Id="164" Count="0" />
+      <LineId Id="71" Count="16" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

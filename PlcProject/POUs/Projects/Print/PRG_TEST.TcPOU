@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="PRG_TEST" Id="{aa609c94-50ed-4e2d-83a1-00bb16a3be93}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM PRG_TEST
+(*************************************************************************************************)
+(*  FILENAME:    PRG_TEST.EXP                                                                    *)
+(*  PROJECT:     CALMAR PUPLC                                                                    *)
+(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2016)            *)
+(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
+(*  VERSION:     <version>                                                                       *)
+(*************************************************************************************************)
+(*  DESCRIPTION:                                                                   <description> *)
+(*    Controls the test functions.                                                               *)
+(*                                                                                </description> *)
+(*************************************************************************************************)
+
+VAR
+	bL_FirstRun           : BOOL := TRUE;
+
+  (*Test CONFIGURATION*)
+
+
+  
+  (*Motion simulation*)
+  _fb_sim_el5101        : FB_EL5101_SIM;
+  bL_Sim_EL5101         : BOOL;   (*enable EL5001 io simulation*) 
+  
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(* INIT First action init call*)
+IF bL_FirstRun THEN
+	bL_FirstRun := FALSE;
+	Init();
+END_IF;
+
+(*** configure tests ****************************)
+(*--> un-comment the defines in GVL_TestCfg*)
+(************************************************)
+
+(*** Library testing ***)
+{IF defined (variable: GVL_TestCfg.do_LibTest)}
+  LibTest();
+{END_IF}
+
+]]></ST>
+    </Implementation>
+    <Action Name="Init" Id="{15466f12-fe50-464a-bc06-a462dd113028}">
+      <Implementation>
+        <ST><![CDATA[
+; // nothing to do]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="LibTest" Id="{df43acd7-7245-4dbb-a1db-5e797fac5e48}">
+      <Implementation>
+        <ST><![CDATA[CalmarCommons.PRG_TEST();
+CalmarCompPrint.PRG_TEST();]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="PRG_TEST">
+      <LineId Id="243" Count="8" />
+      <LineId Id="260" Count="5" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_TEST.Init">
+      <LineId Id="39" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="PRG_TEST.LibTest">
+      <LineId Id="3" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

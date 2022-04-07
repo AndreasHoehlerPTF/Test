@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4022.16">
+  <DUT Name="ST_CONFIG_M" Id="{fc8fe175-51a3-4fbe-aeeb-3bcfe93793a3}">
+    <Declaration><![CDATA[TYPE ST_CONFIG_M :
+(*************************************************************************************************)
+(*  FILENAME:     ST_CONFIG_M.EXP                                                                *)
+(*  PROJEKT:      Plattform and integration                                                      *)
+(*  COPYRIGHT:    wifag//polytype                                                                *)
+(*  UMGEBUNG:     CoDeSys                                                                        *)
+(*  BESCHREIBUNG: Configuration data system											                                 *)
+(*  Autor:        FAF                                                                            *)
+(*************************************************************************************************)
+(*  Aenderungen:                                                                                 *)
+(*************************************************************************************************)
+(*  Datum     Autor   Bemerkung                                                                  *)
+(*************************************************************************************************)
+
+STRUCT
+	aC_CLEANPROCESS_NAME										: STRING := 'CleanProcess';
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

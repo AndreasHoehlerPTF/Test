@@ -1,0 +1,226 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <POU Name="FB_InkCirculation" Id="{60fff47b-915a-467a-9d62-9ebebbdf69ec}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_InkCirculation EXTENDS FB_BaseInk IMPLEMENTS I_SleepObserver, I_EmergencyObserver
+
+VAR_INPUT
+  InActValue                 AT %I* : INT;                      (*Actual value*)
+  IbActValueWcState          AT %I* : BOOL;                     (*EM3701 pressure WcState*)
+  IbInkLevelReachedBack      AT %I* : BOOL;                     (*HT back level reached*)
+
+  iPurgeController                  : I_Purge;
+  iMencController                   : I_AirVolume;
+
+  IbEnable                          : BOOL;                     (*Enable function*)
+  IbAxisMovement                    : BOOL;                     (*Axis movement*)
+  IbHeadertankOk                    : BOOL;                     (*Headertank ok*)
+  IbPHTempOk                        : BOOL;                     (*Printhead temperature ok*)
+END_VAR
+
+VAR_OUTPUT
+  ObHtCloseInkConnectionValve       : BOOL;                     (*HT: close ink connection valve front to back*)
+  ObHtCloseMencConnectionValve      : BOOL;                     (*HT back: close menc connection valve*)
+  ObValveActivation                 : BOOL;                     (*HT: valve activation*)
+  ObPumpActivation                  : BOOL;                     (*HT: pump activation*)
+END_VAR
+
+VAR
+  _sName                            : STRING;                   (*Block name*)
+
+  _bEStop                           : BOOL := FALSE;            (*EStop active*)
+  _bSleep                           : BOOL := FALSE;            (*Sleep active*)
+  bCheckParameterError01            : BOOL := FALSE;            (*CheckParameter: error 01 reported*)
+  bLevelError                       : BOOL := FALSE;            (*HT back level error*)
+  bCirculationActive                : BOOL;                     (*Circulation active*)
+  bConditionsMet                    : BOOL;                     (*Conditions met*)
+  bPumpActivation                   : BOOL;                     (*HT: pump activation*)
+  fbTpPumpOn                        : TP;                       (*HT: pump activation on*)
+  tPumpOnTime                       : TIME;                     (*HT: pump activation on*)
+  fbTpPumpWait                      : TP;                       (*HT: pump activation wait*)
+  tPumpWaitTime                     : TIME;                     (*HT: pump activation wait*)
+  bResetErrorCounter                : BOOL;                     (*Reset HT back level error counter*)
+
+  fbTonSubMencOK                    : TON;                      (*Sub menc pressure ok*)
+  fbTonNoMovement                   : TON;                      (*No axis movement active*)
+  fbTonResumeCirculation            : TON;                      (*Resume circulation after level error*)
+
+  fSubMencActValue                  : LREAL;                    (*HT: actual pressure of back side*)
+  fSubMencTargetValue               : LREAL;                    (*HT: target pressure of back side*)
+END_VAR
+
+VAR PERSISTENT
+  tRSubMencOk                       : TIME := T#5S;             (*Supervision time for sub menc ok*)
+  tRNoMovement                      : TIME := T#1M;             (*Supervision time axis movement*)
+  tRResumeCirculation               : TIME := T#1M;             (*Resume circulation after level error*)
+  tRPumpDutyCycleFrequency          : TIME := T#100MS;          (*Frequency for duty cycle of pump*)
+  nRPumpDutyCycle                   : UINT := 30;               (*Duty cycle of pump*)
+
+  fRConvAdsToLocal                  : LREAL := 10.0;            (*Factor to convert from ADS to local*)
+  fRSubMencDeltaP                   : LREAL := -2.5;            (*HT: delta pressure of sub menc on back side*)
+  fRSubMencHysteresisP              : LREAL :=  0.5;            (*HT: hysteresis pressure*)
+  fRSubMencCorrectionP              : LREAL :=  0.0;            (*HT: correction pressure*)
+
+  nRErrorCounter                    : UINT := 0;                (*HT back level error counter*)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*--- check parameter -------------------*)
+IF NOT mCheckParameter() THEN RETURN; END_IF
+
+(*HT back error*)
+IF bCirculationActive AND IbInkLevelReachedBack THEN
+  bLevelError    := TRUE;
+  nRErrorCounter := nRErrorCounter + 1;
+END_IF
+fbTonResumeCirculation(IN := bLevelError, PT := tRResumeCirculation);
+IF fbTonResumeCirculation.Q THEN
+  bLevelError    := FALSE;
+END_IF
+IF bResetErrorCounter THEN
+  nRErrorCounter := 0;
+END_IF
+
+fbTonSubMencOK (IN := (iMencController.pErrorCode = 0), PT := tRSubMencOk);
+fbTonNoMovement(IN := NOT IbAxisMovement, PT := tRNoMovement);
+
+fSubMencActValue    := INT_TO_LREAL(InActValue) / fRConvAdsToLocal;
+fSubMencActValue    := fSubMencActValue + fRSubMencCorrectionP;
+fSubMencTargetValue := iMencController.pPressure + fRSubMencDeltaP;
+
+bConditionsMet :=     NOT IbActValueWcState
+                  AND NOT _bEStop
+                  AND NOT _bSleep
+                  AND NOT IbInkLevelReachedBack
+                  AND NOT bLevelError
+                  AND NOT iPurgeController.pPurgeBusy
+                  AND fbTonSubMencOK.Q
+                  AND fbTonNoMovement.Q
+                  AND IbHeadertankOk
+                  AND IbPHTempOk
+                  AND (fRSubMencDeltaP <> 0);
+
+IF IbEnable AND bConditionsMet THEN
+  bCirculationActive           := TRUE;
+  ObHtCloseInkConnectionValve  := TRUE;
+  ObHtCloseMencConnectionValve := TRUE;
+  ObValveActivation            := TRUE;
+
+  IF fSubMencActValue >= (fSubMencTargetValue + fRSubMencHysteresisP) THEN
+    bPumpActivation := TRUE;
+  END_IF
+  IF fSubMencActValue <= (fSubMencTargetValue - fRSubMencHysteresisP) THEN
+    bPumpActivation := FALSE;
+  END_IF
+ELSE  
+  bCirculationActive           := FALSE;
+  ObHtCloseInkConnectionValve  := FALSE;
+  ObHtCloseMencConnectionValve := FALSE;
+  ObValveActivation            := FALSE;
+  bPumpActivation              := FALSE;
+END_IF
+
+(*Pump is activated with a variable duty cycle*)
+tPumpOnTime   := DINT_TO_TIME((TIME_TO_DINT(tRPumpDutyCycleFrequency) * nRPumpDutyCycle) / 100);
+tPumpWaitTime := DINT_TO_TIME((TIME_TO_DINT(tRPumpDutyCycleFrequency) * (100 - nRPumpDutyCycle)) / 100);
+IF bPumpActivation THEN
+  IF (nRPumpDutyCycle = 0) THEN
+    ObPumpActivation := FALSE;
+  ELSIF (nRPumpDutyCycle = 100) THEN
+    ObPumpActivation := TRUE;
+  ELSE
+    fbTpPumpOn  (IN := NOT fbTpPumpWait.Q, PT := tPumpOnTime);
+    fbTpPumpWait(IN := NOT fbTpPumpOn.Q  , PT := tPumpWaitTime);
+  
+    ObPumpActivation := fbTpPumpOn.Q;
+  END_IF
+ELSE
+  fbTpPumpOn  (IN := FALSE);
+  fbTpPumpWait(IN := FALSE);
+
+  ObPumpActivation := FALSE;
+END_IF
+
+]]></ST>
+    </Implementation>
+    <Folder Name="I_EmergencyObserver" Id="{701194f4-da54-4e49-b47a-e21921119b4a}" />
+    <Folder Name="I_SleepObserver" Id="{1432cc03-7a96-4e1d-943e-d3d13817efe0}" />
+    <Method Name="mCheckParameter" Id="{484d4591-ac94-4d9d-ae00-0376398b1d80}">
+      <Declaration><![CDATA[(*
+  Check if all necessary variables are properly defined 
+  - check if initialized
+  - crash prevention!
+*)
+METHOD PRIVATE mCheckParameter : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (iPurgeController = 0) OR (iMencController = 0) THEN
+  IF NOT bCheckParameterError01 THEN
+    bCheckParameterError01 := TRUE;
+    F_Report_Error(Report_Error_0Pointer);
+  END_IF
+  RETURN;
+END_IF
+
+mCheckParameter := TRUE; // all params ok]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mEmergencyUpdate" Id="{46eb74cf-352d-4061-ac84-a2c24f18ce2b}" FolderPath="I_EmergencyObserver\">
+      <Declaration><![CDATA[METHOD mEmergencyUpdate
+VAR_INPUT
+	(*updated estop value TRUE = active*)
+	bEStop	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_bEStop := bEStop;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mSleepUpdate" Id="{6c063da7-a206-4a4d-91d3-7d17c61d638f}" FolderPath="I_SleepObserver\">
+      <Declaration><![CDATA[METHOD mSleepUpdate
+VAR_INPUT
+	(*updated sleep value TRUE = active*)
+	bSleep	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_bSleep := bSleep;]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="pName" Id="{85d9f1e5-00c8-4693-bb26-b096ca7df051}">
+      <Declaration><![CDATA[PROPERTY pName : STRING]]></Declaration>
+      <Set Name="Set" Id="{db53bc8c-1af9-422a-90f1-c40afc967e04}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[_sName := pName;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <LineIds Name="FB_InkCirculation">
+      <LineId Id="345" Count="58" />
+      <LineId Id="476" Count="2" />
+      <LineId Id="481" Count="1" />
+      <LineId Id="404" Count="3" />
+      <LineId Id="479" Count="0" />
+      <LineId Id="408" Count="6" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_InkCirculation.mCheckParameter">
+      <LineId Id="14" Count="0" />
+      <LineId Id="26" Count="1" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="16" Count="2" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_InkCirculation.mEmergencyUpdate">
+      <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_InkCirculation.mSleepUpdate">
+      <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_InkCirculation.pName.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

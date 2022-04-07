@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="FB_HWLATCH" Id="{f63b1916-3dd4-4ba8-a11b-6870e9117de7}" SpecialFunc="None">
+    <Declaration><![CDATA[(* $Id$ *)
+FUNCTION_BLOCK FB_HWLATCH
+(*************************************************************************************************)
+(*  FILENAME:     FB_HWLATCH.EXP			                                           		       		   *)
+(*  PROJECT:      CALMAR PUPLC        																													 *)
+(*  COPYRIGHT:    All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2016)           *)
+(*  ENVIRONMENT: 	TwinCAT PLC / CoDeSys																													 *)
+(*	VERSION:			<version>																																			 *)
+(*************************************************************************************************)
+(*  DESCRIPTION:  Function block to convert hardware latch value [count] from terminal to print  *)
+(*								system subpixel																																 *)
+(*																																															 *)
+(*************************************************************************************************)
+
+{library public}
+VAR_INPUT
+	lI_Reference				:	UDINT;			(*position reference pulse count in [count]*)
+	lI_Latch						:	UDINT;			(*position latch pulse count in [count]*)
+	lI_Master_Position  :	DINT;				(*Current Master Position in [SubPx]*)
+	fI_ResolutionInput	: LREAL:=1;	  (*Encoder Resolution in [um/increment]*)
+	fI_ResolutionOutput	: LREAL:=1;	  (*Print system Resolution in [SubPx]*)
+	bI_LatCVal					: BOOL;
+	bI_Reset						: BOOL;				(*Reset terminal*)
+END_VAR
+
+VAR_OUTPUT
+	iO_Offset_X0				: DINT;
+	iO_Offset_XS				: DINT;
+	bO_StartTrig				: BOOL;
+	bO_EnLatC           : BOOL; 			(*C-Latch enable/reset @EL5101*)
+END_VAR
+
+{library private}
+VAR
+	lL_Latch_Reg				:	UDINT:=0;
+  ll_Test             : UDINT:=0;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*Latch register used for HW Start*)
+IF lI_Latch <> lL_Latch_Reg AND bI_LatCVal THEN
+  ll_Test := lI_Latch - lL_Latch_Reg;
+	lL_Latch_Reg := lI_Latch;
+	iO_Offset_X0 := lI_Master_Position - FC_LREAL_TO_DINT( (DINT_TO_LREAL(UDINT_TO_DINT(lI_Reference - lI_Latch)) * fI_ResolutionInput * (fI_ResolutionOutput / 25400) )
+                                                       , ADR(PRG_SYSTEMBASE.lI_ConversionErr));
+	bO_StartTrig := TRUE;
+ELSE
+	bO_StartTrig := FALSE;
+END_IF
+
+(*Latch Handshake with Terminal EL5101,EnLatC must be set to 0 to reactivate latch input *)
+IF bI_LatCVal THEN
+	bO_EnLatC := FALSE;
+ELSE
+	bO_EnLatC := NOT bI_Reset;
+END_IF]]></ST>
+    </Implementation>
+    <LineIds Name="FB_HWLATCH">
+      <LineId Id="76" Count="0" />
+      <LineId Id="129" Count="0" />
+      <LineId Id="77" Count="3" />
+      <LineId Id="82" Count="9" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

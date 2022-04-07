@@ -1,0 +1,26 @@
+### TwinCAT 3 ###
+# VisualStudio
+*.~u
+*.suo
+
+# TwinCAT folders
+_Boot
+_CompileInfo
+/PlcProject/_Libraries/
+
+# TwinCAT files
+*.tclrs
+*.tmc
+*.tmcRefac
+*.tpy
+*.orig
+*.bak
+
+# more specific
+*.tsproj.bak
+*.plcproj.bak
+*.xti.bak
+*.tsproj.orig
+*.plcproj.orig
+*.xti.orig
+*.project.~u

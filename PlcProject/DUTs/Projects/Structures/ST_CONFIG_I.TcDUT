@@ -1,0 +1,272 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <DUT Name="ST_CONFIG_I" Id="{a9bde282-90e6-4939-9d96-af86bc19dbc3}">
+    <Declaration><![CDATA[TYPE ST_CONFIG_I :
+(*************************************************************************************************)
+(*  FILENAME:    ST_CONFIG_I.EXP                                                                 *)
+(*  PROJECT:     CALMAR PUPLC                                                                    *)
+(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2016)            *)
+(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
+(*  VERSION:     <version>                                                                       *)
+(*************************************************************************************************)
+(*  DESCRIPTION:                                                                   <description> *)
+(*    Configuration data system.                                                                 *)
+(*                                                                                </description> *)
+(*************************************************************************************************)
+
+STRUCT
+  (*Air*)(* hier bei Air nur als Bsp.*)
+  wC_T_MAX_CHANGEOVER                : WORD := 200;         (*Max changeover valve plus / minus [ms]*)
+
+  (*Ink System*)
+  wC_VAL_PURGE_PRESS_MIN             : WORD := 600;         (*Limit Min Purge Pressure [mBar]*)
+  wC_VAL_PURGE_PRESS_MAX             : WORD := 1000;        (*Limit Max Purge Pressure [mBar]*)
+
+  (*Ink System*)                                                                              (*Dient als Hilfe*)
+  cC_CONF_PURGE_CONTR                : BYTE := 0;           (*Configuration building block*)
+                                                            (*Bit0: Purge pressure measurement available then BYTE :=  1; (cL_CONF_PURGE_PRESS_MEASURE)   *)
+                                                            (*Bit1: PHin open after purge pressure       then BYTE :=  2; (cL_CONF_PURGE_PH_IN_OPEN)      *)
+                                                            (*Bit2: Valve remains open while WaitTime    then BYTE :=  4; (cL_CONF_PURGE_VALVE_OPEN_WAIT) *)
+                                                            (*Bit3: Valve opens at start command         then BYTE :=  8; (cL_CONF_PURGE_VALVE_OPEN_START)*)
+                                                            (*Bit4: Fill tank before purge               then BYTE := 16; (cL_CONF_PURGE_FILL_TANK)       *)
+                                                            (*Bit5: Purge pressure check only at start   then BYTE := 32; (cL_CONF_PURGE_CHECK_ONLY_START)*)
+  cC_CONF_INK_SUPPLY_UNIT            : BYTE := 0;           (*Configuration building block*)
+                                                            (*Bit0: Level sensor signal has to be high when filled*)
+                                                            (*Bit1: Valve control available                       *)
+                                                            (*Bit2: Circulation ink pump                          *)
+                                                            (*Bit3: Activate ink pump while sleep                 *)
+                                                            (*Bit4: Deactivate ink pump while EStop               *)
+
+
+(*DEGASSING*)
+(*************************************************************************************************)
+  (*ADS Names*)
+  aC_DGAS_NAME                       : STRING := 'Degassing';
+  aC_DGAS_NAME_DETAIL                : ARRAY[1..iCIk_NB_DGAS] OF STRING := [''];
+
+  (*Pneumatic controller PC1*)
+  aC_DGAS1_PRESS_TYPE                : STRING := 'DINT';
+  aC_DGAS1_PRESS_UNIT                : STRING := 'mbar';
+  fL_DGAS1_PRESS_SET_MIN             : REAL   := -1000.0;   (*minimum set value*)
+  fL_DGAS1_PRESS_SET_MAX             : REAL   := 0.0;       (*maximum set value*)
+  fL_DGAS1_PRESS_ACT_MIN             : REAL   := -1000;     (*minimum actual value*)
+  fL_DGAS1_PRESS_ACT_MAX             : REAL   := 0;         (*maximum actual value*)
+  fI_DGAS1_TOL_SMALL                 : REAL   := 0;         (*tolerance window small*)
+  fL_DGAS1_TOL_BIG                   : REAL   := 100;       (*tolerance window big*)
+  fL_DGAS1_CONV_ADS_TO_LCL           : REAL   := 1.0;       (*Factor to convert from ADS to local*)
+
+  lL_DGAS_TIME_ERROR                 : DINT   := 100;       (*maximum time pump is enabled [s]*)
+
+  cC_CONF_DGAS_CONTR                 : BYTE   := 0;         (*Configuration building block*)
+                                                            (*Bit0: software air regulator on PressPlus  valve (cL_CONF_VALVEFLOW_CTRL_PLUS) *)
+                                                            (*Bit1: software air regulator on PressMinus valve (cL_CONF_VALVEFLOW_CTRL_MINUS)*)
+                                                            (*Bit2: PressPlus valve not existing               (cL_CONF_VALVE_PLUS_NOT_EXIST)*)
+                                                            (*Bit3: Pressure check main menc                   (cL_CONF_PRESS_MAIN_CHECK)    *)
+                                                            (*Bit4: Pressure check sub menc                    (cL_CONF_PRESS_SUB_CHECK)     *)
+
+
+(*MENISCUS*)
+(*************************************************************************************************)
+  (*ADS Names*)
+  aC_MENC_NAME                       : STRING := 'Meniscus';
+  aC_MENC_NAME_DETAIL                : ARRAY[1..iCIk_NB_MENC] OF STRING[9] := ['Main'];
+
+  aC_MENC_PRESS_TYPE                 : STRING := 'REAL';
+  aC_MENC_PRESS_UNIT                 : STRING := 'mbar';
+  fL_MENC_PRESS_SET_MIN              : REAL   := -1000.0;   (*minimum set value*)
+  fL_MENC_PRESS_SET_MAX              : REAL   :=     0.0;   (*maximum set value*)
+  fL_MENC_PRESS_ACT_MIN              : REAL   := -1000.0;   (*minimum actual value*)
+  fL_MENC_PRESS_ACT_MAX              : REAL   :=     0.0;   (*maximum actual value*)
+  fL_MENC_TOL_SMALL                  : REAL   :=     0.0;   (*tolerance window small*)
+  fL_MENC_TOL_BIG                    : REAL   :=    50.0;   (*tolerance window big*)
+  fL_MENC_CONV_ADS_TO_LCL            : REAL   :=     1.0;   (*factor to convert from ADS to local*)
+
+  fL_MENC1_PRESS_INITVAL             : REAL   := -300.0;    (*initial set value*)
+  fL_MENC2_PRESS_INITVAL             : REAL   := -200.0;    (*initial set value*)
+
+  wL_MENC_TIME_ERROR                 : WORD   := 30;        (*maximum time pump is enabled [s]*)
+
+  cC_CONF_MENC_CONTR                 : BYTE   := 0;         (*Configuration building block*)
+                                                            (*Bit0: software air regulator on PressPlus  valve (cL_CONF_VALVEFLOW_CTRL_PLUS) *)
+                                                            (*Bit1: software air regulator on PressMinus valve (cL_CONF_VALVEFLOW_CTRL_MINUS)*)
+                                                            (*Bit2: PressPlus valve not existing               (cL_CONF_VALVE_PLUS_NOT_EXIST)*)
+                                                            (*Bit3: Pressure check main menc                   (cL_CONF_PRESS_MAIN_CHECK)    *)
+                                                            (*Bit4: Pressure check sub menc                    (cL_CONF_PRESS_SUB_CHECK)     *)
+
+
+(*SUB MENISCUS*)
+(***********************************************************************************************)
+  (*ADS Names*)
+  aC_SUB_MENC_NAME                   : STRING := 'Meniscus';
+  aC_SUB_MENC_NAME_DETAIL            : ARRAY[1..iCIk_NB_SUB_MENC] OF STRING[20] :=['Printlines module 2',
+                                                                                   'Printlines module 3'];
+
+  aC_SUB_MENC_PRESS_TYPE             : STRING := 'REAL';
+  aC_SUB_MENC_PRESS_UNIT             : STRING := 'mbar';
+  fL_SUB_MENC_PRESS_SET_MIN          : REAL   := -100.0;    (*minimum set value*)
+  fL_SUB_MENC_PRESS_SET_MAX          : REAL   :=    0.0;    (*maximum set value*)
+  fL_SUB_MENC_PRESS_ACT_MIN          : REAL   := -100.0;    (*minimum actual value*)
+  fL_SUB_MENC_PRESS_ACT_MAX          : REAL   :=    0.0;    (*maximum actual value*)
+  fL_SUB_MENC_TOL_SMALL              : REAL   :=    0.0;    (*tolerance window small*)
+  fL_SUB_MENC_TOL_BIG                : REAL   :=    1.0;    (*tolerance window big*)
+  fL_SUB_MENC_CONV_ADS_TO_LCL        : REAL   :=   10.0;    (*factor to convert from ADS to local*)
+
+  fL_SUB_MENC1_PRESS_INITVAL         : REAL   := -24.0;     (*initial set value*)
+  fL_SUB_MENC2_PRESS_INITVAL         : REAL   := -24.0;     (*initial set value*)
+
+  wL_SUB_MENC_TIME_ERROR             : WORD   := 30;        (*maximum time pump is enabled [s]*)
+
+  cC_CONF_SUB_MENC_CONTR             : BYTE   := 0;         (*Configuration building block*)
+                                                            (*Bit0: software air regulator on PressPlus  valve (cL_CONF_VALVEFLOW_CTRL_PLUS) *)
+                                                            (*Bit1: software air regulator on PressMinus valve (cL_CONF_VALVEFLOW_CTRL_MINUS)*)
+                                                            (*Bit2: PressPlus valve not existing               (cL_CONF_VALVE_PLUS_NOT_EXIST)*)
+
+
+(*PURGE*)
+(*************************************************************************************************)
+  (*ADS Names*)
+  aC_PURGE_NAME                      : STRING := 'Purge';
+  aC_PURGE_NAME_DETAIL               : ARRAY[1..iCIk_NB_PURGE_CONTR] OF STRING[7] :=
+           ['M2', 'M3'];
+
+  aC_PURGE_GROUP_NAME                : STRING := 'Purge Group';
+  aC_PURGE_GROUP_NAME_DETAIL         : ARRAY[1..iCIk_NB_PURGE_GROUP] OF STRING[7] :=
+           ['HT2.1',
+            'HT2.2',
+            'HT3.1',
+            'HT3.2'];
+
+
+(*INKPUMP*)
+(*************************************************************************************************)
+  (*ADS Names*)
+  aC_INKPUMP_NAME                    : STRING := 'Pump';
+  aC_INKPUMP_NAME_DETAIL             : ARRAY[1..iCIk_NB_INK_PUMPS] OF STRING[19] :=
+           ['HT2.1_A',
+            'HT2.2_A',
+            'HT3.1_A',
+            'HT3.2_A',
+            'HT2.1_B',
+            'HT2.2_B',
+            'HT3.1_B',
+            'HT3.2_B',
+            'HT2_return',
+            'HT3_return'];
+
+
+  wC_INKPUMP_MAX_TIME                : WORD    := 130;      (*Maximum time pump is enabled [s]*)
+  wC_INKPUMP_LEVELDELAY_TIME         : WORD    := 0;        (*On-Delay waiting time after level falls [s]*)
+
+  aC_INKPUMP_SPEED_TYPE              : STRING  := 'DINT';
+  aC_INKPUMP_SPEED_UNIT              : STRING  := '%';
+  lL_INKPUMP_SPEED_SET_MIN           : DINT    := 10;        (*minimum set value*)
+  lL_INKPUMP_SPEED_SET_MAX           : DINT    := 100;       (*maximum set value*)
+
+  lL_INKPUMP_ANALOG_SET_MIN          : DINT    := 0;         (*Min value analog-output in digit*)
+  lL_INKPUMP_ANALOG_SET_MAX          : DINT    := 16383;     (*Max value analog-output in digit, default: 10V => 32767*)
+
+  wC_CLEANERPUMP_MAX_TIME            : WORD    := 160;      (*Maximum time pump is enabled [s]*)
+
+
+(*INKSTORAGE_TANK*)
+(*************************************************************************************************)
+  (*ADS Names*)
+  aC_STORAGETANK_NAME                : STRING := 'Storage container';
+  aC_STORAGETANK_CONSERVATION        : STRING := 'Conservation';
+  aC_STORAGETANK_NAME_DETAIL         : ARRAY[1..iCIk_NB_INKSTORAGE_TANK] OF STRING[12] :=
+           ['A',
+            'B',
+            aC_STORAGETANK_CONSERVATION];
+
+  aC_STORAGETANK_TYPE                : STRING := 'REAL';
+  aC_STORAGETANK_UNITLITER           : STRING := 'L';
+  aC_STORAGETANK_UNITPERCENT         : STRING := '%';
+  aC_STORAGETANK_SIZE_INITVAL        : REAL   := 5.0;
+
+  aC_STORAGETANK_MAINTENANCE_TYPE    : STRING := 'DINT';
+  aC_STORAGETANK_MAINTENANCE_UNIT    : STRING := 'ms';
+  lL_STORAGETANK_MAINTENANCE_SET_MIN : DINT   := 0;         (*minimum set value*)
+  lL_STORAGETANK_MAINTENANCE_SET_MAX : DINT   := 1000000;   (*maximum set value*)
+  aC_STORAGETANK_MAINT_TIME_SET_INITVAL: DINT := 120000;
+
+  aC_STORAGETANK_DENSITY             : STRING := 'g/cm3';
+  aC_STORAGETANK_VISCOSITY           : STRING := 'mPa*sec';
+  iC_ColorIdEmpty                    : UINT   := 255;       (*Special profile for empty*)
+
+
+(*HEADER TANK*)
+(*************************************************************************************************)
+  (*ADS Names*)
+  aC_HEADERTANK_NAME                 : STRING := 'Ink tank';
+  aC_HEADERTANK_NAME_DETAIL          : ARRAY[1..iCIk_NB_HEADERTANK] OF STRING[19] :=
+           ['HT2.1',
+            'HT2.2',
+            'HT3.1',
+            'HT3.2'];
+
+  aC_HEADERTANKGROUP_NAME            : STRING := 'HT group';
+  aC_HEADERTANKGROUP_NAME_DETAIL     : ARRAY[1..iCIk_NB_HEADERTANK_GROUP] OF STRING[10] :=
+           ['Module 2',
+            'Module 3'];
+
+
+(*TEMP*)
+(*************************************************************************************************)
+  (*ADS Names*)
+  aC_TEMP_NAME                       : STRING := 'Heater';
+
+  aC_TEMP_NAME_DETAIL                : ARRAY[1..iCIk_NB_TEMP_CONTR] OF STRING[22] :=
+           ['HT2.1',
+            'HT2.2',
+            'HT3.1',
+            'HT3.2',
+            'M2 plate infeed',
+            'M2 plate outlet',
+            'M3 plate infeed',
+            'M3 plate outlet'];
+
+  aC_TEMP_TYPE                       : STRING := 'REAL';
+  aC_TEMP_UNIT                       : STRING := 'C';
+  aC_TEMP_UNIT_10                    : STRING := '0.1C';
+  fL_TEMP_ACT_VAL_MIN                : REAL   := 10.0;      (*minimum actual value*)
+  fL_TEMP_ACT_VAL_MAX                : REAL   := 90.0;      (*maximum actual value*)
+  fL_TEMP_SET_VAL_MIN                : REAL   := 20.0;      (*minimum set value*)
+  fL_TEMP_SET_VAL_MAX                : REAL   := 70.0;      (*maximum set value*)
+  lL_TEMP_SET_VAL_MIN                : DINT   := 300;       (*minimum set value*)
+  lL_TEMP_SET_VAL_MAX                : DINT   := 700;       (*maximum set value*)
+
+(*BALANCE*)
+(*************************************************************************************************)
+  (*ADS Names*)
+  aC_BALANCE_NAME                    : STRING := 'Balance';
+  aC_BALANCE_NAME_DETAIL             : ARRAY[1..iCIk_NB_INKBALANCE] OF STRING[19] :=
+           ['A',
+            'B'];
+
+  aC_BALANCE_INKDENSITY_TYPE         : STRING := 'REAL';
+  aC_BALANCE_INKDENSITY_UNIT         : STRING := 'kg/l';
+  aC_BALANCE_INKDENSITY_SET_MIN      : REAL   := 0.0001;
+  aC_BALANCE_INKDENSITY_SET_MAX      : REAL   := 10000;
+
+  aC_BALANCE_CORRECTION_TYPE         : STRING := 'REAL';
+  aC_BALANCE_CORRECTION_UNIT         : STRING := '';
+  aC_BALANCE_CORRECTION_SET_MIN      : REAL   := 0.0001;
+  aC_BALANCE_CORRECTION_SET_MAX      : REAL   := 10;
+
+  aC_BALANCE_WARNINGLEVEL_TYPE       : STRING := 'REAL';
+  aC_BALANCE_WARNINGLEVEL_UNIT       : STRING := 'l';
+  aC_BALANCE_WARNINGLEVEL_SET_MIN    : REAL   := 0;
+  aC_BALANCE_WARNINGLEVEL_SET_MAX    : REAL   := 10000;
+
+  aC_BALANCE_ERRORLEVEL_TYPE         : STRING := 'REAL';
+  aC_BALANCE_ERRORLEVEL_UNIT         : STRING := 'l';
+  aC_BALANCE_ERRORLEVEL_SET_MIN      : REAL   := 0;
+  aC_BALANCE_ERRORLEVEL_SET_MAX      : REAL   := 10000;
+
+  aC_BALANCE_INKACTLEVEL_TYPE        : STRING := 'REAL';
+  aC_BALANCE_INKACTLEVEL_UNIT        : STRING := 'l';
+
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

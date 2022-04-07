@@ -1,0 +1,319 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <GVL Name="CONFIGURATION" Id="{f6329034-6dfe-4c1c-8d40-8c99b18976e0}">
+    <Declaration><![CDATA[{attribute 'Tc2GvlVarNames'}
+VAR_GLOBAL CONSTANT
+(*************************************************************************************************)
+(*  FILENAME:    CONFIGURATION.EXP                                                               *)
+(*  PROJECT:     CALMAR PUPLC                                                                    *)
+(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2016)            *)
+(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
+(*  VERSION:     <version>                                                                       *)
+(*************************************************************************************************)
+(*  DESCRIPTION:                                                                   <description> *)
+(*    Configuration data system.                                                                 *)
+(*                                                                                </description> *)
+(*************************************************************************************************)
+
+(*************************************************************************************************)
+(*Configuration System*)
+(*************************************************************************************************)
+  iCSYS_GEN_BLOCK_MAP_CONFIG        : UINT := 0;   (*Configuration FB_GEN_BLOCK_MAPPING*)
+                                                   (*Bit0: use extended block id then UINT :=  1; (iC_CFG_BIT_EXT_ID) *)
+
+  bCSYS_EStopInputNegativLogic      : BOOL := FALSE;  (*PRG_SYSTEMBASE.FB_Emergency.bI_EStop has negative logic*)
+
+
+(*************************************************************************************************)
+(*Configuration InkSystem*)
+(*************************************************************************************************)
+
+(*ADS*)
+(*************************************************************************************************)
+  iCIk_NB_BLOCK_TYPES               : INT := 10;   (*Number of different ADS block types*)
+
+
+(*GENERAL*)
+(*************************************************************************************************)
+  (*Number of print station*)
+  iCIk_NB_PRINT_STA                 : INT := 1;    (*Number of print station*)
+
+
+(*DEGASSING*)
+(*************************************************************************************************)
+  iCIk_NB_DGAS                      : INT := 1;    (*Number of dgas controller*)
+
+  bCIk_INK_DEGASSING_EXISTING       : BOOL := TRUE;  (*Degassing of ink existing*)
+
+
+(*MENISCUS*)
+(*************************************************************************************************)
+  (*Number of menc controller*)
+  iCIk_NB_MENC                      : INT := 1;    (*Number of menc controller*)
+
+  (*Mapping main meniscus*)
+  iCIk_MAP_MAIN_MENC_PURGE          : ARRAY [1..iCIk_NB_MENC] OF INT := [1];  (*Mapping main menc to purge controller*)
+
+  (*Number of sub menc controller*)
+  iCIk_NB_SUB_MENC                  : INT := 2;    (*Number of sub menc controller*)
+
+  (*Number of menc controller per station*)
+  iCIk_NB_MENC_STA                  : INT := 3;    (*Number of menc controller per station (iCIk_NB_MENC + iCIk_NB_SUB_MENC)*)
+
+  (*Mapping sub meniscus*)
+  iCIk_MAP_SUB_MENC_MAIN_MENC       : ARRAY [1..iCIk_NB_SUB_MENC] OF INT := [1,1];  (*Mapping sub menc to main menc*)
+  iCIk_MAP_SUB_MENC_PURGE           : ARRAY [1..iCIk_NB_SUB_MENC] OF INT := [1,2];  (*Mapping sub menc to purge controller*)
+  iCIk_MAP_SUB_MENC_HTG             : ARRAY [1..iCIk_NB_SUB_MENC] OF INT := [1,2];  (*Mapping sub menc to headertank group*)
+
+
+(*PURGE - GLOBAL*)
+(*************************************************************************************************)
+  iCIk_NB_PURGE_CONTR               : INT := 2;    (*Number of purge controller*)
+  iCIk_NB_PURGE_GROUP               : INT := 4;    (*Number of purge groups*)
+
+  (*Purge controller existing*)
+  bCIk_PURGE_CONTR_EXIST            : ARRAY [1..iCIk_NB_PURGE_CONTR] OF BOOL := [TRUE,TRUE];
+
+  (*Purge group existing*)
+  bCIk_PURGE_GROUP_EXIST            : ARRAY [1..iCIk_NB_PURGE_GROUP] OF BOOL := [TRUE,TRUE,TRUE,TRUE];
+
+  (*Mapping purge group*)
+  cCIk_MAP_PURGE_GROUP_CONTR        : ARRAY [1..iCIk_NB_PURGE_GROUP] OF BYTE := [1,1,2,2];  (*Mapping purge group to purge controller*)
+  cCIk_MAP_PURGE_GROUP_PURGE_STA    : ARRAY [1..iCIk_NB_PURGE_GROUP] OF BYTE := [1,2,1,2];  (*Mapping purge group to purge station*)
+
+  (*Purge for White is working with a special sequence*)
+  bCIk_PURGE_CONTR_SEQUENCE         : ARRAY [1..iCIk_NB_PURGE_CONTR] OF BOOL := [FALSE,FALSE];
+  bCIk_MAP_PURGE_CONTR_SEQ_MENC_NEG : ARRAY [1..iCIk_NB_PURGE_CONTR] OF BYTE := [2,2];
+  bCIk_MAP_PURGE_CONTR_SEQ_MENC_POS : ARRAY [1..iCIk_NB_PURGE_CONTR] OF BYTE := [3,3];
+
+  bCIk_PURGE_SEQUENCE_MAIN_VALVE    : BOOL := TRUE;   (*Use main or sub valve for sequence*)
+  bCIk_PURGE_CONTROLLER_SEQUENTIAL  : BOOL := FALSE;  (*Purge controller process sequential*)
+  bCIk_PURGE_CYCLE_CLOSE_PH_VALVE   : BOOL := FALSE;  (*Close valve PHin and PHout between the cycles*)
+  bCIk_PURGE_PRESSURE_LINE          : BOOL := TRUE;   (*Purge pressure is connected direct to a pressure line*)
+
+
+(*INK*)
+(*************************************************************************************************)
+  iCIk_NB_HEADERTANK                : INT := 4;       (*Number of headertanks*)
+  iCIk_NB_HEADERTANK_GROUP          : INT := 2;       (*Number of headertank groups*)
+
+  (*Headertank existing*)
+  (*'White Recirculation','White front','White back','Cyan','Magenta','Yellow','Black'*)
+  bCIk_HEADERTANK_EXIST             : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL := [ TRUE, TRUE, TRUE, TRUE];
+  bCIk_HEADERTANK_FILL_CLEANER      : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL := [FALSE,FALSE,FALSE,FALSE];
+  bCIk_HEADERTANK_REFUSE            : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL := [FALSE,FALSE,FALSE,FALSE];
+  bCIk_HEADERTANK_CHANGE            : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL := [ TRUE, TRUE, TRUE, TRUE];
+  bCIk_HEADERTANK_FILL              : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL := [ TRUE, TRUE, TRUE, TRUE];
+  bCIk_HEADERTANK_FLUSH             : ARRAY [1..iCIk_NB_HEADERTANK] OF BOOL := [ TRUE, TRUE, TRUE, TRUE];
+
+  (*Mapping headertank*)
+  iCIk_MAP_HEADERTANK_DGAS          : ARRAY [1..iCIk_NB_HEADERTANK] OF INT := [1,1,1,1];  (*Mapping headertank to degass*)
+  iCIk_MAP_HEADERTANK_MENC_STA      : ARRAY [1..iCIk_NB_HEADERTANK] OF INT := [2,2,3,3];  (*Mapping headertank to menc station*)
+  iCIk_MAP_HEADERTANK_INK           : ARRAY [1..iCIk_NB_HEADERTANK] OF INT := [1,1,2,2];  (*Mapping headertank to ink*)
+  iCIk_MAP_HEADERTANK_INK_LEVEL     : ARRAY [1..iCIk_NB_HEADERTANK] OF INT := [1,2,3,4];  (*Mapping headertank to ink level sensor*)
+  iCIk_MAP_HEADERTANK_INK_PUMP      : ARRAY [1..iCIk_NB_HEADERTANK] OF INT := [1,2,3,4];  (*Mapping headertank to ink pump*)
+  iCIk_MAP_HEADERTANK_PURGE_CONTR   : ARRAY [1..iCIk_NB_HEADERTANK] OF INT := [1,1,2,2];  (*Mapping headertank to purge controller*)
+  iCIk_MAP_HEADERTANK_PURGE_GROUP   : ARRAY [1..iCIk_NB_HEADERTANK] OF INT := [1,2,3,4];  (*Mapping headertank to purge group*)
+  iCIk_MAP_HEADERTANK_PURGE_GROUPIDX: ARRAY [1..iCIk_NB_HEADERTANK] OF INT := [1,2,1,2];  (*Mapping headertank to purge group*)
+  iCIk_MAP_HEADERTANK_STORAGE_PUMP  : ARRAY [1..iCIk_NB_HEADERTANK] OF INT := [1,2,3,4];  (*Mapping headertank to storagetank pump*)
+  iCIk_MAP_HEADERTANK_CLEANER_PUMP  : ARRAY [1..iCIk_NB_HEADERTANK] OF INT := [1,1,2,2];  (*Mapping headertank to cleaner pump*)
+  iCIk_MAP_HEADERTANK_RETURN_FLOW   : ARRAY [1..iCIk_NB_HEADERTANK] OF INT := [1,1,2,2];  (*Mapping headertank to return flow*)
+  iCIk_MAP_HEADERTANK_TEMP_CONTR    : ARRAY [1..iCIk_NB_HEADERTANK] OF INT := [1,2,3,4];  (*Mapping headertank to Temp controller*)
+  iCIk_MAP_HEADERTANK_HT_GROUP      : ARRAY [1..iCIk_NB_HEADERTANK] OF INT := [1,1,2,2];  (*Mapping headertank to headertank group*)
+
+  (*Storagetank*)
+  iCIk_NB_INK                       : INT  := 2;    (*Number of ink*)
+  iCIk_NB_INKSTORAGE_TANK           : INT  := 3;    (*Number of storage tanks incl conservation tank*)
+  iCIk_NB_INKSTORAGE_TANK_MAX       : INT  := CalmarCompInkSystem.GVL_InkDef.iCIk_NB_INKSTORAGE_TANK_MAX;    (*Max number of storage tanks*)
+  iCIk_NB_INKSTORAGE_TANK_MIXER     : INT  := 2;    (*Number of storage tank mixer (not existing here)*)
+  iCIk_NB_INKSTORAGE_TANK_PUMP      : INT  := 4;    (*e.g. iCIk_NB_HEADERTANK*)
+  iCIk_STORAGE_TANK_PUMP_SETPOINT   : BOOL := FALSE; (*Pump speed controlled by a set point or fix*)
+  iCIk_MAP_STORAGE_TANK_BALANCE     : ARRAY [1..iCIk_NB_INK] OF INT := [1,2];  (*Mapping storage tank to balances*)
+
+  (*Ink storage tank existing, order see aC_STORAGETANK_NAME_DETAIL*)
+  bCIk_INKSTORAGE_TANK_EXIST        : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF BOOL := [TRUE,TRUE,TRUE];
+  bCIk_INKSTORAGE_MIXER_EXIST       : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF BOOL := [FALSE,FALSE,FALSE];
+  iCIk_MAP_INKSTORAGE_MIXER         : ARRAY [1..iCIk_NB_INKSTORAGE_TANK] OF INT  := [    1,    2,    3];
+  bCIk_MIXER_FEEDBACK_EXIST         : BOOL := FALSE;
+
+
+  (*Number of ink pumps*)
+  iCIk_NB_INK_PUMPS                 : INT := 10;  (*Number of ink pumps in total*)
+
+  iCIk_NB_CLEANER_PUMPS             : INT := 2;   (*Number of cleaner pumps*)
+  iCIk_CLEANER_PUMP_SETPOINT        : ARRAY [1..iCIk_NB_CLEANER_PUMPS]     OF BOOL := [FALSE,FALSE];  (*Pump speed controlled by a set point or fix*)
+
+  iCIk_NB_RETURN_FLOW_UNITS         : INT  := 2;      (*Number of retrun flow units*)
+  iCIk_RETURN_FLOW_PUMP_SETPOINT    : BOOL := FALSE;  (*Pump speed controlled by a set point or fix*)
+
+  (*Number of ink level sensor*)
+  iCIk_NB_INK_LEVEL_SENSOR          : INT := 6;   (*Number of ink level sensor*)
+	iCIk_NB_INK_LEVEL_SENSOR_CIRCL    : INT := 1;   (*Number of ink level sensor for circulation*)
+
+
+(*TEMP*)
+(*************************************************************************************************)
+  (*Number of heating*)
+  iCIk_NB_TEMP_CONTR                : INT := 8;   (*Sum number of heating controllers*)
+  iCIk_NB_TEMP_HYS                  : INT := 8;   (*Number of heating controller with hysteris*)
+
+  (*Mapping temp*)
+  iCIk_MAP_TEMP_INK                 : ARRAY [1..iCIk_NB_TEMP_CONTR] OF INT := [1,1,2,2,1,1,2,2];  (*Mapping temp to ink*)
+  iCIk_MAP_TEMP_HT                  : ARRAY [1..iCIk_NB_TEMP_CONTR] OF INT := [1,2,3,4,1,2,3,4];  (*Mapping temp to ink*)
+  iCIk_MAP_TEMP_PG                  : ARRAY [1..iCIk_NB_TEMP_CONTR] OF INT := [1,2,3,4,1,2,3,4];  (*Mapping temp to print group*)
+
+  
+(*BALANCE*)
+(*************************************************************************************************)
+  bCIk_BALANCE_EXISTING             : BOOL := TRUE;  (*Balance system existing*)
+
+  cCIk_NB_BALANCE_CHANNELS          : BYTE:= 8;   (*Number of balance channels per MUX*)
+  iCIk_NB_INKBALANCE                : INT := 2;   (*Number of used balance channels*)
+  iCIk_NB_BALANCE_MUX               : INT := 1;   (*Number of balance MUX*)
+
+  cCIk_BALANCE_MUX_ID               : ARRAY [1..iCIk_NB_BALANCE_MUX, 0..2] OF BYTE := [48,48,49]; (*Balance ASCII MUX ID 001*)
+
+  (*Balance channel existing*)
+  bCIk_INKBALANCE_EXIST             : ARRAY [1..iCIk_NB_INKBALANCE] OF BOOL := [TRUE, TRUE];
+
+  (*Mapping balance*)
+  cCIk_MAP_BALANCE_BALANCE_MUX      : ARRAY [1..iCIk_NB_INKBALANCE] OF BYTE := [1,1];        (*Mapping balance/storage tank to balance MUX*)
+  cCIk_MAP_BALANCE_BALANCE_CHANNEL  : ARRAY [1..iCIk_NB_INKBALANCE] OF BYTE := [0,1];        (*Mapping balance/storage tank to balance channel*)
+
+  iCIk_NB_COUNT_SEND_WARNING        : INT := 3;       (*Count of 'send data error' messages till warning*)
+  iCIk_NB_COUNT_MOTION_WARNING      : INT := 10000;   (*Count of 'in motion' messages till warning*)
+  iCIk_NB_COUNT_NC_WARNING          : INT := 5;       (*Count of 'not connected' messages till warning*)
+
+  (*Messages*)
+  iCIk_NB_BALANCE_MSG               : INT := 15;      (*Number of messages per balance*)
+
+
+//BALANCE wiedre altes System!
+  (*If no balance system existing iCIk_NB_INKBALANCE should nevertheless set to >0*)
+	(*Number of balance (at least 1 for dummy)*)
+  iCIk_BALANCE_POWER_SUPPLY         : INT  := 5;     (*Power supply of balances [V]*)
+	fCIk_BALANCE_RATED_OUTPUT         : REAL := 3.0;   (*[mV/V]*)
+	fCIk_BALANCE_RATED_CAPACITY       : REAL := 10.0;  (*[kg]*)
+	fCIk_BALANCE_REFUSE_FULL          : REAL := 9.0;   (*[kg]*)
+	fCIk_BALANCE_CLEANER_EMPTY        : REAL := 1.0;  (*[kg]*)
+
+  
+  
+(*************************************************************************************************)
+(*Configuration Print*)
+(*************************************************************************************************)
+
+(*ADS*)
+(*************************************************************************************************)
+  iCPr_NB_BLOCK_TYPES               : INT := 6;    (*Number of different ADS block types*)
+
+  (*Print*)
+  nC_PrintResolution                : UDINT := 600;     (*Print resolutions native*)
+  nC_SubPixelResolution             : UDINT := 32;      (*SubPixel resolution, resolution extension of print resolution*)
+  nC_MemorySectionWidth             : UDINT := 16#800;  (*NIOS Memory section width/height*)
+  nC_MemorySectionDepth             : UDINT := 16#6000; (*NIOS Memory section depth/length*)
+
+  (*DEVICE COUNT*)
+  iCPr_NB_PH                        : INT := 24;  (*Number of printheads*)
+  iCPr_NB_PC                        : INT := 8;   (*Number of printhead controllers*)
+  iCPr_NB_PG                        : INT := 4;   (*Number of printhead groups*)
+  iCPr_NB_PM                        : INT := 2;   (*Number of printhead modules*)
+  iCPr_NB_PU                        : INT := 1;   (*Number of print units*)
+  iCPr_NB_SUBSTRATE_DEVICES         : INT := 1;   (*Number of substrate control devices*)
+  iCPr_NB_ASPECT                    : INT := 1;   (*Number of aspect definitions*)
+
+  (*UNIT*)
+  iCPr_NB_PG_UNIT                   : INT := 4;   (*Number of groups in unit1*)
+
+  (*Mapping MODULE*)
+  iCPr_MAP_PM_PG                    : ARRAY [1..iCPr_NB_PM] OF INT := [1,3];    (*Mapping print module to first printhead group*)
+
+  (*GROUP*)
+  iCPr_NB_PC_GROUP_MAX              : INT := 2;   (*Maximal number of printead controller per group*)
+  iCPr_NB_PC_GROUP1                 : INT := 2;   (*Number of printhead controllers per group*)
+  iCPr_NB_PC_GROUP                  : ARRAY [1..iCPr_NB_PG] OF INT := [2,2,2,2];    (*Number of printhead controllers per group*)
+
+  (*Mapping GROUP*)
+  iCPr_MAP_PG_PU                    : ARRAY [1..iCPr_NB_PG] OF INT := [1,1,1,1];    (*Mapping printhead group to print unit*)
+  iCPr_MAP_PG_PM                    : ARRAY [1..iCPr_NB_PG] OF INT := [1,1,2,2];    (*Mapping printhead group to print module*)
+  iCPr_MAP_PG_HTG                   : ARRAY [1..iCPr_NB_PG] OF INT := [1,1,2,2];    (*Mapping printhead group to headertank group*)
+
+  (*CONTROLLER*)
+  iCPr_NB_PH_PC                     : ARRAY [1..iCPr_NB_PC] OF INT := [3,3,3,3,3,3,3,3];  (*Number or printhead per controller*)
+
+  (*CONTROLLER existing, order see aC_PC_NAME_DETAIL*)
+  bCPr_PC_EXIST                     : ARRAY [1..iCPr_NB_PC] OF BOOL := [TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE];
+
+  (*Mapping CONTROLLER*)
+  iCPr_MAP_PC_PG                    : ARRAY [1..iCPr_NB_PC] OF INT := [1,1,2,2,3,3,4,4];  (*Mapping printhead controller to printhead group*)
+  iCPr_MAP_PC_PH                    : ARRAY [1..iCPr_NB_PC, 1..iCPr_NB_PH_PER_CONTROLLER] OF INT
+                                                  := [ 1,  3,  5, -1,
+                                                       2,  4,  6, -1,
+                                                       7,  9, 11, -1,
+                                                       8, 10, 12, -1,
+                                                      13, 15, 17, -1,
+                                                      14, 16, 18, -1,
+                                                      19, 21, 23, -1,
+                                                      20, 22, 24, -1];   (*Mapping printhead controller to printhead*)
+                                                  (*ARRAY  --------------------------------------*)
+                                                  (*|          PC  1  2  3  4  5  6  7  8 *)
+                                                  (*|              |  |  |  |  |  |  |  | *)
+                                                  (*|Channel 1 - [ 1, 2, 7, 8,13,14,19,20]*)
+                                                  (*|        2 - [ 3, 4, 9,10,15,16,21,22]*)
+                                                  (*|        3 - [ 5, 6,11,12,17,18,23,24]*)
+                                                  (*|        4 - [-1,-1,-1,-1,-1,-1,-1,-1]*)
+                                                  
+  (*PRINTHEAD*)
+  iCPr_NB_PH_PER_CONTROLLER         : INT := 4;   (*!!!Number of printhead channel per controller board, hw spec*)
+
+  (*PRINTHEAD existing, order see aC_PH_NAME_DETAIL*)
+  bCPr_PH_EXIST                     : ARRAY [1..iCPr_NB_PH] OF BOOL := [TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE];
+
+  (*Mapping PRINTHEAD*)
+  iCPr_MAP_PH_PC                    : ARRAY [1..iCPr_NB_PH] OF INT  := [1,2,1,2,1,2,3,4,3,4,3,4,5,6,5,6,5,6,7,8,7,8,7,8];  (*Mapping printhead to printhead controller*)
+  cCPr_MAP_PH_PC_Index              : ARRAY [1..iCPr_NB_PH] OF BYTE := [1,1,2,2,3,3,1,1,2,2,3,3,1,1,2,2,3,3,1,1,2,2,3,3];  (*Mapping printhead to printhead controller index*)
+  iCPr_MAP_PH_HT                    : ARRAY [1..iCPr_NB_PH] OF INT  := [1,1,1,1,1,1,2,2,2,2,2,2,3,3,3,3,3,3,4,4,4,4,4,4];  (*Mapping printhead to headertank*)
+  iCPr_MAP_PH_PM                    : ARRAY [1..iCPr_NB_PH] OF INT  := [1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2];  (*Mapping printhead to print module*)
+
+
+  (*Static offset for YShift depends on cSectionWidth and cHeadWidth*)
+  cSectionWidth                     : DINT := 10_240;
+  cHeadWidth                        : DINT := 1280;
+  cYShiftOffset                     : DINT := ((cSectionWidth - cHeadWidth) / 2) + 1;
+  
+  (*DriftController*)
+  iCPr_DRIFTCONTROL_PGAIN           : LREAL := 0.5;
+  iCPr_DRIFTCONTROL_IGAIN           : LREAL := 20;
+
+
+(*************************************************************************************************)
+(*Configuration Machine                                                                          *)
+(*************************************************************************************************)
+
+(*ADS*)
+(*************************************************************************************************)
+  iCMa_NB_BLOCK_TYPES               : INT := 3;    (*Number of different ADS block types*)
+
+
+(*GENERAL*)
+(*************************************************************************************************)
+  (*DEVICE COUNT*)
+  iCMa_NB_Ax                        : INT := 3;      (*Number of axes*)
+  iCMa_NB_Cp                        : INT := 2;      (*Number of cleaning process controllers*)
+  iCMa_NB_Ca                        : INT := 8;      (*Number of clean axes: 4 per module*)
+  iCMa_NB_Ma                        : INT := 1;      (*Number of machines*)
+
+  (*Mapping GROUP*)
+  iCPr_MAP_Cp_CuAxis                : ARRAY [1..iCMa_NB_Cp] OF INT := [1,5];    (*Mapping cleaning process to CU axis ADS*)
+  iCPr_MAP_Cp_ChAxis                : ARRAY [1..iCMa_NB_Cp] OF INT := [2,6];    (*Mapping cleaning process to CH axis ADS*)
+  iCPr_MAP_Cp_PuAxis                : ARRAY [1..iCMa_NB_Cp] OF INT := [3,7];    (*Mapping cleaning process to PU axis ADS*)
+  iCPr_MAP_Cp_InkInterface          : ARRAY [1..iCMa_NB_Cp] OF INT := [4,8];    (*Mapping cleaning process to ink interface ADS*)
+
+  (*Messages*)
+  iCMa_NB_MSG                       : INT := 31;    (*Number of messages per machine*)
+
+END_VAR
+
+]]></Declaration>
+  </GVL>
+</TcPlcObject>

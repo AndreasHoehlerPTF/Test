@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="FB_MOTION_TO_INKSYSTEM_IF" Id="{8c8d4091-bedb-41af-b055-adeb64c3f251}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_MOTION_TO_INKSYSTEM_IF
+(******************************************************************************************)
+(*	FILENAME:	FB_MOTION_TO_INKSYSTEM_IF							*)
+(*	PROJECT:	Steinemann										*)
+(*	COPYRIGHT:	Wifag-Polytype									*)
+(*	ENVIRONMENT:	TwinCat2, v2.11								*)
+(*	VERSION:	1.0												*)
+(*	DESCRIPTION:												*)
+(*		Interface block to link ink to motion system		*)
+(*	AUTHOR:	FAF							*)
+(*																*)
+(******************************************************************************************)
+(*	Changes:													*)
+(******************************************************************************************)
+(*	Date	Authtor	Descriptons									*)
+(*																*)
+(******************************************************************************************)
+VAR_INPUT
+	(*Commands from Cleaning Process Controller*)
+	sI_CleanDevCmd				: ST_CLEANING_DEV_CMD;	(*Initialize operation*)
+
+	(*Inputs from Purge Controller*)
+	bI_PurgeBusy					: BOOL;
+	bI_CleanPumpOn				: BOOL;
+END_VAR
+VAR_OUTPUT
+	(*To machine/user*)
+	sO_CleanDevStatus			:ST_CLEANING_DEV_STATUS;	(*Initialize operation*)
+	bO_Purge							: BOOL;
+	bO_EnableCleanerPump	: BOOL;
+END_VAR
+VAR
+	bL_PurgeStarted				: BOOL;
+	TonDelay							: TON;									(*Time wait for intertask comm*)
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*Mode selection*)
+IF sI_CleanDevCmd.bAuto THEN	(*Control by cleaning process*)
+	CASE 	sI_CleanDevCmd.eOperation OF
+		eNOP:	(*No operation active*)
+			bO_Purge :=	FALSE;
+			bL_PurgeStarted:=FALSE;
+			bO_EnableCleanerPump := FALSE;
+			TonDelay.IN:= FALSE;
+
+		eOPCLEAN:	(*Cleaning Mode -------------------------------------*)
+			bO_Purge :=	FALSE;
+			bL_PurgeStarted:=FALSE;
+			IF sI_CleanDevCmd.bInit THEN
+				bO_EnableCleanerPump := FALSE;
+			ELSIF sI_CleanDevCmd.bPrep THEN
+				bO_EnableCleanerPump := FALSE;
+			ELSIF sI_CleanDevCmd.bStart THEN
+				bO_EnableCleanerPump := TRUE;
+			ELSIF sI_CleanDevCmd.bStop THEN
+				bO_EnableCleanerPump := FALSE;
+			ELSE	(*Command removed, wait until axis finished movement*)
+				;		(*No operation, keep commands*)
+			END_IF;
+
+			TonDelay.PT:= T#500ms;
+			TonDelay.IN:= bO_EnableCleanerPump;
+			TonDelay();
+
+			IF bO_EnableCleanerPump THEN
+				sO_CleanDevStatus.bBusy:=NOT(TonDelay.Q AND bI_CleanPumpOn);
+				sO_CleanDevStatus.bReady:=TonDelay.Q AND bI_CleanPumpOn;
+			ELSE
+				sO_CleanDevStatus.bBusy:=FALSE;
+				sO_CleanDevStatus.bReady:=TRUE;
+			END_IF;
+
+			sO_CleanDevStatus.bBusy:= (bO_EnableCleanerPump AND NOT bI_CleanPumpOn) OR (NOT bO_EnableCleanerPump AND bI_CleanPumpOn);
+			sO_CleanDevStatus.bReady:= NOT sO_CleanDevStatus.bBusy;
+
+		eOPPURGE:	(*Purge Mode -------------------------------------*)
+			bO_EnableCleanerPump :=	FALSE;
+			IF sI_CleanDevCmd.bInit THEN
+				bO_Purge := FALSE;
+			ELSIF sI_CleanDevCmd.bPrep THEN
+				bO_Purge := FALSE;
+			ELSIF sI_CleanDevCmd.bStart THEN
+				bO_Purge := TRUE;
+			ELSIF sI_CleanDevCmd.bStop THEN
+				bO_Purge := FALSE;
+			ELSE	(*Command removed, wait until axis finished movement*)
+				;		(*No operation, keep commands*)
+			END_IF;
+
+			IF bO_Purge THEN
+					IF bI_PurgeBusy THEN
+						bL_PurgeStarted:=TRUE;
+					END_IF;
+					sO_CleanDevStatus.bBusy:= NOT(bL_PurgeStarted AND NOT bI_PurgeBusy);
+					sO_CleanDevStatus.bReady:= bL_PurgeStarted AND NOT bI_PurgeBusy;
+			ELSE
+				bL_PurgeStarted:=FALSE;
+				sO_CleanDevStatus.bBusy:=FALSE;
+				sO_CleanDevStatus.bReady:=TRUE;
+			END_IF;
+
+		ELSE
+				TonDelay.IN:= FALSE;
+				bO_Purge :=	FALSE;
+				bL_PurgeStarted:=FALSE;
+				bO_EnableCleanerPump := FALSE;
+				sO_CleanDevStatus.bBusy:=FALSE;
+				sO_CleanDevStatus.bReady:=TRUE;
+		END_CASE;
+END_IF;
+
+IF sI_CleanDevCmd.bAbort THEN
+		TonDelay.IN:= FALSE;
+		bO_Purge :=	FALSE;
+		bL_PurgeStarted:=FALSE;
+		bO_EnableCleanerPump := FALSE;
+		sO_CleanDevStatus.bBusy:=FALSE;
+		sO_CleanDevStatus.bReady:=TRUE;
+END_IF;
+
+sO_CleanDevStatus.bRefKnown:=TRUE;]]></ST>
+    </Implementation>
+    <LineIds Name="FB_MOTION_TO_INKSYSTEM_IF">
+      <LineId Id="3" Count="83" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

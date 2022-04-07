@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="FB_PrintOverview" Id="{57a6df33-c5fc-4b78-b796-858abcecd4f4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_PrintOverview
+VAR_INPUT
+  fResSubPx     : LREAL;   // Subpixel pulse resolution
+END_VAR
+
+VAR
+  // helper
+  bInit   : BOOL;
+  nCtr    : UDINT;
+  nNum    : UDINT;
+  
+  // config
+  _pCTM   : POINTER TO FB_CTManagerDts;
+  _fPrintResolution : LREAL;      // [dpi]
+  _fSubPixelResolution : LREAL;   // sub pixel resolution [x]
+  
+  // Container view list
+  iCT     : I_CT;
+  aCTV    : ARRAY[1..iCPr_MAX_CONTAINER] OF FB_ContainerView;
+  // Worker view list
+  iWorker : I_Worker;
+  
+  // motion and position
+  bMovingInd : BOOL;
+  fSpeed  : LREAL;
+  fbBlink : FB_BLINK;
+  t : TIME;
+  
+  // time
+  sCurrentDateTime : STRING;
+END_VAR
+
+VAR CONSTANT
+  nC_MAX_WORKER_VIEWS : UINT := 10;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF NOT checkConfig() THEN RETURN; END_IF    // check config
+
+// -- current time ---------------------------
+sCurrentDateTime := F_TimeGetDateTime();]]></ST>
+    </Implementation>
+    <Method Name="checkConfig" Id="{edfe75ad-63c4-4ec1-9d31-8e206962e7b0}">
+      <Declaration><![CDATA[METHOD checkConfig : BOOL
+VAR_INPUT
+END_VAR
+VAR_INST
+  _fX_m, _fY_m   : LREAL;
+  _nX_px, _nY_px : DINT; 
+END_VAR
+VAR
+  bOK : BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT bInit THEN RETURN; END_IF
+
+checkConfig := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="init" Id="{bd002f50-5fd9-48d9-b817-a794ac96eb55}">
+      <Declaration><![CDATA[METHOD init : BOOL
+VAR_INPUT
+  pCTM                : POINTER TO FB_CTManager;
+  fSubPixelResolution : LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF pCTM = 0 THEN RETURN; END_IF
+
+_pCTM := pCTM;
+
+bInit := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_PrintOverview">
+      <LineId Id="295" Count="0" />
+      <LineId Id="297" Count="0" />
+      <LineId Id="418" Count="0" />
+      <LineId Id="424" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintOverview.checkConfig">
+      <LineId Id="26" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintOverview.init">
+      <LineId Id="5" Count="0" />
+      <LineId Id="11" Count="1" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="14" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

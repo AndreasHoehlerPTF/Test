@@ -1,0 +1,192 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="FB_ExhaustSystemPrint" Id="{40045859-dda9-44e0-add5-bd15475d8407}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_ExhaustSystemPrint
+
+VAR_INPUT
+  bI_FUReady                         AT %I* : BOOL;   (*FU ready*)
+  iI_VacuumMeasurement               AT %I* : UINT;   (*Analog input: vacuum measurement*)
+  bI_AerosolMeasurementAckInit       AT %I* : BOOL;                  (*EL6001: aerosol measurement acknowledge init*)
+  bI_AerosolMeasurementDataRec       AT %I* : BOOL;                  (*EL6001: aerosol measurement receive data*)
+  iI_AerosolMeasurementRecDataLength AT %I* : USINT;                 (*EL6001: aerosol measurement receive data length*)
+  cI_AerosolMeasurementRxBuff        AT %I* : ARRAY[0..21] OF BYTE;  (*EL6001: aerosol measurement receive data buffer*)
+  bI_AerosolMeasurementBufferFull    AT %I* : BOOL;                  (*EL6001: aerosol measurement buffer full*)
+  bI_AerosolMeasurementFramingError  AT %I* : BOOL;                  (*EL6001: aerosol measurement framing error*)
+  bI_AerosolMeasurementOverRunError  AT %I* : BOOL;                  (*EL6001: aerosol measurement over run error*)
+
+  bI_PrintActive                            : BOOL;   (*Printing active*)
+END_VAR
+
+VAR_OUTPUT
+  bO_FUActivate                      AT %Q* : BOOL;   (*FU activation*)
+  bO_AerosolMeasurementReqInit       AT %Q* : BOOL;   (*EL6001: aerosol measurement request init*)
+  bO_AerosolMeasurementAckRec        AT %Q* : BOOL;   (*EL6001: aerosol measurement acknowledge receive*)
+
+  bO_FUReady                                : BOOL;   (*FU ready*)
+  bO_VacuumWarningLevel                     : BOOL;   (*Vacuum warning level reached*)
+  bO_VacuumErrorLevel                       : BOOL;   (*Vacuum error level reached*)
+END_VAR
+
+VAR
+  iL_Counter                                : INT;    (*Basic counter*)
+
+  fb_TofFUOffDelay                          : TOF;    (*FU off delay*)
+  fb_TonVacuumCheckDelay                    : TON;    (*Vacuum check delay*)
+
+  fL_VacuumAnalogLevelMBar                  : REAL;   (*Actual value analog-input in mBar*)
+
+  (*Aerosol measurement*)
+  fb_TonMeasurementTrigger                  : TON;                   (*Vacuum check delay*)
+  eO_ComState                               : EN_COMPORT_STATES;     (*State of the COM port*)
+  iL_ComState                               : INT := 0;              (*Identifier on the state of the com function*)
+  cL_Value                                  : BYTE;                  (*Amount of data received*)
+  aL_ReceivedData                           : T_MaxString;           (*String for received data*)
+  fb_RTrigDataReceived                      : R_TRIG;                (*R_TRIG for data received*)
+  fb_FTrigDataReceived                      : F_TRIG;                (*F_TRIG for data received*)
+  iL_ReceiveCount                           : UINT;                  (*Receive counter*)
+  fL_ParticleMeasurements                   : ARRAY[1..iC_ParticleMeasurementNb] OF REAL;  (*Particle measurements*)
+  iL_ParticleMeasurementIdx                 : INT := 1;              (*Particle measurement index*)
+END_VAR
+
+VAR PERSISTENT
+  tR_FUOffDelay                             : TIME := T#3M;   (*FU off delay time*)
+  tR_VacuumCheckDelay                       : TIME := T#10S;  (*Vacuum check delay time*)
+
+  iR_VacuumAnalogMinDigit                   : UINT := 0;      (*Min value analog-input in digit*)
+  iR_VacuumAnalogMaxDigit                   : UINT := 32737;  (*Max value analog-input in digit*)
+  fR_VacuumAnalogMinMBar                    : REAL := 0;      (*Min value analog-input in mBar*)
+  fR_VacuumAnalogMaxMBar                    : REAL := 50.0;   (*Max value analog-input in mBar*)
+  fR_VacuumWarningLevelMBar                 : REAL := 20.0;   (*Warning level in mBar*)
+  fR_VacuumErrorLevelMBar                   : REAL := 10.0;   (*Error level in mBar*)
+
+  iR_ParticleMeasurementWarning             : INT := 40;      (*Particle measurement warning level*)
+END_VAR
+
+VAR CONSTANT
+  iC_ParticleMeasurementNb                  : INT := 60;      (*Number of particle measurements*)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[bO_FUReady := bI_FUReady;
+
+fb_TofFUOffDelay(IN := bI_PrintActive, PT := tR_FUOffDelay);
+bO_FUActivate := fb_TofFUOffDelay.Q;
+
+fL_VacuumAnalogLevelMBar := UINT_TO_REAL(iI_VacuumMeasurement) * fR_VacuumAnalogMaxMBar / iR_VacuumAnalogMaxDigit;
+  
+fb_TonVacuumCheckDelay(IN := bO_FUActivate, PT := tR_VacuumCheckDelay);
+IF fb_TonVacuumCheckDelay.Q THEN
+  (*Level detection for messaging*)
+  bO_VacuumWarningLevel := fL_VacuumAnalogLevelMBar < fR_VacuumWarningLevelMBar;
+  bO_VacuumErrorLevel   := fL_VacuumAnalogLevelMBar < fR_VacuumErrorLevelMBar;
+END_IF
+
+AerosolMeasurement();
+]]></ST>
+    </Implementation>
+    <Action Name="AerosolMeasurement" Id="{4b33e5a7-c21f-4053-9a73-f24174c2439d}">
+      <Implementation>
+        <ST><![CDATA[fb_RTrigDataReceived(CLK := bI_AerosolMeasurementDataRec);
+fb_FTrigDataReceived(CLK := bI_AerosolMeasurementDataRec);
+
+CASE iL_COMstate OF
+0:
+  IF NOT bI_AerosolMeasurementAckInit THEN
+    bO_AerosolMeasurementReqInit := TRUE;
+  ELSE
+    bO_AerosolMeasurementReqInit := FALSE;
+
+    iL_COMstate := 1;
+
+    bO_AerosolMeasurementAckRec := bI_AerosolMeasurementDataRec;
+  END_IF
+
+1:	(*Receive data*)
+  IF    fb_RTrigDataReceived.Q
+     OR fb_FTrigDataReceived.Q 
+  THEN
+    bO_AerosolMeasurementAckRec := bI_AerosolMeasurementDataRec;
+
+    cL_Value := iI_AerosolMeasurementRecDataLength;
+
+    aL_ReceivedData := '';
+    FOR iL_Counter := 0 TO (cL_Value - 2) DO  (*Without Suffix*)
+      aL_ReceivedData := CONCAT(aL_ReceivedData, F_ToCHR(cI_AerosolMeasurementRxBuff[iL_Counter]));
+    END_FOR
+
+    iL_ReceiveCount := iL_ReceiveCount + 1;
+  END_IF
+
+  IF    bI_AerosolMeasurementBufferFull
+     OR bI_AerosolMeasurementFramingError
+     OR bI_AerosolMeasurementOverRunError
+  THEN
+    iL_COMstate := 666;
+  ELSE
+    eO_ComState := eOpen;
+  END_IF
+
+666:	 (* ERROR STATE*)
+  eO_ComState := ePortFaulty;	(*ERROR system*)
+  iL_COMstate := 0;
+
+END_CASE
+
+fb_TonMeasurementTrigger(IN := NOT fb_TonMeasurementTrigger.Q, PT := T#10S);
+IF fb_TonMeasurementTrigger.Q AND bO_FUActivate THEN
+  fL_ParticleMeasurements[iL_ParticleMeasurementIdx] := fL_VacuumAnalogLevelMBar; (*TEST with fL_VacuumAnalogLevelMBar !!!*)
+  iL_ParticleMeasurementIdx := iL_ParticleMeasurementIdx + 1;
+  
+  IF iL_ParticleMeasurementIdx > iC_ParticleMeasurementNb THEN
+    FOR iL_Counter := 2 TO iC_ParticleMeasurementNb DO
+      fL_ParticleMeasurements[iL_Counter - 1] := fL_ParticleMeasurements[iL_Counter];
+    END_FOR
+    iL_ParticleMeasurementIdx := iC_ParticleMeasurementNb;
+  END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Action>
+    <Method Name="mAckError" Id="{6c908b6b-fd1e-4ba3-8b10-49e31e8c5837}">
+      <Declaration><![CDATA[METHOD mAckError : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bO_VacuumWarningLevel := FALSE;
+bO_VacuumErrorLevel   := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_ExhaustSystemPrint">
+      <LineId Id="78" Count="1" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="69" Count="0" />
+      <LineId Id="168" Count="1" />
+      <LineId Id="70" Count="1" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="75" Count="1" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="102" Count="0" />
+      <LineId Id="68" Count="0" />
+      <LineId Id="103" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ExhaustSystemPrint.AerosolMeasurement">
+      <LineId Id="2" Count="8" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="11" Count="21" />
+      <LineId Id="47" Count="2" />
+      <LineId Id="33" Count="9" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="1" Count="0" />
+      <LineId Id="51" Count="1" />
+      <LineId Id="54" Count="2" />
+      <LineId Id="59" Count="2" />
+      <LineId Id="57" Count="1" />
+      <LineId Id="53" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ExhaustSystemPrint.mAckError">
+      <LineId Id="6" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

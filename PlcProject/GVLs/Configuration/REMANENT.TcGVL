@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4022.16">
+  <GVL Name="REMANENT" Id="{8ecd94c7-5d32-4b9a-ae17-1dd035f4d391}">
+    <Declaration><![CDATA[{attribute 'Tc2GvlVarNames'}
+VAR_GLOBAL PERSISTENT
+(*************************************************************************************************)
+(*  FILENAME:     REMANENT.EXP		                                                               *)
+(*  PROJECT:      CALMAR Ink System                                                              *)
+(*  COPYRIGHT:    Wifag//Polytype Fribourg	 		                                                 *)
+(*  ENVIRONMENT:  TwinCAT PLC / CoDeSys	                                                         *)
+(*	VERSION:			1.0																																						 *)
+(*  DESCRIPTION:  Remanent Variables													        							             *)
+(*																																															 *)
+(*  AUTHOR:       PAR                                                                            *)
+(*************************************************************************************************)
+(*  MODIFICATIONS:                                                                               *)
+(*************************************************************************************************)
+(*  Date      Author  Comments                                                                   *)
+(*  04.12.13  PAR     Initial Version                                                            *)
+(*************************************************************************************************)
+
+  (*Remanente Variablen*)
+  sR_RemVar_P         : ST_REM_VAR_P;
+  sR_RemVar_I        	: ST_REM_VAR_I;
+	sR_RemVar_M					: ST_REM_VAR_M;
+END_VAR
+]]></Declaration>
+  </GVL>
+</TcPlcObject>

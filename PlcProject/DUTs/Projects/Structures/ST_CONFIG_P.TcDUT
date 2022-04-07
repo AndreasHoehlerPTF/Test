@@ -1,0 +1,182 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <DUT Name="ST_CONFIG_P" Id="{7a2191f7-9cbe-4d14-a5c4-e3302fa46a3b}">
+    <Declaration><![CDATA[TYPE ST_CONFIG_P :
+(*************************************************************************************************)
+(*  FILENAME:    ST_CONFIG_P.EXP                                                                 *)
+(*  PROJECT:     CALMAR PUPLC                                                                    *)
+(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2016)            *)
+(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
+(*  VERSION:     <version>                                                                       *)
+(*************************************************************************************************)
+(*  DESCRIPTION:                                                                   <description> *)
+(*    Configuration data system.                                                                 *)
+(*                                                                                </description> *)
+(*************************************************************************************************)
+
+STRUCT
+  aC_PU_NAME                    : ARRAY[1..iCPr_NB_PU] OF STRING[9] :=
+           ['WEU'];
+
+  aC_PM_NAME                    : ARRAY[1..iCPr_NB_PM] OF STRING[10] :=
+           ['Module 2',
+            'Module 3'];
+
+  aC_PG_NAME                    : ARRAY[1..iCPr_NB_PG] OF STRING[22] :=
+           ['M2 Printline 1 infeed',
+            'M2 Printline 2 outlet',
+            'M3 Printline 3 infeed',
+            'M3 Printline 4 outlet'];
+
+  aC_PC_NAME                    : ARRAY[1..iCPr_NB_PC] OF STRING[22] :=
+           ['Controller Board 1.1',
+            'Controller Board 1.2',
+            'Controller Board 2.1',
+            'Controller Board 2.2',
+            'Controller Board 3.1',
+            'Controller Board 3.2',
+            'Controller Board 4.1',
+            'Controller Board 4.2'];
+
+  aC_PH_NAME                    : ARRAY[1..iCPr_NB_PH] OF STRING[15] :=
+           ['Printhead 1.1',
+            'Printhead 1.2',
+            'Printhead 1.3',
+            'Printhead 1.4',
+            'Printhead 1.5',
+            'Printhead 1.6',
+            'Printhead 2.1',
+            'Printhead 2.2',
+            'Printhead 2.3',
+            'Printhead 2.4',
+            'Printhead 2.5',
+            'Printhead 2.6',
+            'Printhead 3.1',
+            'Printhead 3.2',
+            'Printhead 3.3',
+            'Printhead 3.4',
+            'Printhead 3.5',
+            'Printhead 3.6',
+            'Printhead 4.1',
+            'Printhead 4.2',
+            'Printhead 4.3',
+            'Printhead 4.4',
+            'Printhead 4.5',
+            'Printhead 4.6'];
+
+  aC_PH_AO_TYPE                 : ARRAY[1..iCPr_NB_PH] OF STRING[9] :=
+           ['RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5',
+            'RicohGen5'];
+
+
+  aC_SUB_NAME                     : STRING := 'Substrate';
+  
+  aC_ASP_NAME                     : STRING := 'Aspect';
+
+  
+  (*Positioning configuration*)
+  (*PU*)
+  aC_PU_SHIFTPOS_X_UNIT           : STRING  := 'um';
+  lL_PU_SHIFTPOS_X_SET_MIN        : DINT    := -5_000;         (*minimum set value*)
+  lL_PU_SHIFTPOS_X_SET_MAX        : DINT    :=  5_000;         (*maximum set value*)
+
+  aC_PU_SHIFTPOS_Y_UNIT           : STRING  := 'um';
+  lL_PU_SHIFTPOS_Y_SET_MIN        : DINT    := -1_000;         (*minimum set value*)
+  lL_PU_SHIFTPOS_Y_SET_MAX        : DINT    :=  1_000;         (*maximum set value*)
+
+  aC_PU_GENERALSHIFT_X_UNIT       : STRING  := 'um';
+  lL_PU_GENERALSHIFT_X_SET_MIN    : DINT    :=   -380_000;     (*minimum set value*)
+  lL_PU_GENERALSHIFT_X_SET_MAX    : DINT    :=  1_000_000;     (*maximum set value*)
+
+  aC_PU_GENERALSHIFT_Y_UNIT       : STRING  := 'um';
+  lL_PU_GENERALSHIFT_Y_SET_MIN    : DINT    := -8_001;         (*minimum set value*)
+  lL_PU_GENERALSHIFT_Y_SET_MAX    : DINT    :=  8_001;         (*maximum set value*)
+
+  aC_xx_POSITION_X_TYPE           : STRING  := 'DINT';
+  aC_xx_POSITION_X_UNIT           : STRING  := 'um';
+  lL_xx_POSITION_X_SET_MIN        : DINT    := 0;              (*minimum set value*)
+  lL_xx_POSITION_X_SET_MAX        : DINT    := 2147483647;     (*maximum set value*)
+
+  aC_PH_OFFSETPOS_Y_UNIT          : STRING  := 'pixel';
+  lL_PH_OFFSETPOS_Y_SET_MIN       : DINT    := 0;              (*minimum set value*)
+  lL_PH_OFFSETPOS_Y_SET_MAX       : DINT    := 2147483647;     (*maximum set value*)
+
+  aC_xx_STARTPOS_X_TYPE           : STRING  := 'DINT';
+  aC_xx_STARTPOS_X_UNIT           : STRING  := 'um';
+  lL_xx_STARTPOS_X_SET_MIN        : DINT    := 0;              (*minimum set value*)
+  lL_xx_STARTPOS_X_SET_MAX        : DINT    := 2_000_000;      (*maximum set value*)
+
+  aC_xx_STARTPOS_Y_UNIT           : STRING  := 'pixel';
+  lL_xx_STARTPOS_Y_SET_MIN        : DINT    := 0;              (*minimum set value*)
+  lL_xx_STARTPOS_Y_SET_MAX        : DINT    := 2147483647;     (*maximum set value*)
+
+  aC_SHEETALIGNMENT_NAME          : STRING  := 'SheetAlignment';
+
+  aC_xx_PRINTMARK_X_TYPE          : STRING  := 'REAL';
+  aC_xx_PRINTMARK_X_UNIT          : STRING  := 'mm';
+  fL_xx_PRINTMARK_X_SET_MIN       : REAL    := 1.0;            (*minimum set value*)
+  fL_xx_PRINTMARK_X_SET_MAX       : REAL    := 50.0;           (*maximum set value*)
+
+  aC_xx_PRINTMARK_Y_TYPE          : STRING  := 'REAL';
+  aC_xx_PRINTMARK_Y_UNIT          : STRING  := 'mm';
+  fL_xx_PRINTMARK_Y_SET_MIN       : REAL    := 1.0;            (*minimum set value*)
+  fL_xx_PRINTMARK_Y_SET_MAX       : REAL    := 50.0;           (*maximum set value*)
+
+  aC_xx_HEAD_GAP_TYPE             : STRING  := 'REAL';
+  aC_xx_HEAD_GAP_UNIT             : STRING  := 'mm';
+  fL_xx_HEAD_GAP_SET_MIN          : REAL    := 0.8;            (*minimum set value*)
+  fL_xx_HEAD_GAP_SET_MAX          : REAL    := 2.5;            (*maximum set value*)
+
+  aC_xx_CURRENT_ANGLE_TYPE        : STRING  := 'REAL';
+  aC_xx_CURRENT_ANGLE_UNIT        : STRING  := '°';
+  fL_xx_CURRENT_ANGLE_SET_MIN     : REAL    := -5.0;           (*minimum set value*)
+  fL_xx_CURRENT_ANGLE_SET_MAX     : REAL    :=  5.0;           (*maximum set value*)
+
+  (*SUB*)
+  aC_SUB_SURFACE_VELOCITY_TYPE    : STRING  := 'REAL';
+  aC_SUB_SURFACE_VELOCITY_UNIT    : STRING  := 'm/s';
+  fC_SUB_SURFACE_VELOCITY_SET_MIN : REAL    := 0.0833;         (*minimum set value*)
+  fC_SUB_SURFACE_VELOCITY_SET_MAX : REAL    := 3.3334;         (*maximum set value*)
+
+  aC_SUB_SURFACE_SIZE_UNIT        : STRING  := 'mm';
+  fC_SUB_SURFACE_SIZE_SET_MIN     : REAL    := 0;              (*minimum set value*)
+  fC_SUB_SURFACE_SIZE_SET_MAX     : REAL    := 4000;           (*maximum set value*)
+
+  aC_SUB_SURFACE_POS_UNIT         : STRING  := 'mm';
+  fC_SUB_SURFACE_POS_SET_MIN      : REAL    := 0;              (*minimum set value*)
+  fC_SUB_SURFACE_POS_SET_MAX      : REAL    := 4000;           (*maximum set value*)
+  
+  (*Aspect*)
+  aC_ASP_SPEED_UNIT               : STRING  :=  'm/s';
+  aC_ASP_SPEED_MIN                : REAL    :=  0;
+  aC_ASP_SPEED_MAX                : REAL    :=  5;
+  
+  aC_ASP_POSITION_OFFSET_UNIT     : STRING  :=  'um';
+  aC_ASP_POSITION_OFFSET_MIN      : DINT    :=  -1000000;
+  aC_ASP_POSITION_OFFSET_MAX      : DINT    :=  1000000;
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

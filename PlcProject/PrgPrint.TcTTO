@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <Task Name="PrgPrint" Id="{bfebb9f8-2d0f-4e12-8c04-f6f45ab67802}">
+    <!--CycleTime in micro seconds.-->
+    <CycleTime>2000</CycleTime>
+    <Priority>20</Priority>
+    <PouCall>
+      <Name>PRG_PRINT</Name>
+    </PouCall>
+    <TaskFBGuid>{b8d3c1c4-c63b-4264-84b8-ff2f12aa76b5}</TaskFBGuid>
+    <Fb_init>{d5291ba5-840d-4385-9e05-37a90ebce6d2}</Fb_init>
+    <Fb_exit>{5c6ef04e-a11d-45fe-9ee0-b2cb35f0b2d3}</Fb_exit>
+    <CycleUpdate>{6545f480-0fcc-4a91-bed5-7e3486a6ad42}</CycleUpdate>
+    <PostCycleUpdate>{82ab80eb-a058-43e9-8842-c3fc102022ee}</PostCycleUpdate>
+  </Task>
+</TcPlcObject>

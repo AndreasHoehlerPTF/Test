@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="ST_REM_VAR_M" Id="{1afd5631-99fc-4f85-ba0a-48ca15dc400a}">
+    <Declaration><![CDATA[TYPE ST_REM_VAR_M :
+(*************************************************************************************************)
+(*  FILENAME:    ST_REM_VAR_M.EXP                                                                *)
+(*  PROJECT:     CALMAR PUPLC                                                                    *)
+(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2016)            *)
+(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
+(*  VERSION:     <version>                                                                       *)
+(*************************************************************************************************)
+(*  DESCRIPTION:                                                                   <description> *)
+(*    Structure of remanent variables.                                                           *)
+(*                                                                                </description> *)
+(*************************************************************************************************)
+
+STRUCT
+  (*Clean Head*)
+  (*************************************************************************************************)
+  fRCH_Position_A                           : REAL;
+  fRCH_Position_B                           : REAL;
+  fRCH_Position_p1                          : REAL;
+  fRCH_Position_p2                          : REAL;
+  fRCH_PlaceSpeed                           : REAL;
+  fRCH_WorkSpeed                            : REAL;
+  fRCH_ServiceSpeed                         : REAL;
+
+  lRCH_OffsetEncoder                        : DINT;
+  
+
+  lR_ToleranceLenPx                         : DINT;
+
+(*Last entry----retain (remanent) variables of PRG_MACHINE and realated modules*)
+  aL_Pattern                                : UDINT;  (*check pattern for rem validity*)
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

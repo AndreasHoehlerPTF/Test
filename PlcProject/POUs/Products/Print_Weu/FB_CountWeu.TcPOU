@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <POU Name="FB_CountWeu" Id="{fb47218b-a802-4696-a3fb-d6997a3b7774}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_CountWeu
+(*************************************************************************************************)
+(*  FILENAME:    FB_CountWeu                                                                     *)
+(*  PROJECT:     CALMAR PUPLC                                                                    *)
+(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2021)            *)
+(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
+(*  VERSION:     <version>                                                                       *)
+(*************************************************************************************************)
+(*  DESCRIPTION:                                                                   <description> *)
+(*    Function for product count.                                                                *)
+(*    The used pointers must be set in PRG_PRINT.Init!                                           *)
+(*                                                                                </description> *)
+(*************************************************************************************************)
+
+VAR_INPUT
+  pI_sAdsPrintUnit                          : POINTER TO ST_ADS_PU;        (*Pointer to ST_ADS_PU*)
+  pI_ZeroPointerErr                         : POINTER TO UDINT;
+
+  bI_SuccessFeedback                        : BOOL;             (*Success feedback from machine*)
+
+  cI_ExtraCount                             : BYTE := 0;        (*Number of extra products that should be printed*)
+END_VAR
+
+VAR_OUTPUT
+  bO_JobFinished                            : BOOL := FALSE;    (*Number of printed copies reached => job finished*)
+  lO_ProductCountSuccess                    : UDINT;            (*Product counter of successfully printed*)
+END_VAR
+
+VAR
+  iL_Counter                                : INT;              (*Local iteration counter - default*)
+
+  lL_SuccessCount                           : UDINT := 0;       (*Success counter*)
+
+  fb_RTrigSuccessFeedback                   : R_TRIG;           (*Success feedback from machine*)
+  fb_RTrigPrintedCopies                     : R_TRIG;           (*Number of printed copies reached*)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*0 pointer found*)
+IF (pI_sAdsPrintUnit = 0) THEN
+  IF pI_ZeroPointerErr <> 0 THEN
+    pI_ZeroPointerErr^ := pI_ZeroPointerErr^ + 1;
+  END_IF
+
+  RETURN;
+END_IF;
+
+IF pI_sAdsPrintUnit^.sI_Start.bI_Command THEN
+  lL_SuccessCount := 0;
+END_IF;
+
+(*Count successfull products*)
+fb_RTrigSuccessFeedback(CLK := bI_SuccessFeedback);
+IF fb_RTrigSuccessFeedback.Q THEN
+  lL_SuccessCount := lL_SuccessCount + 1;
+END_IF;
+lO_ProductCountSuccess := lL_SuccessCount;
+
+IF pI_sAdsPrintUnit^.sI_JobSettings.lI_NumberOfCopies = 0 THEN
+  bO_JobFinished := FALSE;
+ELSE
+  (*Set job finished if number of desired copies reached.*)
+  fb_RTrigPrintedCopies(CLK := (lL_SuccessCount >= (pI_sAdsPrintUnit^.sI_JobSettings.lI_NumberOfCopies + cI_ExtraCount)));
+  IF fb_RTrigPrintedCopies.Q THEN
+    bO_JobFinished := TRUE;
+  END_IF;
+END_IF;
+
+(*Reset signals*)
+IF pI_sAdsPrintUnit^.sI_Stop.bI_Command THEN
+  bO_JobFinished := FALSE;
+END_IF;
+
+(********************************* END OF FB *****************************************************)
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_CountWeu">
+      <LineId Id="3" Count="8" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="32" Count="1" />
+      <LineId Id="49" Count="6" />
+      <LineId Id="84" Count="0" />
+      <LineId Id="86" Count="1" />
+      <LineId Id="98" Count="11" />
+      <LineId Id="115" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

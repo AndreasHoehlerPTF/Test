@@ -1,0 +1,251 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="FB_PrintPositionWeu" Id="{726347b1-24f3-41dd-8d38-18de7bf18c3b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_PrintPositionWeu EXTENDS FB_BasePrint IMPLEMENTS I_Simulation
+VAR_INPUT
+  IlEncoderPulse      AT%I* : UDINT;                // Encoder counter intput
+  IbEncoderWcState    AT%I* : BOOL;                 // Encoder EL5101 WcState
+END_VAR
+VAR_OUTPUT
+  bStarted                  : BOOL;                 // position started moving
+  bMoving                   : BOOL;                 // position is moving
+END_VAR
+// ----------------------------------
+// configuration
+VAR
+  // configuration (init)
+  _fPrintResolution         : LREAL := 600;         // print(head) resolution in [dpi]
+  _fSubPxResolution         : LREAL := 32;          // SubPixel resolution [SubPx], resolution factor (fI_PrintResolution*fI_SubPxResolution=>Output resolution)
+  _fTaskCycleTime           : LREAL := 0.002;        // Task cycle time in [s]
+END_VAR
+VAR PERSISTENT
+  // config values changable during runtime (recipe, visu, property)
+  _fEncoderResolution       : LREAL := 1;     // Encoder resolution
+END_VAR
+VAR CONSTANT
+  fC_MinSpeed               : LREAL := 0.05;
+END_VAR
+// ---------------------------------
+// internal variables
+VAR
+  // fb inst
+  //fbPositionMaster          : FB_PositionMaster;
+  Fb_Ph_Master                : FB_POSITION_MASTER;
+  Fb_Ref_Master               : FB_POSITION_MASTER;
+  Fb_Aux_Master               : FB_POSITION_MASTER;
+  
+  // internal vars
+  fEncoderReso              : LREAL;                // used encoder resolution
+  rTrigMoving               : R_TRIG;
+  // simulation
+  _bSim                     : BOOL;
+  rfTrig_Sim                : RF_TRIG;
+    
+  // test functions
+
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[rfTrig_Sim(CLK:=_bSim);
+IF rfTrig_Sim.RT THEN SimEnter(); END_IF
+IF rfTrig_Sim.FT THEN SimExit(); END_IF
+IF _bSim THEN SimUpdate(); END_IF
+
+// set internal used resolution
+fEncoderReso := _fEncoderResolution;  
+
+// calc position / speed
+(*Reference Master (Used in Endless Mode with drift compensation)*)
+(*---input---*)
+Fb_Ref_Master.pI_ConversionErr       := ADR(PRG_SYSTEMBASE.lI_ConversionErr);
+Fb_Ref_Master.bI_Reset               := bI_HardwareSync[ePr_PG_GROUP_1];  (*AutoReset*)
+Fb_Ref_Master.lI_Reference           := lL_EncPulse[iL_I];
+Fb_Ref_Master.fI_ResolutionInput     := fEncoderReso;
+Fb_Ref_Master.fI_ResolutionOutPh     := iL_ResolutionPhPx[iL_I];
+Fb_Ref_Master.fI_ResolutionOutSubPx  := iL_ResolutionSubPx[iL_I];
+
+(*---call---*)
+Fb_Ref_Master();
+
+
+(*Aux Master (Used for machine speed info)*)
+(*---input---*)
+Fb_Aux_Master.pI_ConversionErr       := ADR(PRG_SYSTEMBASE.lI_ConversionErr);
+Fb_Aux_Master.bI_Reset               := bI_HardwareSync[ePr_PG_GROUP_1];  (*AutoReset*)
+Fb_Aux_Master.lI_Reference           := lIKp_EncPulse;
+Fb_Aux_Master.fI_ResolutionInput     := fEncoderReso;
+Fb_Aux_Master.fI_ResolutionOutPh     := iL_ResolutionPhPx[iL_I];
+Fb_Aux_Master.fI_ResolutionOutSubPx  := iL_ResolutionSubPx[iL_I];
+
+(*---call---*)
+Fb_Aux_Master();
+
+
+(*Printhead Master / Scaling from encoder pulses to subpixels*)
+(*---input---*)
+Fb_Ph_Master.pI_ConversionErr       := ADR(PRG_SYSTEMBASE.lI_ConversionErr);
+Fb_Ph_Master.bI_Reset               := bI_HardwareSync[ePr_PG_GROUP_1];  (*AutoReset*)
+Fb_Ph_Master.lI_Reference           := lL_EncPulse[iL_I];
+Fb_Ph_Master.fI_ResolutionInput     := fL_ResolutionEncoder[iL_I] * fB_DriftControl[iL_I].fO_SpeedCorrectionFactor;
+Fb_Ph_Master.fI_ResolutionOutPh     := iL_ResolutionPhPx[iL_I];
+Fb_Ph_Master.fI_ResolutionOutSubPx  := iL_ResolutionSubPx[iL_I];
+
+(*---call---*)
+Fb_Ph_Master();
+
+
+// postion status
+bMoving := Fb_Ph_Master.fO_Master_Speed >= fC_MinSpeed; 
+rTrigMoving(CLK:=bMoving);   // create started trigger output
+bStarted := rTrigMoving.Q; //OR Fb_Ph_Master.bSyncReq;]]></ST>
+    </Implementation>
+    <Folder Name="I_Simulation" Id="{c1a12b52-feac-46ab-b12a-ebb95261e645}" />
+    <Property Name="bSimEnable" Id="{30fe551a-b50f-4bf8-9016-a91da26e946e}" FolderPath="I_Simulation\">
+      <Declaration><![CDATA[PROPERTY bSimEnable : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{090ecbf3-b86f-44c9-8fdc-e451b7a045c5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSimEnable := _bSim;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{184d9067-da40-4094-b303-24bea6510207}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[_bSim := bSimEnable;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Method Name="getPosition" Id="{f3e3b96b-183e-4641-b112-e525c3bb6c11}">
+      <Declaration><![CDATA[(*
+  Get current "default" position.
+  [SubPx] as return value and [um] as output
+  :return: position in SubPx resolution
+*)
+METHOD getPosition : DINT
+VAR_OUTPUT
+  nPosition_px       : DINT;                 // Master position in [px]
+  fPosition_um       : LREAL;                // Master position in [um]
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getPosition := fbPositionMaster.lMasterPosition;
+nPosition_px := fbPositionMaster.lMasterPosition / LREAL_TO_DINT(_fSubPxResolution);
+fPosition_um := fbPositionMaster.fMasterPosition;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getSpeed" Id="{89c2b88d-36bc-48c9-87d7-952cfd236342}">
+      <Declaration><![CDATA[(*
+  Get "default" speed.
+*)
+METHOD getSpeed : LREAL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getSpeed := fbPositionMaster.fMasterSpeed;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Init" Id="{0edf7ce9-df28-43fb-8910-213c45b50fdb}">
+      <Declaration><![CDATA[METHOD Init : BOOL
+VAR_INPUT
+  fPrintResolution    : LREAL := 600;         // print(head) resolution in [dpi]
+  fSubPxResolution    : LREAL := 32;          // SubPixel resolution [SubPx], resolution factor (fI_PrintResolution*fI_SubPxResolution=>Output resolution)
+  fTaskCycleTime      : LREAL;                 // Task cycle time in [s]
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// store config
+_fPrintResolution := fPrintResolution;
+_fSubPxResolution := fSubPxResolution;
+_fTaskCycleTime   := fTaskCycleTime;
+
+// init fbs
+// - position master
+fbPositionMaster.init(
+  fI_PrintResolution:=fPrintResolution, 
+  fI_SubPxResolution:=fSubPxResolution, 
+  fI_TaskCycleTime:=fTaskCycleTime, 
+  bI_HWEncoder:=FALSE
+);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="reset" Id="{2192cbfc-67ef-40f5-ae03-86c2f311383b}">
+      <Declaration><![CDATA[METHOD reset
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// reset positioning system
+fbPositionMaster.reset();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SimEnter" Id="{18dac86d-19ba-4d47-91ad-308f9520a467}" FolderPath="I_Simulation\">
+      <Declaration><![CDATA[METHOD SimEnter : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_bSim := TRUE;
+fbPositionMaster.bSim := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SimExit" Id="{82b36d9c-34f8-4e76-b748-6f9668c98474}" FolderPath="I_Simulation\">
+      <Declaration><![CDATA[METHOD SimExit : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_bSim := FALSE;
+fbPositionMaster.bSim := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SimUpdate" Id="{fde6f37f-ac02-4cf3-9a0e-3488a85e6ee5}" FolderPath="I_Simulation\">
+      <Declaration><![CDATA[METHOD SimUpdate : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//test_OldPhMaster(bEn:=bEnTestVsOld);]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_PrintPositionWeu">
+      <LineId Id="3" Count="6" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="115" Count="16" />
+      <LineId Id="194" Count="0" />
+      <LineId Id="133" Count="18" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="23" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintPositionWeu.bSimEnable.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintPositionWeu.bSimEnable.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintPositionWeu.getPosition">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintPositionWeu.getSpeed">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintPositionWeu.Init">
+      <LineId Id="3" Count="12" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintPositionWeu.reset">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintPositionWeu.SimEnter">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintPositionWeu.SimExit">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintPositionWeu.SimUpdate">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

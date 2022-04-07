@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <POU Name="FB_FIFO_DINT" Id="{47300557-10a0-4205-ba88-97eb41933848}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_FIFO_DINT
+(*************************************************************************************************)
+(*  FILENAME:    FB_FIFO_TRIGGER_POS                                                             *)
+(*  PROJECT:     CALMAR PUPLC                                                                    *)
+(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2016)            *)
+(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
+(*  VERSION:     <version>                                                                       *)
+(*************************************************************************************************)
+(*  DESCRIPTION:                                                                   <description> *)
+(*    FIFO for trigger positions.                                                                *)
+(*                                                                                </description> *)
+(*************************************************************************************************)
+
+{library public}
+VAR_INPUT
+  nI_FIFO_Input           : DINT;                          (*FIFO input value*)
+  bI_Init                 : BOOL;                          (*Init*)
+  bI_Add                  : BOOL;                          (*Add value*)
+  bI_Release              : BOOL;                          (*Release value*)
+END_VAR
+
+VAR_OUTPUT
+  bO_FIFO_Error           : BOOL;                          (*value FIFO error*)
+  nO_FIFO                 : DINT;                          (*FIFO for value*)
+END_VAR
+
+{library private}
+VAR
+  nL_FIFO                 : ARRAY[0..iL_FIFOSIZE] OF DINT; (*FIFO for values*)
+  iL_FIFO_Level           : INT := 0;                      (*Level of FIFO*)
+  iL_Count                : INT;                           (*Temporary counter*)
+
+  bL_Add                  : BOOL;                          (*Add value memory*)
+  bL_Release              : BOOL;                          (*Release value memory*)
+END_VAR
+
+VAR CONSTANT
+  (*Bit selection for configuration*)
+  iL_FIFOSIZE             : INT := 75;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF bI_Init THEN
+  Init();
+END_IF;
+
+IF bI_Add AND NOT bL_Add THEN
+  AddValue();
+END_IF;
+bL_Add := bI_Add;
+
+IF bI_Release AND NOT bL_Release THEN
+  ReleaseValue();
+END_IF;
+bL_Release := bI_Release;
+
+nO_FIFO := nL_FIFO[0];
+(********************************* END OF FB *****************************************************)]]></ST>
+    </Implementation>
+    <Action Name="AddValue" Id="{b4a437f9-8fc8-4321-95da-feddc5193980}">
+      <Implementation>
+        <ST><![CDATA[IF iL_FIFO_Level < iL_FIFOSIZE THEN
+	nL_FIFO[iL_FIFO_Level] := nI_FIFO_Input;
+
+	iL_FIFO_Level := iL_FIFO_Level + 1;
+ELSE
+	bO_FIFO_Error := TRUE;
+END_IF;
+
+(********************************* END OF ACTION *************************************************)]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="Init" Id="{058f5d99-5729-49b5-b8c2-e92417d51514}">
+      <Implementation>
+        <ST><![CDATA[iL_FIFO_Level := 0;
+nL_FIFO[0]    := 0;
+bO_FIFO_Error := FALSE;
+(********************************* END OF ACTION *************************************************)]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="ReleaseValue" Id="{a0611afe-0264-4560-9788-5910a690fbca}">
+      <Implementation>
+        <ST><![CDATA[IF iL_FIFO_Level > 1 THEN
+	FOR iL_Count := 0 TO (iL_FIFO_Level - 2) DO
+		nL_FIFO[iL_Count] := nL_FIFO[iL_Count + 1];
+	END_FOR;
+
+	iL_FIFO_Level := iL_FIFO_Level - 1;
+ELSIF iL_FIFO_Level = 1 THEN
+	iL_FIFO_Level := 0;
+END_IF;
+
+(********************************* END OF ACTION *************************************************)]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="FB_FIFO_DINT">
+      <LineId Id="186" Count="12" />
+      <LineId Id="278" Count="0" />
+      <LineId Id="199" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_FIFO_DINT.AddValue">
+      <LineId Id="2" Count="7" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_FIFO_DINT.Init">
+      <LineId Id="2" Count="0" />
+      <LineId Id="4" Count="0" />
+      <LineId Id="3" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_FIFO_DINT.ReleaseValue">
+      <LineId Id="7" Count="9" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
