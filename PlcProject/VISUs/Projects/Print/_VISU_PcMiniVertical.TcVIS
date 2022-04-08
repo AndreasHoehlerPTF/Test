@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
   <Visu Name="_VISU_PcMiniVertical" Id="{8c35e159-baf9-4292-8da6-479cd8b48198}">
     <XmlArchive>
       <Data>
@@ -1584,8 +1584,8 @@
           <o n="GeneratedLMMDescriptions" t="GeneratedLanguageModelEntriesData">
             <o n="GeneratedVisuFbDescription" t="GenericFbDescription">
               <d n="FbMethods" t="CaseInsensitiveHashtable" ckt="String" cvt="Guid">
-                <v>GetUpdateRects</v>
-                <v>d161a986-2d4f-4a94-864b-4f20e5678464</v>
+                <v>HasVisibilityAccess</v>
+                <v>b4d2a17e-2bbb-4274-947e-9ebe51da5387</v>
                 <v>ContainsPoint</v>
                 <v>f35ad891-6812-4006-a299-293d1060ed2d</v>
                 <v>SetStaticState</v>
@@ -1594,6 +1594,8 @@
                 <v>f0f782c1-5455-42e1-9f98-fcaf1bd47ea5</v>
                 <v>GetTooltip</v>
                 <v>2e1c9e52-81b1-42f6-ad27-9ba327385bdc</v>
+                <v>GetUpdateRects</v>
+                <v>d161a986-2d4f-4a94-864b-4f20e5678464</v>
                 <v>GetNamespace</v>
                 <v>dd2af0fc-b5fb-440b-8c49-867c1711a880</v>
                 <v>GetTranslator</v>
@@ -1604,10 +1606,10 @@
                 <v>46a7976d-240b-4426-a5ac-7bff7114eaee</v>
                 <v>GetClientData</v>
                 <v>a7d4172d-6adb-49f4-b529-c4dcbed68bfa</v>
+                <v>Destruct</v>
+                <v>51c46994-f23f-4b94-abd4-57bdfbfa1f39</v>
                 <v>Paint</v>
                 <v>07e4c8fa-ef7f-468d-b4b2-7bb63f67f6fb</v>
-                <v>HasVisibilityAccess</v>
-                <v>b4d2a17e-2bbb-4274-947e-9ebe51da5387</v>
                 <v>GetElementArray</v>
                 <v>08f6a8fb-c4f7-4911-b489-a78955fa20ab</v>
                 <v>SetVisuFlagsInternal</v>
@@ -1626,8 +1628,6 @@
                 <v>7bcf6131-68b1-4e3b-afd0-6fd5e07da352</v>
                 <v>GetSurroundingRect</v>
                 <v>5bdca3cf-651d-4452-a720-29073f82cf14</v>
-                <v>ElementInfo</v>
-                <v>8f5692c9-91a6-41c9-bafd-1642517710e5</v>
                 <v>GetLocalUsergroup</v>
                 <v>f7ffce97-726d-4a2c-9255-863e13e5a8f0</v>
                 <v>GetName</v>
@@ -1644,8 +1644,8 @@
                 <v>59bae184-57f5-4795-bba7-657160e6d9db</v>
                 <v>HandleInput</v>
                 <v>7773cc8c-86a0-4850-8773-ab128b9f593e</v>
-                <v>Destruct</v>
-                <v>51c46994-f23f-4b94-abd4-57bdfbfa1f39</v>
+                <v>ElementInfo</v>
+                <v>8f5692c9-91a6-41c9-bafd-1642517710e5</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{8c35e159-baf9-4292-8da6-479cd8b48198}</v>
@@ -1658,10 +1658,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>21a9b12e-72e0-4748-8264-ea80362bb58d</v>
-                <v>FB_Exit</v>
-                <v>00761630-872e-4147-82d8-29db14e83f8e</v>
                 <v>FB_Reinit</v>
                 <v>4b55a6af-2cb4-4659-8ef7-a8a6e9c1080c</v>
+                <v>FB_Exit</v>
+                <v>00761630-872e-4147-82d8-29db14e83f8e</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{1a149a73-7f88-47b9-8b02-b03e9cdc2688}</v>

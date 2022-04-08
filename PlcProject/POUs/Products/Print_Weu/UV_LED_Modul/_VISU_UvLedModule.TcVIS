@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
   <Visu Name="_VISU_UvLedModule" Id="{a60d7e00-1bb5-4f72-9bcb-6006f3c617b7}">
     <XmlArchive>
       <Data>
@@ -1810,7 +1810,7 @@
                 <v n="VisualElementIdentifier">"GenElemInst_28"</v>
                 <n n="VisualElementOfflinePaintCommands" />
                 <n n="VisualElementFrameInformation" />
-                <d n="VisualElementInputActions" t="Hashtable" ckt="String" cvt="IInputAction[]">
+                <d n="VisualElementInputActions" t="Hashtable" ckt="String" cvt="InputBoxInputAction[]">
                   <v>OnMouseDown</v>
                   <a cet="InputBoxInputAction">
                     <o>
@@ -1857,8 +1857,8 @@
                 <v>b466562e-517a-4469-97b7-a42c00b738c3</v>
                 <v>ContainsPoint</v>
                 <v>29a232dc-8638-4505-a0e5-bfc84c2c4740</v>
-                <v>HasInputAccess</v>
-                <v>8752c12f-e14d-416e-a7a1-ac2d6cc21877</v>
+                <v>SetStaticState</v>
+                <v>1ce087f3-2b42-4ad7-80f9-ac5be130d92f</v>
                 <v>HasInputAccessIntern</v>
                 <v>cdd9b86d-f6b6-40ff-b835-a92be105018a</v>
                 <v>GetTooltip</v>
@@ -1877,8 +1877,6 @@
                 <v>ae8703d2-7bb3-496e-a506-a0ec81407db8</v>
                 <v>SetClientData</v>
                 <v>d591a14f-3e07-4b07-85cd-e754b18b911f</v>
-                <v>HasVisibilityAccessIntern</v>
-                <v>2c495187-eae6-4681-a9ee-11425dec726d</v>
                 <v>GetInstance</v>
                 <v>797536f3-916d-4bad-a909-53d9173893fb</v>
                 <v>GetClientData</v>
@@ -1897,12 +1895,14 @@
                 <v>9d21236c-9a04-4e82-85e3-115729e394ac</v>
                 <v>Initialize</v>
                 <v>1244ba50-c3a4-48c9-9f58-d7d198c38ce9</v>
-                <v>Destruct</v>
-                <v>74e172c4-ffe3-4877-a1a8-4f6f5eeaa712</v>
-                <v>SetStaticState</v>
-                <v>1ce087f3-2b42-4ad7-80f9-ac5be130d92f</v>
+                <v>HasInputAccess</v>
+                <v>8752c12f-e14d-416e-a7a1-ac2d6cc21877</v>
+                <v>HasVisibilityAccessIntern</v>
+                <v>2c495187-eae6-4681-a9ee-11425dec726d</v>
                 <v>GetSurroundingRect</v>
                 <v>2131fb73-5856-4cb5-8787-379a7f63807f</v>
+                <v>ElementInfo</v>
+                <v>f6c1cf01-a28b-465b-8dcd-5f78dc7fdb2e</v>
                 <v>GetResult</v>
                 <v>7f53dcd1-3b4e-4a59-947a-96f2a03d6b80</v>
                 <v>GetLocalUsergroup</v>
@@ -1925,8 +1925,8 @@
                 <v>bc3df51a-a664-4c90-9632-34843e6bf373</v>
                 <v>HandleInput</v>
                 <v>fbbe153c-7f34-4a36-af9a-5a39a7e7a36e</v>
-                <v>ElementInfo</v>
-                <v>f6c1cf01-a28b-465b-8dcd-5f78dc7fdb2e</v>
+                <v>Destruct</v>
+                <v>74e172c4-ffe3-4877-a1a8-4f6f5eeaa712</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{a60d7e00-1bb5-4f72-9bcb-6006f3c617b7}</v>
@@ -1939,10 +1939,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>9b830759-ecab-4155-9dc6-3f2afe7c4b1f</v>
-                <v>FB_Exit</v>
-                <v>051d1ecb-9503-4286-8247-e75e1a32dac7</v>
                 <v>FB_Reinit</v>
                 <v>a118144d-4cb7-428b-8d6c-37e4bb47ab65</v>
+                <v>FB_Exit</v>
+                <v>051d1ecb-9503-4286-8247-e75e1a32dac7</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{4f265154-08ab-4967-a9d3-e8dbf8d7ed14}</v>
@@ -2052,8 +2052,8 @@
         <Type n="Guid">System.Guid</Type>
         <Type n="Hashtable">System.Collections.Hashtable</Type>
         <Type n="HotkeyConfiguration">{6b108d46-58af-4e41-a3f4-174d8f160cc4}</Type>
-        <Type n="IInputAction[]">_3S.CoDeSys.VisualElem.IInputAction[], VisualElem, Version=3.5.13.0, Culture=neutral, PublicKeyToken=null</Type>
         <Type n="InputBoxInputAction">{e8e7e747-f76f-4dee-ab1c-b9637e41ac26}</Type>
+        <Type n="InputBoxInputAction[]">_3S.CoDeSys.VisualElem.InputBoxInputAction[], VisualElem.plugin, Version=3.5.13.31, Culture=neutral, PublicKeyToken=null</Type>
         <Type n="Int16">System.Int16</Type>
         <Type n="Int32">System.Int32</Type>
         <Type n="Int64">System.Int64</Type>

@@ -2420,8 +2420,8 @@
                 <v>1f6aa146-9183-4eb1-b68e-85dbb3133643</v>
                 <v>ContainsPoint</v>
                 <v>c0399ca7-b14b-4e03-9252-ca70735a4ba1</v>
-                <v>HasInputAccess</v>
-                <v>93a089ff-1606-412c-8e22-8b581b6289de</v>
+                <v>SetStaticState</v>
+                <v>2d032d39-57ae-4177-96d6-d75a32e52462</v>
                 <v>HasInputAccessIntern</v>
                 <v>2d822244-4508-4c89-8f35-cf9a2ddb63dd</v>
                 <v>GetTooltip</v>
@@ -2440,8 +2440,6 @@
                 <v>fa6c48b4-5b01-4b00-b050-d55675d1466b</v>
                 <v>SetClientData</v>
                 <v>166708ab-c981-4187-ace4-8a16b036e13f</v>
-                <v>HasVisibilityAccessIntern</v>
-                <v>25b3a431-0b55-4450-a3dc-442f208dc6b5</v>
                 <v>GetInstance</v>
                 <v>9ca5f2e0-115f-4ed9-b7c4-b4942ced761e</v>
                 <v>GetClientData</v>
@@ -2460,12 +2458,14 @@
                 <v>7ff556e5-c5d1-4761-a1dc-ea3b9617f6c5</v>
                 <v>Initialize</v>
                 <v>a19c9bce-c337-4f9f-ab73-662da881bbf2</v>
-                <v>Destruct</v>
-                <v>3cfe45ef-83e7-4f83-a0d3-d1ed382da515</v>
-                <v>SetStaticState</v>
-                <v>2d032d39-57ae-4177-96d6-d75a32e52462</v>
+                <v>HasInputAccess</v>
+                <v>93a089ff-1606-412c-8e22-8b581b6289de</v>
+                <v>HasVisibilityAccessIntern</v>
+                <v>25b3a431-0b55-4450-a3dc-442f208dc6b5</v>
                 <v>GetSurroundingRect</v>
                 <v>47ad905d-0492-44dd-8d35-46dbab834c2b</v>
+                <v>ElementInfo</v>
+                <v>141a7c40-100a-4ddf-b90d-80afcc41002d</v>
                 <v>GetResult</v>
                 <v>ee9ef6bc-c470-43b8-9a4e-d1ccb61e6711</v>
                 <v>GetLocalUsergroup</v>
@@ -2488,8 +2488,8 @@
                 <v>3e729dd0-8f70-4e04-9d64-da6a2f27acc5</v>
                 <v>HandleInput</v>
                 <v>64b3feee-9eb6-470d-8943-40ee4148d1d9</v>
-                <v>ElementInfo</v>
-                <v>141a7c40-100a-4ddf-b90d-80afcc41002d</v>
+                <v>Destruct</v>
+                <v>3cfe45ef-83e7-4f83-a0d3-d1ed382da515</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{d967b255-3c60-4a96-935f-bc78778ee326}</v>
@@ -2502,10 +2502,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>30e8afd9-24c3-4cef-aaab-bf62178fe22a</v>
-                <v>FB_Reinit</v>
-                <v>a079c4c9-9a14-4b72-8162-dcc0dedc6877</v>
                 <v>FB_Exit</v>
                 <v>2a8cff6a-d13d-4ee9-bb97-d4e93d69f65f</v>
+                <v>FB_Reinit</v>
+                <v>a079c4c9-9a14-4b72-8162-dcc0dedc6877</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{038614cb-daf9-4e0c-9ca3-1c58a66fa9d1}</v>

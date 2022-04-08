@@ -258,12 +258,12 @@
                               <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
                                 <v>Visible</v>
                                 <v>False</v>
-                                <v>ieccodeconversion_array</v>
-                                <v></v>
-                                <v>VisibleChildren</v>
-                                <v>True</v>
                                 <v>DefaultArraySize</v>
                                 <v>5</v>
+                                <v>VisibleChildren</v>
+                                <v>True</v>
+                                <v>ieccodeconversion_array</v>
+                                <v></v>
                                 <v>''NORMAL__COMMENT</v>
                                 <v> We hide this node to prevent having two References nodes
  Nevertheless we want to make sure that the children are displayed</v>
@@ -319,8 +319,8 @@
                         <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
                           <v n="AttrFlags">81920UL</v>
                           <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
-                            <v>conditionalshow</v>
-                            <v>visu_elemdev</v>
+                            <v>DisplayFrameReferencesConfiguration</v>
+                            <v></v>
                             <v>DescriptionTextId</v>
                             <v>TL_ElementProperties.Desc_ReferencedVisus</v>
                             <v>SortFlag</v>
@@ -331,14 +331,14 @@
                             <v>Simple|Standard</v>
                             <v>DynamicArray</v>
                             <v></v>
-                            <v>DisplayFrameReferencesConfiguration</v>
-                            <v></v>
+                            <v>conditionalshow</v>
+                            <v>visu_elemdev</v>
                             <v>FrameReferences</v>
                             <v></v>
-                            <v>Storable</v>
-                            <v>True</v>
                             <v>DisplayTextId</v>
                             <v>TL_ElementProperties.References</v>
+                            <v>Storable</v>
+                            <v>True</v>
                           </d>
                           <v n="ConvDone">true</v>
                         </o>
@@ -1026,12 +1026,12 @@
                               <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
                                 <v>Visible</v>
                                 <v>False</v>
-                                <v>ieccodeconversion_array</v>
-                                <v></v>
-                                <v>VisibleChildren</v>
-                                <v>True</v>
                                 <v>DefaultArraySize</v>
                                 <v>5</v>
+                                <v>VisibleChildren</v>
+                                <v>True</v>
+                                <v>ieccodeconversion_array</v>
+                                <v></v>
                                 <v>''NORMAL__COMMENT</v>
                                 <v> We hide this node to prevent having two References nodes
  Nevertheless we want to make sure that the children are displayed</v>
@@ -1087,8 +1087,8 @@
                         <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
                           <v n="AttrFlags">81920UL</v>
                           <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
-                            <v>conditionalshow</v>
-                            <v>visu_elemdev</v>
+                            <v>DisplayFrameReferencesConfiguration</v>
+                            <v></v>
                             <v>DescriptionTextId</v>
                             <v>TL_ElementProperties.Desc_ReferencedVisus</v>
                             <v>SortFlag</v>
@@ -1099,14 +1099,14 @@
                             <v>Simple|Standard</v>
                             <v>DynamicArray</v>
                             <v></v>
-                            <v>DisplayFrameReferencesConfiguration</v>
-                            <v></v>
+                            <v>conditionalshow</v>
+                            <v>visu_elemdev</v>
                             <v>FrameReferences</v>
                             <v></v>
-                            <v>Storable</v>
-                            <v>True</v>
                             <v>DisplayTextId</v>
                             <v>TL_ElementProperties.References</v>
+                            <v>Storable</v>
+                            <v>True</v>
                           </d>
                           <v n="ConvDone">true</v>
                         </o>
@@ -1274,8 +1274,8 @@
                 <v>cc70bbff-b898-436f-a9c9-70100f1e560c</v>
                 <v>ContainsPoint</v>
                 <v>39e67825-8199-43fe-b865-da24e4314797</v>
-                <v>HasInputAccess</v>
-                <v>7a1d3a42-5c6a-46aa-95e4-b892f8e35be4</v>
+                <v>SetStaticState</v>
+                <v>0b218000-7f5d-4ddf-9ccc-0cd629e5d1bc</v>
                 <v>HasInputAccessIntern</v>
                 <v>ae0351f5-37f6-4e50-8b7f-9c78dff0fdf9</v>
                 <v>GetTooltip</v>
@@ -1294,8 +1294,6 @@
                 <v>8f6c5933-b8c4-434b-9c1d-4f129caaa14f</v>
                 <v>SetClientData</v>
                 <v>a7cb1a26-da8d-49b3-b6cd-58aa2853b06b</v>
-                <v>HasVisibilityAccessIntern</v>
-                <v>b8b61908-92a8-4bcf-b629-fb1a58195636</v>
                 <v>GetInstance</v>
                 <v>c13e82cc-6644-4aee-813d-a0e244971559</v>
                 <v>GetClientData</v>
@@ -1314,12 +1312,14 @@
                 <v>3c648e7f-4bf7-4bde-aae3-2fc7a9c1d506</v>
                 <v>Initialize</v>
                 <v>ea989b5e-7bae-40a3-a603-6f0090226546</v>
-                <v>Destruct</v>
-                <v>79fa4f58-399e-41cf-9dc4-4d15a6bdb6f0</v>
-                <v>SetStaticState</v>
-                <v>0b218000-7f5d-4ddf-9ccc-0cd629e5d1bc</v>
+                <v>HasInputAccess</v>
+                <v>7a1d3a42-5c6a-46aa-95e4-b892f8e35be4</v>
+                <v>HasVisibilityAccessIntern</v>
+                <v>b8b61908-92a8-4bcf-b629-fb1a58195636</v>
                 <v>GetSurroundingRect</v>
                 <v>5fe96409-50b3-4659-a643-121d69e0847d</v>
+                <v>ElementInfo</v>
+                <v>f1bd6d2c-1910-4f42-aeb3-0cbba2f240ae</v>
                 <v>GetResult</v>
                 <v>aa67efbc-e1f3-42f1-8765-5d716a2a09bd</v>
                 <v>GetLocalUsergroup</v>
@@ -1342,8 +1342,8 @@
                 <v>ceaabdec-05af-4775-8e42-e10b30f08083</v>
                 <v>HandleInput</v>
                 <v>63af74c9-0b40-4201-b3ad-61bd9d7b7e8d</v>
-                <v>ElementInfo</v>
-                <v>f1bd6d2c-1910-4f42-aeb3-0cbba2f240ae</v>
+                <v>Destruct</v>
+                <v>79fa4f58-399e-41cf-9dc4-4d15a6bdb6f0</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{106bf08b-3246-4506-8c48-e81ae7b17b40}</v>
@@ -1356,10 +1356,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable_1" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>a7fa0104-0e52-4f3b-a8c6-b10711609b11</v>
-                <v>FB_Reinit</v>
-                <v>796653d1-fa7e-4840-aeae-f0c009ad1589</v>
                 <v>FB_Exit</v>
                 <v>7244b1c7-98b6-487c-873c-86b1886a6f07</v>
+                <v>FB_Reinit</v>
+                <v>796653d1-fa7e-4840-aeae-f0c009ad1589</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{0d3037c6-d9dc-4ba1-bcdc-eebc7fad5c4d}</v>

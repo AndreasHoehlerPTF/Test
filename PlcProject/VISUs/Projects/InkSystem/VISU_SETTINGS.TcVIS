@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
   <Visu Name="VISU_SETTINGS" Id="{0ef5a966-9586-445b-b8d7-b949545be274}">
     <XmlArchive>
       <Data>
@@ -4384,8 +4384,8 @@
           <o n="GeneratedLMMDescriptions" t="GeneratedLanguageModelEntriesData">
             <o n="GeneratedVisuFbDescription" t="GenericFbDescription">
               <d n="FbMethods" t="CaseInsensitiveHashtable" ckt="String" cvt="Guid">
-                <v>GetUpdateRects</v>
-                <v>e2643cf9-e9b3-4090-9ee8-b4498eff808f</v>
+                <v>HasVisibilityAccess</v>
+                <v>63c5948a-b430-48b5-97dd-a88fbc0694e2</v>
                 <v>ContainsPoint</v>
                 <v>15c8c0e9-d2ac-4ddc-a78a-5b98792472fc</v>
                 <v>SetStaticState</v>
@@ -4394,6 +4394,8 @@
                 <v>a164b105-1dad-4bac-91ac-9bc84e5d872b</v>
                 <v>GetTooltip</v>
                 <v>471806b1-b818-48e0-963f-ef4460ec67d4</v>
+                <v>GetUpdateRects</v>
+                <v>e2643cf9-e9b3-4090-9ee8-b4498eff808f</v>
                 <v>GetNamespace</v>
                 <v>22e71358-f36e-42c5-bdfe-6a8f8962b0ed</v>
                 <v>GetTranslator</v>
@@ -4404,10 +4406,10 @@
                 <v>ef9692db-9d0b-45c3-a6c2-74f41aa4784c</v>
                 <v>GetClientData</v>
                 <v>dd47a033-db03-45a5-b34f-72ab1b13e0cb</v>
+                <v>Destruct</v>
+                <v>d622d315-fb31-4dfc-a922-50e4bba9170d</v>
                 <v>Paint</v>
                 <v>37cc08b4-95a6-46b7-b6ef-614c0d311f72</v>
-                <v>HasVisibilityAccess</v>
-                <v>63c5948a-b430-48b5-97dd-a88fbc0694e2</v>
                 <v>GetElementArray</v>
                 <v>cd98c656-e3f8-4586-a20f-115e690592b4</v>
                 <v>SetVisuFlagsInternal</v>
@@ -4426,8 +4428,6 @@
                 <v>621584d3-b0ba-4733-b829-2a47115bc17b</v>
                 <v>GetSurroundingRect</v>
                 <v>4bcf4fbb-11ca-4ff0-8169-3ebad8d72ddc</v>
-                <v>ElementInfo</v>
-                <v>4136a04a-b4a2-4c79-962c-889eff658586</v>
                 <v>GetLocalUsergroup</v>
                 <v>788705bb-bbfb-4f44-a5a8-c48a10ca07a8</v>
                 <v>GetName</v>
@@ -4444,8 +4444,8 @@
                 <v>46c51b4a-3411-4918-b3d6-0dbebb228aff</v>
                 <v>HandleInput</v>
                 <v>bbf09991-a45f-4bf0-98e9-5fef510d42c4</v>
-                <v>Destruct</v>
-                <v>d622d315-fb31-4dfc-a922-50e4bba9170d</v>
+                <v>ElementInfo</v>
+                <v>4136a04a-b4a2-4c79-962c-889eff658586</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{0ef5a966-9586-445b-b8d7-b949545be274}</v>
@@ -4458,10 +4458,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>ebcd496d-4d47-4ab6-97d1-71838b0d81cb</v>
-                <v>FB_Reinit</v>
-                <v>fadacaff-13a1-4fda-bd01-d6edc5662552</v>
                 <v>FB_Exit</v>
                 <v>c357a6b7-6225-46b3-9ad1-0e51455d776c</v>
+                <v>FB_Reinit</v>
+                <v>fadacaff-13a1-4fda-bd01-d6edc5662552</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{1d5d1afb-0ac6-425b-a100-35ac7d77b571}</v>
@@ -4570,7 +4570,7 @@
         <Type n="Hashtable">System.Collections.Hashtable</Type>
         <Type n="HotkeyConfiguration">{6b108d46-58af-4e41-a3f4-174d8f160cc4}</Type>
         <Type n="InputBoxInputAction">{e8e7e747-f76f-4dee-ab1c-b9637e41ac26}</Type>
-        <Type n="InputBoxInputAction[]">_3S.CoDeSys.VisualElem.InputBoxInputAction[], VisualElem.plugin, Version=3.5.13.30, Culture=neutral, PublicKeyToken=null</Type>
+        <Type n="InputBoxInputAction[]">_3S.CoDeSys.VisualElem.InputBoxInputAction[], VisualElem.plugin, Version=3.5.13.31, Culture=neutral, PublicKeyToken=null</Type>
         <Type n="Int16">System.Int16</Type>
         <Type n="Int32">System.Int32</Type>
         <Type n="Int64">System.Int64</Type>

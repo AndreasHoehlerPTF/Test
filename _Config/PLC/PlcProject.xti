@@ -192,11 +192,6 @@
 					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.IbEAP_TargetSpeedReached</Name>
-					<Comment><![CDATA[Target speed reached]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
 					<Name>PRG_MACHINE.InEAP_SubstrateThickness</Name>
 					<Comment><![CDATA[Substrate thickness [µm]]]></Comment>
 					<Type>DINT</Type>
@@ -217,14 +212,19 @@
 					<Type>DINT</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.IbEAP_PrintMarksExist</Name>
-					<Comment><![CDATA[Print marks exist]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
-				</Var>
-				<Var>
 					<Name>PRG_MACHINE.InEAP_Module2ToModule3</Name>
 					<Comment><![CDATA[Distance between Module 2 and 3 [µm]]]></Comment>
 					<Type>DINT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_MACHINE.IbEAP_TargetSpeedReached</Name>
+					<Comment><![CDATA[Target speed reached]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_MACHINE.IbEAP_PrintMarksExist</Name>
+					<Comment><![CDATA[Print marks exist]]></Comment>
+					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.InEAP_NeutralFibreFactor</Name>
@@ -620,6 +620,11 @@
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
+					<Name>PRG_PRINT.ObPrinterPrinting</Name>
+					<Comment><![CDATA[Printer printing]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
 					<Name>PRG_PRINT.bO_ActivateLatch</Name>
 					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
@@ -627,11 +632,6 @@
 					<Name>PRG_PRINT.bOKp_EnLatC</Name>
 					<Comment><![CDATA[C-Latch enable/reset @EL5101]]></Comment>
 					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.ObPrinterPrinting</Name>
-					<Comment><![CDATA[Printer printing]]></Comment>
-					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[1].sO_PhHw</Name>
@@ -1102,14 +1102,14 @@
 					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.InEAP_WatchdogCycleIndex</Name>
-					<Comment><![CDATA[Watchdog: check CycleIndex]]></Comment>
-					<Type>INT</Type>
-				</Var>
-				<Var>
 					<Name>PRG_MACHINE.InEAP_OperatingMode</Name>
 					<Comment><![CDATA[Operating mode]]></Comment>
 					<Type>BYTE</Type>
+				</Var>
+				<Var>
+					<Name>PRG_MACHINE.InEAP_WatchdogCycleIndex</Name>
+					<Comment><![CDATA[Watchdog: check CycleIndex]]></Comment>
+					<Type>INT</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.IbEAP_Engaged</Name>
@@ -1480,6 +1480,11 @@
 					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
+					<Name>PRG_MACHINE.ObEAP_WarnungActive</Name>
+					<Comment><![CDATA[Warning active]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
 					<Name>PRG_MACHINE.OnEAP_VarnishQuantity</Name>
 					<Comment><![CDATA[Varnish quantity [g/m^2]]]></Comment>
 					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCD0}">ARRAY [1..2] OF DINT</Type>
@@ -1488,11 +1493,6 @@
 					<Name>PRG_MACHINE.OnEAP_MaxWebSpeed</Name>
 					<Comment><![CDATA[Max web speed [m/min]]]></Comment>
 					<Type>DINT</Type>
-				</Var>
-				<Var>
-					<Name>PRG_MACHINE.ObEAP_WarnungActive</Name>
-					<Comment><![CDATA[Warning active]]></Comment>
-					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.ObEAP_ErrorActive</Name>
@@ -1728,14 +1728,14 @@
 					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_INK.bIKn_TankCleanerLevelEmpty</Name>
-					<Comment><![CDATA[Tank cleaner level empty reached]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
 					<Name>PRG_INK.bIKn_TankInkLevelReached</Name>
 					<Comment><![CDATA[-BX53, BX57: HT front level reached]]></Comment>
 					<Type GUID="{CF887A53-7490-A600-6B5D-04343BF0EA04}">ARRAY [1..4] OF BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bIKn_TankCleanerLevelEmpty</Name>
+					<Comment><![CDATA[Tank cleaner level empty reached]]></Comment>
+					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.bIKn_TankRefuseLevelFull</Name>
@@ -1985,14 +1985,14 @@
 					<Type>USINT</Type>
 				</Var>
 				<Var>
-					<Name>PRG_INK.cO_Balance_TxBuffWord</Name>
-					<Comment><![CDATA[EL6021: Data out 0..49]]></Comment>
-					<Type GUID="{EC79C002-EC73-F686-CA4C-A2795FD67094}">ARRAY [0..49] OF UINT</Type>
-				</Var>
-				<Var>
 					<Name>PRG_INK.bO_Barcode_ReqInit</Name>
 					<Comment><![CDATA[EL6001: Barcode scanner request init]]></Comment>
 					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.cO_Balance_TxBuffWord</Name>
+					<Comment><![CDATA[EL6021: Data out 0..49]]></Comment>
+					<Type GUID="{EC79C002-EC73-F686-CA4C-A2795FD67094}">ARRAY [0..49] OF UINT</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.bO_Barcode_AckRec</Name>
@@ -3043,6 +3043,36 @@
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
+					<Name>PRG_MACHINE.bIKp_CabinetTemp_Ok</Name>
+					<Comment><![CDATA[monitoring input]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_MACHINE.IbEAP_ShutDownActive</Name>
+					<Comment><![CDATA[not used yet]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_MACHINE.IbEAP_MessageReset</Name>
+					<Comment><![CDATA[used in PRG_System]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_MACHINE.IbEAP_SpliceDetected</Name>
+					<Comment><![CDATA[Splice detected]]></Comment>
+					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_MACHINE.InEAP_SubstrateWidth</Name>
+					<Comment><![CDATA[not used yet]]></Comment>
+					<Type>DINT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_MACHINE.InEAP_TargetSpeed</Name>
+					<Comment><![CDATA[Neutral fibre factor [m/min]]]></Comment>
+					<Type>DINT</Type>
+				</Var>
+				<Var>
 					<Name>PRG_INK.bI_Balance_BufferFull</Name>
 					<Comment><![CDATA[EL6021: Balance buffer full]]></Comment>
 					<Type>BOOL</Type>
@@ -3061,36 +3091,6 @@
 					<Name>PRG_INK.bI_Barcode_AckSend</Name>
 					<Comment><![CDATA[EL6001: Barcode scanner acknowledge send]]></Comment>
 					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_MACHINE.bIKp_CabinetTemp_Ok</Name>
-					<Comment><![CDATA[monitoring input]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_MACHINE.IbEAP_ShutDownActive</Name>
-					<Comment><![CDATA[not used yet]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_MACHINE.IbEAP_MessageReset</Name>
-					<Comment><![CDATA[used in PRG_System]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_MACHINE.InEAP_SubstrateWidth</Name>
-					<Comment><![CDATA[not used yet]]></Comment>
-					<Type>DINT</Type>
-				</Var>
-				<Var>
-					<Name>PRG_MACHINE.IbEAP_SpliceDetected</Name>
-					<Comment><![CDATA[Splice detected]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_MACHINE.InEAP_TargetSpeed</Name>
-					<Comment><![CDATA[Neutral fibre factor [m/min]]]></Comment>
-					<Type>DINT</Type>
 				</Var>
 			</Vars>
 			<Vars VarGrpType="2" ContextId="3" AreaNo="49">

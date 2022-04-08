@@ -1833,12 +1833,12 @@
                                       <v>TL_ElementProperties.Color</v>
                                       <v>EditorType</v>
                                       <v>Color</v>
-                                      <v>DescriptionTextId</v>
-                                      <v>TL_ElementProperties.Desc_AreaColor</v>
-                                      <v>''DOCU__COMMENT</v>
-                                      <v> The background color of the color area</v>
                                       <v>UseInitValue</v>
                                       <v></v>
+                                      <v>''DOCU__COMMENT</v>
+                                      <v> The background color of the color area</v>
+                                      <v>DescriptionTextId</v>
+                                      <v>TL_ElementProperties.Desc_AreaColor</v>
                                     </d>
                                     <v n="ConvDone">false</v>
                                   </o>
@@ -4503,12 +4503,12 @@
                                       <v>TL_ElementProperties.Color</v>
                                       <v>EditorType</v>
                                       <v>Color</v>
-                                      <v>UseInitValue</v>
-                                      <v></v>
-                                      <v>''DOCU__COMMENT</v>
-                                      <v> The background color of the color area</v>
                                       <v>DescriptionTextId</v>
                                       <v>TL_ElementProperties.Desc_AreaColor</v>
+                                      <v>''DOCU__COMMENT</v>
+                                      <v> The background color of the color area</v>
+                                      <v>UseInitValue</v>
+                                      <v></v>
                                     </d>
                                     <v n="ConvDone">false</v>
                                   </o>
@@ -5368,8 +5368,8 @@
                 <v>da1d3cfe-2812-4aa2-becf-fccd97f45e5e</v>
                 <v>ContainsPoint</v>
                 <v>8902dc51-6e6d-44b1-9d32-379c48bd491b</v>
-                <v>HasInputAccess</v>
-                <v>0f97f1cb-de71-4f76-9e1d-5eba099e0104</v>
+                <v>SetStaticState</v>
+                <v>76f63428-f645-4a07-a3eb-02f9c65ae383</v>
                 <v>HasInputAccessIntern</v>
                 <v>2abac0d4-91bb-4d3f-bae1-c1b7a5b7a9aa</v>
                 <v>GetTooltip</v>
@@ -5388,8 +5388,6 @@
                 <v>3759fd9e-9b79-4d9e-919a-1bf0235d7b15</v>
                 <v>SetClientData</v>
                 <v>48c92ec5-d56c-4cbb-a79a-8b44e161c2fe</v>
-                <v>HasVisibilityAccessIntern</v>
-                <v>aeba308d-d849-4dbc-8efb-6cee41a7730a</v>
                 <v>GetInstance</v>
                 <v>0d2381e8-1c93-41c3-ae92-d7722784b4cf</v>
                 <v>GetClientData</v>
@@ -5408,12 +5406,14 @@
                 <v>52c6a27f-b245-43ef-83be-7299bab4f4e0</v>
                 <v>Initialize</v>
                 <v>0c8504c2-e5a1-490c-adbb-e2eff0607581</v>
-                <v>Destruct</v>
-                <v>6bd321bc-976b-48c1-afbb-07ecd27bfd7d</v>
-                <v>SetStaticState</v>
-                <v>76f63428-f645-4a07-a3eb-02f9c65ae383</v>
+                <v>HasInputAccess</v>
+                <v>0f97f1cb-de71-4f76-9e1d-5eba099e0104</v>
+                <v>HasVisibilityAccessIntern</v>
+                <v>aeba308d-d849-4dbc-8efb-6cee41a7730a</v>
                 <v>GetSurroundingRect</v>
                 <v>df22a759-25ca-4492-a9e9-695ce1b3c752</v>
+                <v>ElementInfo</v>
+                <v>bbb4fea7-dc31-4ceb-98a0-dc57df714e2f</v>
                 <v>GetResult</v>
                 <v>1af24144-bb2a-4862-909f-7670dfbb7a51</v>
                 <v>GetLocalUsergroup</v>
@@ -5436,8 +5436,8 @@
                 <v>1bcf6bbc-9ad9-437b-bad7-cc571ef35baf</v>
                 <v>HandleInput</v>
                 <v>946ed30a-a2ff-4555-a42c-7739bc2405fd</v>
-                <v>ElementInfo</v>
-                <v>bbb4fea7-dc31-4ceb-98a0-dc57df714e2f</v>
+                <v>Destruct</v>
+                <v>6bd321bc-976b-48c1-afbb-07ecd27bfd7d</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{128a8423-106f-419b-b178-293a48fc0069}</v>
@@ -5450,10 +5450,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable_1" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>cf90909b-fb6d-434c-ab92-a93be718d88c</v>
-                <v>FB_Exit</v>
-                <v>07bd240f-198f-410f-b41d-f9c4b4c0d9a5</v>
                 <v>FB_Reinit</v>
                 <v>09031b67-d86e-46b9-9e4f-1e08dcd8bc12</v>
+                <v>FB_Exit</v>
+                <v>07bd240f-198f-410f-b41d-f9c4b4c0d9a5</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{8a5f5596-9a55-4ed8-bc47-dcb517a1f5e1}</v>
