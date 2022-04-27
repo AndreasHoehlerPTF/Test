@@ -47,13 +47,13 @@
 			</ArrayInfo>
 		</DataType>
 	</DataTypes>
-	<Device Id="2" Disabled="true" DevType="112" AmsPort="28674" AmsNetId="172.21.10.11.3.1" RemoteName="Device 2 (EtherCAT Automation Protocol)">
+	<Device Id="2" DevType="112" AmsPort="28674" AmsNetId="172.21.10.11.3.1" RemoteName="Device 2 (EtherCAT Automation Protocol)">
 		<Name>__FILENAME__</Name>
 		<AddressInfo>
 			<Pnp>
-				<DeviceDesc>X104 - MachineNetwork (TwinCAT-Intel PCI Ethernet A</DeviceDesc>
-				<DeviceName>\DEVICE\{A439834A-4E83-4E0F-89C7-F394D47E284A}</DeviceName>
-				<DeviceData>000105603970</DeviceData>
+				<DeviceDesc>PDS2_MachineNetwork (TwinCAT-Intel PCI Ethernet Ada</DeviceDesc>
+				<DeviceName>\DEVICE\{E82630DD-0E58-4B86-90D4-0175339FFFFD}</DeviceName>
+				<DeviceData>0001054dd9a2</DeviceData>
 			</Pnp>
 		</AddressInfo>
 		<Image Id="5" AddrType="1" ImageType="3">
@@ -1383,7 +1383,7 @@
 				</EapVar>
 			</Eap>
 		</Box>
-		<Ethernet DeviceDesc="X104 - MachineNetwork (TwinCAT-Intel PCI Ethernet Adapter (Gigabit) #6)"/>
+		<Ethernet DeviceDesc="PDS2_MachineNetwork (TwinCAT-Intel PCI Ethernet Adapter (Gigabit) #5)"/>
 		<Eap EapDeviceGuid="{B2003EB3-B901-4230-BC03-737DEC0C09DB}"/>
 	</Device>
 </TcSmItem>

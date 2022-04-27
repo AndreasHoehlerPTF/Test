@@ -1679,12 +1679,12 @@
                               <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
                                 <v>Visible</v>
                                 <v>False</v>
-                                <v>DefaultArraySize</v>
-                                <v>5</v>
-                                <v>VisibleChildren</v>
-                                <v>True</v>
                                 <v>ieccodeconversion_array</v>
                                 <v></v>
+                                <v>VisibleChildren</v>
+                                <v>True</v>
+                                <v>DefaultArraySize</v>
+                                <v>5</v>
                                 <v>''NORMAL__COMMENT</v>
                                 <v> We hide this node to prevent having two References nodes
  Nevertheless we want to make sure that the children are displayed</v>
@@ -1740,8 +1740,8 @@
                         <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
                           <v n="AttrFlags">81920UL</v>
                           <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
-                            <v>DisplayFrameReferencesConfiguration</v>
-                            <v></v>
+                            <v>conditionalshow</v>
+                            <v>visu_elemdev</v>
                             <v>DescriptionTextId</v>
                             <v>TL_ElementProperties.Desc_ReferencedVisus</v>
                             <v>SortFlag</v>
@@ -1752,14 +1752,14 @@
                             <v>Simple|Standard</v>
                             <v>DynamicArray</v>
                             <v></v>
-                            <v>conditionalshow</v>
-                            <v>visu_elemdev</v>
+                            <v>DisplayFrameReferencesConfiguration</v>
+                            <v></v>
                             <v>FrameReferences</v>
                             <v></v>
-                            <v>DisplayTextId</v>
-                            <v>TL_ElementProperties.References</v>
                             <v>Storable</v>
                             <v>True</v>
+                            <v>DisplayTextId</v>
+                            <v>TL_ElementProperties.References</v>
                           </d>
                           <v n="ConvDone">true</v>
                         </o>
@@ -2957,8 +2957,6 @@
                 <v>09b003e6-b8ed-4e55-98ce-1e51c5239fd2</v>
                 <v>GetClientData</v>
                 <v>8c496d39-b2f4-4a22-a26a-818f0043ba42</v>
-                <v>Destruct</v>
-                <v>8bfad43b-e0a4-4ba1-ba37-ccca999749f6</v>
                 <v>Paint</v>
                 <v>abfa609a-ab12-4fc1-b7a0-29c794d2b703</v>
                 <v>GetElementArray</v>
@@ -2979,6 +2977,8 @@
                 <v>c4971b77-a007-4601-a2a9-a8b393c315c4</v>
                 <v>GetSurroundingRect</v>
                 <v>9919fc51-6b59-4cc4-bd93-09531d293adf</v>
+                <v>ElementInfo</v>
+                <v>2c8b50fb-de88-4829-ba2c-c098db502eac</v>
                 <v>GetLocalUsergroup</v>
                 <v>0bfc6a33-c4ac-4b9b-9185-54d1964c76ab</v>
                 <v>GetName</v>
@@ -2995,8 +2995,8 @@
                 <v>b0bab23e-f632-4c8f-a301-361cd4e61484</v>
                 <v>HandleInput</v>
                 <v>da4602d7-2a7c-4539-abaf-67a8c9551b92</v>
-                <v>ElementInfo</v>
-                <v>2c8b50fb-de88-4829-ba2c-c098db502eac</v>
+                <v>Destruct</v>
+                <v>8bfad43b-e0a4-4ba1-ba37-ccca999749f6</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{909ae22e-b5e2-4752-9d7c-ebeb0086d62f}</v>
@@ -3009,10 +3009,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable_1" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>a0ff2ccd-d4ac-4f37-8f44-6ccacf190a6e</v>
-                <v>FB_Reinit</v>
-                <v>73f4c96c-4bde-4ea3-af6a-da9255271854</v>
                 <v>FB_Exit</v>
                 <v>dbf3b16d-d40d-4002-9179-937e84754c9f</v>
+                <v>FB_Reinit</v>
+                <v>73f4c96c-4bde-4ea3-af6a-da9255271854</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{c046d8f1-d131-46f2-9ec3-7f8f8fa3d808}</v>
