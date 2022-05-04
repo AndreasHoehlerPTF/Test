@@ -132,6 +132,10 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Products\FB_HWLATCH.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Products\FB_NeutralFibreDetermine.TcPOU">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
     <Compile Include="POUs\Products\FB_ModuleSynchronisation.TcPOU">
       <SubType>Code</SubType>
     </Compile>

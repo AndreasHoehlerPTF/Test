@@ -25,6 +25,7 @@ VAR_OUTPUT
   fO_SpeedCorrectionFactor    : LREAL;           (*[-] controller output*)
   bO_ContrErr                 : BOOL;            (*correction fail (out of bound)*)
   bO_SupervisionContrErr      : BOOL;            (*supervision (out of bound)*)
+  bO_SupervisionMissMarks     : BOOL;            (*supervision misses marks after X cycles*)
   bO_ControllerAdjusted       : BOOL;            (*controller adjusted after X cycles*)
 END_VAR
 
@@ -67,6 +68,7 @@ VAR
   bL_SupervisionContrErr      : BOOL;            (*supervision (out of bound)*)
   fb_TonSupervisionContrErr   : TON;             (*supervision (out of bound)*)
   fb_TonSupervisionMarkErr    : TON;             (*supervision marks missing*)
+  fb_TonSupervisionMissMarkErr: TON;             (*supervision marks missing*)
 
   fC_MaxCorrection            : LREAL := 1.10;  (*moved from Constant: org value: 1.05*)
   fC_MinCorrection            : LREAL := 0.90;  (*moved from Constant: org value: 0.95*)
@@ -92,6 +94,7 @@ VAR PERSISTENT
   fI_ControllerIGain          : LREAL := 20;       (*PDI controller I-Gain*)
   fI_DriftTimeShift           : LREAL;             (*[ms] register shift time*)
   nI_NbCyclesToAdjust         : INT   := 0;        (*Number of cycles to adjust the controller*)
+  nI_NbMissMarksToStop        : INT   := 5;        (*Number of missed marks to stop the machine*)
 END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[(*--- Reset*)
@@ -120,6 +123,7 @@ CASE iL_State OF
     fL_ImgPos := 0;
     bL_SupervisionContrErr := FALSE;
     bO_SupervisionContrErr := FALSE;
+    bO_SupervisionMissMarks:= FALSE;
 
     IF pI_JobSettings <> 0 THEN
       iL_State:=001;
@@ -133,6 +137,9 @@ CASE iL_State OF
     bL_Error               := FALSE;
     bI_Enable              := FALSE; (*Disable by default*)
     bO_ContrErr            := FALSE;
+
+    (*Check for missing marks*)
+    fb_TonSupervisionMissMarkErr(IN := FALSE);
     
   001:  (*Control Disabled --------------------*)
     (*New PrintLib 1.5.2.6
@@ -149,7 +156,15 @@ CASE iL_State OF
     IF bI_Enable AND (fL_DeltaTimeStamp < fC_MaxCycleTime) AND bL_RegisterEvent AND lL_ImgLength >0 THEN (*Enabled and moving*)
       iL_State:=010;
     ELSE
-      iL_State:=001;
+      (*Check for missing marks*)
+      fb_TonSupervisionMissMarkErr();
+      IF fb_TonSupervisionMissMarkErr.Q THEN
+        bO_SupervisionMissMarks := TRUE;
+
+        iL_State:=099;
+      ELSE 
+        iL_State:=001;
+      END_IF
     END_IF
 
     fO_SpeedCorrectionFactor := 1.0; 
@@ -160,7 +175,7 @@ CASE iL_State OF
     IF (fL_DeltaTimeStamp > fC_MaxCycleTime) THEN
       iL_State:=001;
     ELSIF bL_RegisterEvent THEN
-        (*registered first label*)
+      (*registered first label*)
       fL_RefLength := DINT_TO_LREAL(lI_RegisterMarkPosition - lL_LastRegisterMarkPosition);
       (*New PrintLib 1.5.2.6
       lL_ImgLength:=UDINT_TO_DINT(pI_JobSettings^.lI_ImageDepth)*iI_Res_SubPix; *)
@@ -179,7 +194,8 @@ CASE iL_State OF
         fL_RefPos := 0;
         fL_ImgPos := 0;
         (*Check for missing marks*)
-        fb_TonSupervisionMarkErr(IN := FALSE);
+        fb_TonSupervisionMarkErr    (IN := FALSE);
+        fb_TonSupervisionMissMarkErr(IN := FALSE);
       ELSE
         iL_State:=099;
       END_IF
@@ -268,7 +284,8 @@ CASE iL_State OF
     bO_SupervisionContrErr := fb_TonSupervisionContrErr.Q;
 
     (*Check for missing marks*)
-    fb_TonSupervisionMarkErr(IN := TRUE, PT := REAL_TO_TIME(fL_DeltaTimeStamp * 2000)); (*[s] to [ms] and a factor of 2*)
+    fb_TonSupervisionMarkErr    (IN := TRUE, PT := LREAL_TO_TIME(fL_DeltaTimeStamp * 1000 * 2)); (*[s] to [ms] and factor of 2*)
+    fb_TonSupervisionMissMarkErr(IN := TRUE, PT := LREAL_TO_TIME(fL_DeltaTimeStamp * 1000 * nI_NbMissMarksToStop)); (*[s] to [ms] and factor of the setting*)
     
     (*Check for errors  while control was on*)
     IF ((fL_DeltaTimeStamp > fC_MaxCycleTime) OR (fL_DeltaCtrl > fC_MaxControlError) OR fL_RefLength=0) AND bL_RegisterEvent THEN
@@ -313,6 +330,7 @@ END_IF;]]></ST>
       <LineId Id="2315" Count="23" />
       <LineId Id="3001" Count="0" />
       <LineId Id="3000" Count="0" />
+      <LineId Id="3510" Count="0" />
       <LineId Id="2558" Count="0" />
       <LineId Id="2339" Count="4" />
       <LineId Id="2559" Count="0" />
@@ -321,11 +339,20 @@ END_IF;]]></ST>
       <LineId Id="3279" Count="0" />
       <LineId Id="2345" Count="1" />
       <LineId Id="2560" Count="0" />
+      <LineId Id="3488" Count="0" />
+      <LineId Id="3486" Count="1" />
       <LineId Id="2347" Count="2" />
       <LineId Id="2714" Count="0" />
       <LineId Id="2713" Count="0" />
       <LineId Id="2716" Count="2" />
-      <LineId Id="2350" Count="9" />
+      <LineId Id="2350" Count="7" />
+      <LineId Id="3496" Count="1" />
+      <LineId Id="3502" Count="1" />
+      <LineId Id="3508" Count="0" />
+      <LineId Id="3507" Count="0" />
+      <LineId Id="3505" Count="1" />
+      <LineId Id="3504" Count="0" />
+      <LineId Id="2359" Count="0" />
       <LineId Id="3375" Count="0" />
       <LineId Id="2360" Count="0" />
       <LineId Id="3376" Count="0" />
@@ -334,6 +361,7 @@ END_IF;]]></ST>
       <LineId Id="2722" Count="5" />
       <LineId Id="2369" Count="9" />
       <LineId Id="3389" Count="1" />
+      <LineId Id="3495" Count="0" />
       <LineId Id="2379" Count="11" />
       <LineId Id="3381" Count="0" />
       <LineId Id="3384" Count="1" />
@@ -361,6 +389,7 @@ END_IF;]]></ST>
       <LineId Id="2911" Count="0" />
       <LineId Id="3377" Count="0" />
       <LineId Id="3386" Count="1" />
+      <LineId Id="3485" Count="0" />
       <LineId Id="2446" Count="8" />
       <LineId Id="3281" Count="0" />
       <LineId Id="2455" Count="0" />

@@ -9,6 +9,7 @@ VAR_INPUT
   IbExhaustVacuumError    : BOOL;
   IbExhaustFUError        : BOOL;
   IbDriftControlError     : BOOL;
+  IbDriftControlMissMarks : BOOL;
   IbSafetyNOk             : BOOL;
 END_VAR
 
@@ -25,7 +26,7 @@ END_VAR
 
 VAR CONSTANT
   (*Messaging*)
-  iC_NUM_MSG              : INT := 7;
+  iC_NUM_MSG              : INT := 8;
 END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[(*Messaging*)
@@ -38,6 +39,7 @@ fB_Msg[4](bI_Status := IbExhaustVacuumError);
 fB_Msg[5](bI_Status := IbExhaustFUError);
 fB_Msg[6](bI_Status := IbDriftControlError);
 fB_Msg[7](bI_Status := IbSafetyNOk);
+fB_Msg[8](bI_Status := IbDriftControlMissMarks);
 
 fb_MsgQueue();
 
@@ -99,6 +101,10 @@ fb_Msg[6].iI_MsgNumber       := eCMa_DRIFT_CONTR_ERROR;
 fb_Msg[7].pI_MsgConfig       := ADR(sL_MsgConfig);
 fb_Msg[7].iI_MsgLocation     := nBlockId;
 fb_Msg[7].iI_MsgNumber       := eCMa_AXIS_SAFETY_ACCEPTANCE;
+
+fb_Msg[8].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[8].iI_MsgLocation     := nBlockId;
+fb_Msg[8].iI_MsgNumber       := eCPr_SHEET_MARK_DETECTION;
 ]]></ST>
       </Implementation>
     </Method>
@@ -110,6 +116,7 @@ fb_Msg[7].iI_MsgNumber       := eCMa_AXIS_SAFETY_ACCEPTANCE;
       <LineId Id="71" Count="0" />
       <LineId Id="73" Count="0" />
       <LineId Id="63" Count="0" />
+      <LineId Id="101" Count="0" />
       <LineId Id="37" Count="2" />
       <LineId Id="9" Count="0" />
     </LineIds>
@@ -122,6 +129,8 @@ fb_Msg[7].iI_MsgNumber       := eCMa_AXIS_SAFETY_ACCEPTANCE;
       <LineId Id="50" Count="0" />
       <LineId Id="54" Count="14" />
       <LineId Id="70" Count="3" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="82" Count="2" />
       <LineId Id="14" Count="0" />
     </LineIds>
   </POU>

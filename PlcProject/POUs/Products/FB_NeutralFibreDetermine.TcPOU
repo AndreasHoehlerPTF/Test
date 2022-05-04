@@ -1,0 +1,113 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <POU Name="FB_NeutralFibreDetermine" Id="{09e5318c-d36f-4976-9501-8d59b352594a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_NeutralFibreDetermine EXTENDS FB_Commons
+(*************************************************************************************************)
+(*  FILENAME:    FB_NeutralFibreDetermine                                                      *)
+(*  PROJECT:     CALMAR PUPLC                                                                    *)
+(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2022)            *)
+(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
+(*  VERSION:     <version>                                                                       *)
+(*************************************************************************************************)
+(*  DESCRIPTION:                                                                   <description> *)
+(*                                                                                </description> *)
+(*************************************************************************************************)
+
+{library public}
+VAR_INPUT
+  (*EL1252*)
+  bIKp_MarkTrigger01        AT%I* : BOOL;        (*Mark sensor 01*)
+  tIKp_TimeStampPos01       AT%I* : T_DCTIME64;  (*TimeStamp Pos_Edge @EL1252*)
+  tIKn_TimeStampNeg01       AT%I* : T_DCTIME64;  (*TimeStamp Neg_Edge @EL1252*)
+  bIKp_MarkTrigger02        AT%I* : BOOL;        (*Mark sensor 02*)
+  tIKp_TimeStampPos02       AT%I* : T_DCTIME64;  (*TimeStamp Pos_Edge @EL1252*)
+  tIKn_TimeStampNeg02       AT%I* : T_DCTIME64;  (*TimeStamp Neg_Edge @EL1252*)
+
+  fI_ConveyorSpeed                : LREAL;       (*Current speed of substrate in [m/s]*)
+END_VAR
+
+VAR_OUTPUT
+END_VAR
+
+(*{library private}*)
+VAR
+  bInitOk                         : BOOL;           // initialized
+  bSpeedValid                     : BOOL;           // speed is valid
+  
+  (*configuration*)
+  _nResolution                    : INT := 1;       // Printhead Resolution [e.g. 600] x Subpixel Resolution [e.g. 32]*)
+
+  fbRTrigMark01                   : R_TRIG;
+  fbRTrigMark02                   : R_TRIG;
+  
+  fL_DurationMark01to02           : REAL;       (*Mark 1 to 2 [ms]*)
+  fL_LengthMark01to02             : REAL;       (*Mark 1 to 2 [mm]*)
+  nL_DeltaMark01to02              : DINT;       (*Mark 1 to 2 [SubPx]*)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF NOT bInitOk THEN RETURN; END_IF;
+
+fbRTrigMark01(CLK := bIKp_MarkTrigger01);
+fbRTrigMark02(CLK := bIKp_MarkTrigger02);
+
+IF fbRTrigMark01.Q THEN
+	;
+END_IF
+
+IF fbRTrigMark02.Q THEN
+	fL_DurationMark01to02 := LREAL_TO_REAL(ULINT_TO_LREAL(tIKp_TimeStampPos02) - ULINT_TO_LREAL(tIKp_TimeStampPos01)) / 1_000_000.0; (*[ms]*)
+	fL_LengthMark01to02   := LREAL_TO_REAL((fL_DurationMark01to02 / 1000) * fI_ConveyorSpeed) * 1000;       (*[mm]*)
+	nL_DeltaMark01to02    := LREAL_TO_DINT(fL_LengthMark01to02 * _nResolution / 25.4);  (*[SubPx]*)
+END_IF
+
+(********************************* END OF FB *****************************************************)]]></ST>
+    </Implementation>
+    <Method Name="Init" Id="{0e5d9d38-5568-4252-a7a4-4a674ac176b4}">
+      <Declaration><![CDATA[METHOD Init
+VAR_INPUT
+  nResolution                   : INT := 1;        (*Printhead Resolution [e.g. 600] x Subpixel Resolution [e.g. 32]*)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(*zero divisions*)
+IF nResolution = 0 THEN 
+  bInitOk := FALSE;
+
+  RETURN; 
+END_IF;
+
+_nResolution := nResolution;
+
+bInitOk := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_NeutralFibreDetermine">
+      <LineId Id="2387" Count="0" />
+      <LineId Id="4534" Count="0" />
+      <LineId Id="4595" Count="2" />
+      <LineId Id="4585" Count="0" />
+      <LineId Id="4589" Count="0" />
+      <LineId Id="4588" Count="0" />
+      <LineId Id="4584" Count="0" />
+      <LineId Id="4535" Count="0" />
+      <LineId Id="4540" Count="0" />
+      <LineId Id="4542" Count="0" />
+      <LineId Id="4583" Count="0" />
+      <LineId Id="4537" Count="0" />
+      <LineId Id="2388" Count="0" />
+      <LineId Id="1688" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_NeutralFibreDetermine.Init">
+      <LineId Id="6" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="11" Count="1" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
