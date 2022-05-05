@@ -622,7 +622,7 @@ ELSE (*Else when init Ok*)
   (*Automatic flushing device print unit*)
   (*Remove call after commissioning.*)
   //{warning 'Remove call AutoFlushingDevice after commissioning!!!'}
-  //AutoFlushingDevice();
+  AutoFlushingDevice();
   (*AuxReturnPump activation*)
   bO_FlushingReturnPump[1] := bL_FlushingReturnFlowRequest[1] OR bL_FlushingReturnFlowRequest[2];
   bO_FlushingReturnPump[2] := bL_FlushingReturnFlowRequest[3] OR bL_FlushingReturnFlowRequest[4];

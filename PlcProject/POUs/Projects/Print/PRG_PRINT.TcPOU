@@ -262,7 +262,7 @@ VAR CONSTANT
   fC_MIN_MASTER_SPEED                       : LREAL := 0.05;   (*[m/s]*)
   fC_PROD_MASTER_SPEED                      : LREAL := 5.0;    (*[m/min]*)
 
-  cEncoderImpU                              : LREAL := 2048 * 4;    (*Impulses * 4 times sampling [Imp/U]*)
+  cEncoderImpU                              : LREAL := 10_000 * 4;    (*Impulses * 4 times sampling [Imp/U]*)
     
   iC_yShiftOffset                           : INT := (2048-1280)/2;  (*[px]*)
   iC_yShiftMin                              : INT := 0;              (*[px]*)

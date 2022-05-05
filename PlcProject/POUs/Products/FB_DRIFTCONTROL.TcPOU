@@ -159,7 +159,7 @@ CASE iL_State OF
       (*Check for missing marks*)
       fb_TonSupervisionMissMarkErr();
       IF fb_TonSupervisionMissMarkErr.Q THEN
-        bO_SupervisionMissMarks := TRUE;
+        //bO_SupervisionMissMarks := TRUE;
 
         iL_State:=099;
       ELSE 
