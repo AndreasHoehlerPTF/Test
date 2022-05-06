@@ -157,9 +157,9 @@ CASE iL_State OF
       iL_State:=010;
     ELSE
       (*Check for missing marks*)
-      fb_TonSupervisionMissMarkErr();
+      fb_TonSupervisionMissMarkErr(IN := bI_OutputEnable);
       IF fb_TonSupervisionMissMarkErr.Q THEN
-        //bO_SupervisionMissMarks := TRUE;
+        bO_SupervisionMissMarks := TRUE;
 
         iL_State:=099;
       ELSE 
@@ -210,7 +210,8 @@ CASE iL_State OF
     
     IF bL_RegisterEvent THEN (*run controller when a mark trigger was detected*)
       (*Check for missing marks*)
-      fb_TonSupervisionMarkErr(IN := FALSE);
+      fb_TonSupervisionMarkErr    (IN := FALSE);
+      fb_TonSupervisionMissMarkErr(IN := FALSE);
     
       (*Wait until controller is stable*)
       IF (nL_CountCyclesToAdjust < nI_NbCyclesToAdjust) THEN
@@ -365,6 +366,7 @@ END_IF;]]></ST>
       <LineId Id="2379" Count="11" />
       <LineId Id="3381" Count="0" />
       <LineId Id="3384" Count="1" />
+      <LineId Id="3605" Count="0" />
       <LineId Id="3383" Count="0" />
       <LineId Id="3382" Count="0" />
       <LineId Id="3282" Count="0" />
