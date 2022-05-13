@@ -39,6 +39,7 @@ VAR_INPUT
 
   (*configuration*)
   bI_WithMark                     : BOOL := TRUE;    (*use with or without mark detection, TRUE=with detection*)
+  bI_MarksInverted                : BOOL := FALSE;   (*invert in case of wrong mirrored marks*)
   fI_MarkLength                   : REAL;            (*length of detection mark [m]*)
   fI_MarkHeight                   : REAL;            (*width of detection mark [m]*)
 
@@ -188,8 +189,12 @@ IF bL_S1_AcqOK THEN
 	IF bI_WithMark AND NOT bI_ManualTrigger THEN
     (*Sensor should aligned to the middle of the sensor (fI_MarkHeight / 2). *)
     (*With the difference of the measured lenght to the normal lenght, the fO_LateralOffset can be calculated*)
-		//fO_LateralOffset := (fL_S1_Length * (fI_MarkHeight / 2 ) / (fI_MarkLength / 2)) - (fI_MarkHeight / 2 );
-    fO_LateralOffset := -1*((fL_S1_Length * (fI_MarkHeight / 2 ) / (fI_MarkLength / 2)) - (fI_MarkHeight / 2 )); (* invert in case of wrong mirrored marks *)
+    (* invert in case of wrong mirrored marks *)
+    IF bI_MarksInverted THEN
+      fO_LateralOffset := -1*((fL_S1_Length * (fI_MarkHeight / 2 ) / (fI_MarkLength / 2)) - (fI_MarkHeight / 2 ));
+    ELSE     
+		  fO_LateralOffset := (fL_S1_Length * (fI_MarkHeight / 2 ) / (fI_MarkLength / 2)) - (fI_MarkHeight / 2 );
+    END_IF
 	ELSE
 		fO_LateralOffset := 0;			(* if no mark on the paper, can't detect the offset *)
 	END_IF;
@@ -242,8 +247,13 @@ END_IF;
       <LineId Id="1843" Count="0" />
       <LineId Id="1845" Count="55" />
       <LineId Id="2260" Count="7" />
-      <LineId Id="1901" Count="5" />
-      <LineId Id="2116" Count="0" />
+      <LineId Id="1901" Count="4" />
+      <LineId Id="2374" Count="0" />
+      <LineId Id="2369" Count="0" />
+      <LineId Id="2372" Count="0" />
+      <LineId Id="2370" Count="0" />
+      <LineId Id="2373" Count="0" />
+      <LineId Id="2371" Count="0" />
       <LineId Id="1907" Count="7" />
       <LineId Id="2268" Count="0" />
       <LineId Id="2127" Count="1" />
