@@ -220,7 +220,6 @@ VAR
   nL_SimMarkStartTriggerPos                 : ARRAY [1..iCPr_NB_PM] OF DINT;   (*start trigger simulation DeltaX*)
   bL_DisableSimMarkStartTriggerM3           : BOOL;                            (*disable start trigger simulation for module 3 (mark is printed with module 2)*)
   bL_DisableDelayTriggerDistanceM3          : BOOL;                            (*disable delay for start trigger simulation for module 3*)
-  bL_MarksInverted                          : BOOL;                            (*inverted marks in case of wrong mirrored prints*)
   fbRTrigMarkSelectNormal                   : R_TRIG;                          (*inverted marks in case of wrong mirrored prints*)
   fbRTrigMarkSelectInverted                 : R_TRIG;                          (*inverted marks in case of wrong mirrored prints*)
   _nPrintModuleAdjustY                      : ARRAY [1..iCPr_NB_PM] OF DINT;   (*Module adjust Y [SubPx]*)
@@ -256,6 +255,8 @@ VAR PERSISTENT
 
   lEncoderCylinderDiameter                  : ARRAY [1..iCPr_NB_PM] OF LREAL := [100.0, 100.0];  (*Encoder cylinder diameter [mm]*)
   nPrintModuleAdjustY                       : ARRAY [1..iCPr_NB_PM] OF DINT  := [0, 0];          (*Module adjust Y [µm]*)
+
+  bMarksInverted                            : BOOL;                            (*inverted marks in case of wrong mirrored prints*)
 END_VAR
 
 VAR CONSTANT
@@ -474,7 +475,7 @@ FOR iL_I := 1 TO iCPr_NB_PM DO
   Fb_PaperPosDetect[iL_I].pI_ConversionErr         := ADR(PRG_SYSTEMBASE.lI_ConversionErr);
   Fb_PaperPosDetect[iL_I].bI_Reset                 := bL_ResetPosition[iL_I] OR bL_HardwareSync[iL_I];  (*AutoReset*)
   Fb_PaperPosDetect[iL_I].bI_WithMark              := NOT bL_EnableEncTrig;
-  Fb_PaperPosDetect[iL_I].bI_MarksInverted         := bL_MarksInverted;
+  Fb_PaperPosDetect[iL_I].bI_MarksInverted         := bMarksInverted;
   Fb_PaperPosDetect[iL_I].fI_ConveyorSpeed         := LREAL_TO_REAL(Fb_Ref_Master[iL_I].fO_Master_Speed);
   Fb_PaperPosDetect[iL_I].iI_CurrentPos            := Fb_Ref_Master[iL_I].lO_Master_Position;
 //  Fb_PaperPosDetect[iL_I].iI_Resolution            := iL_ResolutionSubPx[ePr_PU_UNIT_1] * iL_ResolutionPhPx[ePr_PU_UNIT_1];
@@ -1670,8 +1671,8 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);
 fb_visu_pc      (sI_Ary_Fb      := FB_PC, sI_Ary_Ads := sAdsPrintController);
 fb_visu_ph      (sI_Ary_Fb      := FB_PH);
 
-fbRTrigMarkSelectNormal();   IF fbRTrigMarkSelectNormal.Q   THEN bL_MarksInverted := FALSE; END_IF
-fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bL_MarksInverted := TRUE;  END_IF]]></ST>
+fbRTrigMarkSelectNormal();   IF fbRTrigMarkSelectNormal.Q   THEN bMarksInverted := FALSE; END_IF
+fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted := TRUE;  END_IF]]></ST>
       </Implementation>
     </Action>
     <LineIds Name="PRG_PRINT">
