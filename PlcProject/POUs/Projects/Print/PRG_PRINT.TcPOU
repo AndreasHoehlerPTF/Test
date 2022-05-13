@@ -54,6 +54,7 @@ VAR
   nL_Module2ToModule3                       : DINT;             (*PRG_MACHINE: distance between Module 2 and 3 [µm]*)
   bL_TargetSpeedReached                     : BOOL;             (*PRG_MACHINE: Target speed reached*)
   nL_NeutralFibreFactor                     : DINT;             (*PRG_MACHINE: neutral fibre factor [%]*)
+  bL_ReceiptMessage                         : BOOL;             (*PRG_MACHINE: fb_MsgQueueMachine[1].bO_ReceiptMessage*)
 
   // ADS interface instances & mapping and responsible FBs
   // -------------------------------------------------------------
@@ -316,6 +317,7 @@ nL_LateralRegister                  := PRG_MACHINE.InEAP_LateralRegister;
 nL_Module2ToModule3                 := PRG_MACHINE.InEAP_Module2ToModule3;
 bL_TargetSpeedReached               := PRG_MACHINE.IbEAP_TargetSpeedReached;
 nL_NeutralFibreFactor               := PRG_MACHINE.InEAP_NeutralFibreFactor;
+bL_ReceiptMessage                   := PRG_MACHINE.fb_MsgQueueMachine[1].bO_ReceiptMessage;
 (* -> Infos to other tasks *)
 bAxisMovement := NOT bL_MachineStopped[1];           //fbPrintPosition.bMoving;
 
@@ -522,6 +524,7 @@ FOR iL_I := 1 TO iCPr_NB_PM DO
   fB_DriftControl[iL_I].bI_Reset                :=    bL_ResetPosition[iL_I]
                                                    OR bL_HardwareSync [iL_I]
                                                    OR fbRTrigStartPositionSimulation.Q;  (*AutoReset*)
+  fB_DriftControl[iL_I].bI_ReceiptMessage       := bL_ReceiptMessage;
   fB_DriftControl[iL_I].iI_Res_Ph               := iL_ResolutionPhPx [ePr_PU_UNIT_1];
   fB_DriftControl[iL_I].iI_Res_SubPix           := iL_ResolutionSubPx[ePr_PU_UNIT_1];
   fB_DriftControl[iL_I].bI_RegisterMark         := bL_StartTrigger[iL_I];
@@ -1683,6 +1686,7 @@ fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted 
       <LineId Id="65435" Count="3" />
       <LineId Id="66510" Count="0" />
       <LineId Id="67096" Count="0" />
+      <LineId Id="69114" Count="0" />
       <LineId Id="65441" Count="38" />
       <LineId Id="67097" Count="0" />
       <LineId Id="65481" Count="25" />
@@ -1719,7 +1723,9 @@ fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted 
       <LineId Id="65641" Count="0" />
       <LineId Id="65646" Count="5" />
       <LineId Id="66188" Count="0" />
-      <LineId Id="65653" Count="18" />
+      <LineId Id="65653" Count="0" />
+      <LineId Id="69116" Count="0" />
+      <LineId Id="65654" Count="17" />
       <LineId Id="68245" Count="0" />
       <LineId Id="65672" Count="84" />
       <LineId Id="65758" Count="7" />

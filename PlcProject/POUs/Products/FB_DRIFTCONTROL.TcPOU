@@ -4,6 +4,7 @@
     <Declaration><![CDATA[FUNCTION_BLOCK FB_DRIFTCONTROL
 VAR_INPUT
   bI_Reset                    : BOOL;            (*reset fb and controller*)
+  bI_ReceiptMessage           : BOOL;            (*reset error*)
   bI_Enable                   : BOOL;            (*[internal] auto enable of control*)
   bI_OutputEnable             : BOOL;            (*enable control output or 1.0 if off*)
   bI_RegisterMark             : BOOL;            (*start trigger (e.g. register mark)*)
@@ -100,6 +101,11 @@ END_VAR]]></Declaration>
       <ST><![CDATA[(*--- Reset*)
 IF bI_Reset OR bL_ResetInternal THEN
   iL_State := 0;
+END_IF;
+
+(*--- Reset error*)
+IF bI_ReceiptMessage THEN
+  bO_SupervisionMissMarks := FALSE;
 END_IF;
 
 (*--- cyclic called on register event*)
@@ -328,7 +334,11 @@ IF bL_RegisterEvent OR bI_Reset THEN
 END_IF;]]></ST>
     </Implementation>
     <LineIds Name="FB_DRIFTCONTROL">
-      <LineId Id="2315" Count="23" />
+      <LineId Id="2315" Count="4" />
+      <LineId Id="3701" Count="1" />
+      <LineId Id="3706" Count="0" />
+      <LineId Id="3704" Count="1" />
+      <LineId Id="2320" Count="18" />
       <LineId Id="3001" Count="0" />
       <LineId Id="3000" Count="0" />
       <LineId Id="3510" Count="0" />
