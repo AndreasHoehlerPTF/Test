@@ -342,7 +342,8 @@ FOR iL_I := 1 TO iCPr_NB_PM DO
   (*- Sync after freeze Encode position to prevent jetting*)
   (*- Sync on PU start*)
   fb_RTrigPrintEnabled[iL_I](CLK := bL_PmPrintEnabled[iL_I]);
-  IF fb_RTrigPrintEnabled[iL_I].Q OR tL_SyncTriggerDelay[iL_I].Q THEN
+  IF fb_RTrigPrintEnabled[iL_I].Q OR tL_SyncTriggerDelay[iL_I].Q OR sAdsPrintUnit[ePr_PU_UNIT_1].sI_Start.bO_CommandCanEx  (*Reset if job is stopped*)
+  THEN
     bL_HardwareSync[iL_I] := TRUE;   (*exec sync*)
   ELSE
     bL_HardwareSync[iL_I] := FALSE;  (*reset sync*)
@@ -1687,7 +1688,9 @@ fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted 
       <LineId Id="66510" Count="0" />
       <LineId Id="67096" Count="0" />
       <LineId Id="69114" Count="0" />
-      <LineId Id="65441" Count="38" />
+      <LineId Id="65441" Count="24" />
+      <LineId Id="69409" Count="0" />
+      <LineId Id="65466" Count="13" />
       <LineId Id="67097" Count="0" />
       <LineId Id="65481" Count="25" />
       <LineId Id="65898" Count="0" />
