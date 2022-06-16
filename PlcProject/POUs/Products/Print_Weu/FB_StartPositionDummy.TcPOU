@@ -57,7 +57,7 @@ VAR PERSISTENT
   // local simulation configurations persistent
   iCreateType    : UINT := 3;   // 0,1=by input rising edge, 2=create by sheets p.m. 3=create by sheet gap  
   fSheetCycle    : REAL := 20;  // [-] sheets per minute
-  fSheetGap      : REAL := 20;  // [mm] gap between two sheets
+  fSheetGap      : REAL := 0;   // [mm] gap between two sheets
   fSheetLength   : LREAL := 500; // [mm] sheet length TODO: remove if given by job(default if not given by jobDefinition)
 END_VAR
 
