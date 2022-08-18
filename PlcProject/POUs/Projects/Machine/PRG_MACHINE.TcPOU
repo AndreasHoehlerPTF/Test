@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="PRG_MACHINE" Id="{4e095629-a33c-43c2-b165-05af09822f13}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM PRG_MACHINE
 (*************************************************************************************************)
@@ -646,9 +646,10 @@ FOR iL_Counter := 1 TO iCPr_NB_PM DO
   IF fb_TonAxisReady[iL_Counter].Q (* OR fb_TonAxisReadyRelease[iL_Counter].Q *) THEN
     bL_IO_Engaged[iL_Counter] := IbEAP_Engaged[iL_Counter];
   END_IF
-
   // TEST
-  bL_IO_Engaged[iL_Counter] := IbEAP_Engaged[iL_Counter];
+  IF IbEAP_PinningClosed[iL_Counter] THEN
+    bL_IO_Engaged[iL_Counter] := IbEAP_Engaged[iL_Counter];
+	END_IF
 END_FOR
 fb_RTrigShutdownActive(CLK := IbEAP_StandbyActive AND ObEAP_ShutdownReady);
 fb_FTrigShutdownActive(CLK := IbEAP_StandbyActive);
@@ -691,6 +692,8 @@ FOR iL_Counter := 1 TO iCPr_NB_PM DO
     OnEAP_PrintMarkPosBits[iL_Counter] := 1; (*mark missing*) 
   END_IF
   OnEAP_MasterSpeed     [iL_Counter] := PRG_PRINT.Fb_Ref_Master[iL_Counter].fO_Master_Speed;
+  (*TEST!!! use OnEAP_MasterSpeed to transmit PU position to Motronic*)
+  OnEAP_MasterSpeed     [iL_Counter] := sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].sO_AxisPosition.fO_Val;
 END_FOR
 (*Axis drive must be completed before the info 'ShutdownReady' goes to the machine.*)
 fb_TonSleepToMachine( IN :=     fb_CleaningCU[1].pInPosCappingClean AND fb_CleaningCU[2].pInPosCappingClean         (*Cleaning position*)
@@ -1627,9 +1630,15 @@ fb_CleaningPU[2].fI_PositionPrint   := 1;
       <LineId Id="86318" Count="0" />
       <LineId Id="83904" Count="20" />
       <LineId Id="85862" Count="5" />
-      <LineId Id="83930" Count="152" />
+      <LineId Id="83930" Count="113" />
+      <LineId Id="84045" Count="0" />
+      <LineId Id="87213" Count="0" />
+      <LineId Id="87216" Count="0" />
+      <LineId Id="87215" Count="0" />
+      <LineId Id="84047" Count="35" />
       <LineId Id="85868" Count="4" />
       <LineId Id="84993" Count="0" />
+      <LineId Id="87210" Count="1" />
       <LineId Id="84083" Count="14" />
       <LineId Id="85873" Count="2" />
       <LineId Id="84098" Count="143" />
