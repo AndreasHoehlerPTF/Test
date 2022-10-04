@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="FB_START_POS_DETECT_WEU" Id="{9a49eb65-c69c-4374-bbae-64640fc50cbd}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_START_POS_DETECT_WEU
 (*************************************************************************************************)
@@ -46,6 +46,7 @@ VAR_INPUT
   fI_Resolution                   : LREAL := 1;
 
   (*Debug & Test*)
+  bI_SimTriggerActive             : BOOL;            (*Sim start trigger active*)
   bI_ManualTrigger                : BOOL;            (*Manual start trigger*)
   iI_ManualTriggerPosition        : DINT;            (*Manual trigger position [SubPx]*)
 END_VAR
@@ -123,7 +124,7 @@ bL_SpeedValid    := bI_SpeedValid;
 
 
 (* -------- Detection of rising edge on sensor1 --------*)
-IF bI_Sensor1_State AND NOT bL_memS1_State AND NOT bL_inhibSensor1 AND bL_SpeedValid THEN
+IF bI_Sensor1_State AND NOT bL_memS1_State AND NOT bL_inhibSensor1 AND bL_SpeedValid AND NOT bI_SimTriggerActive THEN
 	tL_S1_RisingEdge := tI_Sensor1_TimeStampPos;
 
 	IF bI_WithMark THEN					(*  if the paper is marked, *)
@@ -164,7 +165,7 @@ END_IF
 
 
 (* -------- Detection of falling edge, only for detection with mark --------*)
-IF bI_WithMark AND NOT bI_Sensor1_State AND bL_memS1_State AND NOT bL_inhibSensor1 AND bL_SpeedValid THEN
+IF bI_WithMark AND NOT bI_Sensor1_State AND bL_memS1_State AND NOT bL_inhibSensor1 AND bL_SpeedValid AND NOT bI_SimTriggerActive THEN
 	tL_S1_FallingEdge := tI_Sensor1_TimeStampNeg;
 	fL_S1_Duration    := LREAL_TO_REAL(ULINT_TO_LREAL(tL_S1_FallingEdge) - ULINT_TO_LREAL(tL_S1_RisingEdge));		(* Calculate how long the signal was ON *)
 	fL_S1_Length      := fL_S1_Duration * fI_ConveyorSpeed * 0.000_000_001;			(* Calculate the equivalence*)

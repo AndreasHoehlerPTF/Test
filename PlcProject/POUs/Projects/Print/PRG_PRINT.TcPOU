@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="PRG_PRINT" Id="{ed92b124-5714-4a13-a793-01a465126fd2}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM PRG_PRINT
 (*************************************************************************************************)
@@ -217,6 +217,7 @@ VAR
   bSimPosMaster                             : BOOL;         // simulate ph master positions
   fbStartPositionSimulation                 : FB_StartPositionDummy;
   fbRTrigStartPositionSimulation            : R_TRIG;
+  bL_SimMarkStartActive                     : ARRAY [1..iCPr_NB_PM] OF BOOL;   (*start trigger simulation active*)
   bL_SimMarkStartTrigger                    : ARRAY [1..iCPr_NB_PM] OF BOOL;   (*start trigger simulation*)
   nL_SimMarkStartTriggerPos                 : ARRAY [1..iCPr_NB_PM] OF DINT;   (*start trigger simulation DeltaX*)
   bL_DisableSimMarkStartTriggerM3           : BOOL;                            (*disable start trigger simulation for module 3 (mark is printed with module 2)*)
@@ -416,8 +417,8 @@ ELSIF bL_Engaged[2] THEN ; (*Module3 angaged*)
 ELSE                     ; (*none active*) END_IF
 
 // Use of start simulation depends on the print marks
-fbStartPositionSimulation.bSimEnable := NOT bL_PrintMarksExist[1];
-bL_DisableSimMarkStartTriggerM3      := NOT bL_PrintMarksExist[1] AND bL_PrintMarksExist[2];
+fbStartPositionSimulation.bSimEnable := bL_SimMarkStartActive[1] := NOT bL_PrintMarksExist[1];
+bL_DisableSimMarkStartTriggerM3      := bL_SimMarkStartActive[2] := NOT bL_PrintMarksExist[1] AND bL_PrintMarksExist[2];
 fbRTrigStartPositionSimulation(CLK := fbStartPositionSimulation._bSim);
 IF    (bL_HardwareSync[1] AND bL_Engaged[1])
    OR (bL_HardwareSync[2] AND NOT bL_Engaged[1])
@@ -486,6 +487,7 @@ FOR iL_I := 1 TO iCPr_NB_PM DO
   Fb_PaperPosDetect[iL_I].fI_MarkLength            := sAdsSheetAlignment[ePr_PU_UNIT_1].sI_PrintMarkSizeX.fI_Val / 1_000;
   Fb_PaperPosDetect[iL_I].fI_MarkHeight            := sAdsSheetAlignment[ePr_PU_UNIT_1].sI_PrintMarkSizeY.fI_Val / 1_000;
   Fb_PaperPosDetect[iL_I].fI_SubstrateLength       := fL_SubstrateLen[ePr_PU_UNIT_1];
+  Fb_PaperPosDetect[iL_I].bI_SimTriggerActive      := bL_SimMarkStartActive[iL_I];      // StartTrigger Simulation VISU&FB
   Fb_PaperPosDetect[iL_I].bI_ManualTrigger         := bL_SimMarkStartTrigger[iL_I];     // StartTrigger Simulation VISU&FB
   Fb_PaperPosDetect[iL_I].iI_ManualTriggerPosition := nL_SimMarkStartTriggerPos[iL_I];  // StartTrigger Simulation VISU&FB
   Fb_PaperPosDetect[iL_I].bI_SpeedValid            := bL_TargetSpeedReached AND (bL_MachineUpper5MpMin[1] OR bL_MachineUpper5MpMin[2]);
@@ -1698,7 +1700,7 @@ fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted 
       <LineId Id="65507" Count="15" />
       <LineId Id="67672" Count="2" />
       <LineId Id="65523" Count="9" />
-      <LineId Id="67091" Count="1" />
+      <LineId Id="69702" Count="1" />
       <LineId Id="66187" Count="0" />
       <LineId Id="66190" Count="0" />
       <LineId Id="66475" Count="0" />
@@ -1716,7 +1718,9 @@ fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted 
       <LineId Id="68823" Count="0" />
       <LineId Id="65606" Count="2" />
       <LineId Id="65902" Count="0" />
-      <LineId Id="65609" Count="4" />
+      <LineId Id="65609" Count="2" />
+      <LineId Id="69704" Count="0" />
+      <LineId Id="65612" Count="1" />
       <LineId Id="66511" Count="0" />
       <LineId Id="65614" Count="16" />
       <LineId Id="65632" Count="6" />
