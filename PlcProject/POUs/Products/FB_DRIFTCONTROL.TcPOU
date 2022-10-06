@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="FB_DRIFTCONTROL" Id="{525b6909-7917-44ad-af97-c164fbbd270b}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_DRIFTCONTROL
 VAR_INPUT
@@ -152,8 +152,7 @@ CASE iL_State OF
     lL_ImgLength:=UDINT_TO_DINT(pI_JobSettings^.lI_ImageDepth)*iI_Res_SubPix; *)
     lL_ImgLength := FC_CONV_M_TO_SUBPX( UDINT_TO_LREAL(pI_JobSettings^.lI_ImageDepth) / 1_000_000
                                       , iI_Res_Ph
-                                      , iI_Res_SubPix
-                                      , ADR(PRG_SYSTEMBASE.lI_ConversionErr));
+                                      , iI_Res_SubPix);
 
     IF pI_JobSettings^.lI_PrintMode.ePr_PRINT_MODE_ENDLESS THEN
       bI_Enable:=TRUE; (*Automatically enable in Endless Mode*)
@@ -187,11 +186,10 @@ CASE iL_State OF
       lL_ImgLength:=UDINT_TO_DINT(pI_JobSettings^.lI_ImageDepth)*iI_Res_SubPix; *)
       lL_ImgLength := FC_CONV_M_TO_SUBPX( UDINT_TO_LREAL(pI_JobSettings^.lI_ImageDepth) / 1_000_000
                                         , iI_Res_Ph
-                                        , iI_Res_SubPix
-                                        , ADR(PRG_SYSTEMBASE.lI_ConversionErr));
+                                        , iI_Res_SubPix);
       
       IF fL_RefLength > 0 AND lL_ImgLength > 0 THEN
-        IF DINT_TO_LREAL(ABS(FC_LREAL_TO_DINT(fL_RefLength, ADR(lL_ConversionErrorCtr))-lL_ImgLength)*100)/fL_RefLength > fC_MaxFormatDifference THEN
+        IF DINT_TO_LREAL(ABS(FC_LREAL_TO_DINT(fL_RefLength)-lL_ImgLength)*100)/fL_RefLength > fC_MaxFormatDifference THEN
           bL_FormatWarning:=TRUE;
         ELSE
           bL_FormatWarning:=FALSE;
@@ -355,7 +353,7 @@ END_IF;]]></ST>
       <LineId Id="2347" Count="2" />
       <LineId Id="2714" Count="0" />
       <LineId Id="2713" Count="0" />
-      <LineId Id="2716" Count="2" />
+      <LineId Id="2716" Count="1" />
       <LineId Id="2350" Count="7" />
       <LineId Id="3496" Count="1" />
       <LineId Id="3502" Count="1" />
@@ -369,7 +367,7 @@ END_IF;]]></ST>
       <LineId Id="3376" Count="0" />
       <LineId Id="3374" Count="0" />
       <LineId Id="2361" Count="6" />
-      <LineId Id="2722" Count="5" />
+      <LineId Id="2722" Count="4" />
       <LineId Id="2369" Count="9" />
       <LineId Id="3389" Count="1" />
       <LineId Id="3495" Count="0" />

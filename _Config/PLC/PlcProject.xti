@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<TcSmItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4024.17" ClassName="CNestedPlcProjDef">
+<TcSmItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4024.32" ClassName="CNestedPlcProjDef">
 	<DataTypes>
 		<DataType>
-			<Name GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF BOOL</Name>
+			<Name GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF BOOL</Name>
 			<BitSize>16</BitSize>
 			<BaseType GUID="{18071995-0000-0000-0000-000000000030}">BOOL</BaseType>
 			<ArrayInfo>
@@ -11,7 +11,7 @@
 			</ArrayInfo>
 		</DataType>
 		<DataType>
-			<Name GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCD1}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF UDINT</Name>
+			<Name GUID="{25064278-D686-DB73-C1A4-2DEAEDC17D4D}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF UDINT</Name>
 			<BitSize>64</BitSize>
 			<BaseType GUID="{18071995-0000-0000-0000-000000000008}">UDINT</BaseType>
 			<ArrayInfo>
@@ -52,7 +52,7 @@
 			</SubItem>
 		</DataType>
 		<DataType>
-			<Name GUID="{CF887A53-7490-A600-6B5D-04343BF0EA04}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..4] OF BOOL</Name>
+			<Name GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..4] OF BOOL</Name>
 			<BitSize>32</BitSize>
 			<BaseType GUID="{18071995-0000-0000-0000-000000000030}">BOOL</BaseType>
 			<ArrayInfo>
@@ -61,9 +61,15 @@
 			</ArrayInfo>
 		</DataType>
 		<DataType>
-			<Name GUID="{3E4D4A0A-BFAF-6F37-DD3B-7C3DCF8DF9BF}" Namespace="Tc2_EtherCAT" AutoDeleteType="true">T_DCTIME64</Name>
+			<Name GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT" AutoDeleteType="true">T_DCTIME64</Name>
 			<BitSize>64</BitSize>
 			<BaseType GUID="{18071995-0000-0000-0000-00000000000B}">ULINT</BaseType>
+			<Properties>
+				<Property>
+					<Name>TcDisplayTypeGUID</Name>
+					<Value>18071995-0000-0000-0000-000000000047</Value>
+				</Property>
+			</Properties>
 		</DataType>
 		<DataType>
 			<Name GUID="{48DB5C9F-F246-BFCF-3CCA-E7969E4FCDA5}" Namespace="CalmarCompPrint" AutoDeleteType="true">ST_PcPdiOutput</Name>
@@ -98,7 +104,7 @@
 			</SubItem>
 		</DataType>
 		<DataType>
-			<Name GUID="{3A0A41FA-E793-0040-02C3-0E86FC421616}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..13] OF BOOL</Name>
+			<Name GUID="{FE1AC57F-3B24-C429-2603-F652F369B870}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..13] OF BOOL</Name>
 			<BitSize>104</BitSize>
 			<BaseType GUID="{18071995-0000-0000-0000-000000000030}">BOOL</BaseType>
 			<ArrayInfo>
@@ -107,7 +113,7 @@
 			</ArrayInfo>
 		</DataType>
 		<DataType>
-			<Name GUID="{2DEBB35E-6364-5D71-E712-09F9CACC9C11}" IecBaseType="true" AutoDeleteType="true">ARRAY [0..21] OF BYTE</Name>
+			<Name GUID="{BBFC3C84-2835-602C-793A-4CCF6A40D1E8}" IecBaseType="true" AutoDeleteType="true">ARRAY [0..21] OF BYTE</Name>
 			<BitSize>176</BitSize>
 			<BaseType GUID="{18071995-0000-0000-0000-000000000001}">BYTE</BaseType>
 			<ArrayInfo>
@@ -116,7 +122,7 @@
 			</ArrayInfo>
 		</DataType>
 		<DataType>
-			<Name GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCD0}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF DINT</Name>
+			<Name GUID="{F585EC68-350F-45ED-8409-4E110429A50F}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF DINT</Name>
 			<BitSize>64</BitSize>
 			<BaseType GUID="{18071995-0000-0000-0000-000000000009}">DINT</BaseType>
 			<ArrayInfo>
@@ -125,7 +131,7 @@
 			</ArrayInfo>
 		</DataType>
 		<DataType>
-			<Name GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCDD}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF WORD</Name>
+			<Name GUID="{593083CF-E92B-2C09-0A88-F9043676EF31}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF WORD</Name>
 			<BitSize>32</BitSize>
 			<BaseType GUID="{18071995-0000-0000-0000-000000000004}">WORD</BaseType>
 			<ArrayInfo>
@@ -134,7 +140,7 @@
 			</ArrayInfo>
 		</DataType>
 		<DataType>
-			<Name GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCD7}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF LREAL</Name>
+			<Name GUID="{12F9F70A-56DE-B2DB-4A3C-FB49D6018C54}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..2] OF LREAL</Name>
 			<BitSize>128</BitSize>
 			<BaseType GUID="{18071995-0000-0000-0000-00000000000E}">LREAL</BaseType>
 			<ArrayInfo>
@@ -143,7 +149,7 @@
 			</ArrayInfo>
 		</DataType>
 		<DataType>
-			<Name GUID="{EC79C002-EC73-F686-CA4C-A2795FD67094}" IecBaseType="true" AutoDeleteType="true">ARRAY [0..49] OF UINT</Name>
+			<Name GUID="{0BF29E54-38D5-B9F8-5230-399B8034A23F}" IecBaseType="true" AutoDeleteType="true">ARRAY [0..49] OF UINT</Name>
 			<BitSize>800</BitSize>
 			<BaseType GUID="{18071995-0000-0000-0000-000000000005}">UINT</BaseType>
 			<ArrayInfo>
@@ -152,7 +158,7 @@
 			</ArrayInfo>
 		</DataType>
 		<DataType>
-			<Name GUID="{CF887A53-7490-A600-6B5D-04343BF0EA30}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..4] OF WORD</Name>
+			<Name GUID="{EA55AFA5-173A-B1D8-E585-84C23FB5C985}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..4] OF WORD</Name>
 			<BitSize>64</BitSize>
 			<BaseType GUID="{18071995-0000-0000-0000-000000000004}">WORD</BaseType>
 			<ArrayInfo>
@@ -161,7 +167,7 @@
 			</ArrayInfo>
 		</DataType>
 		<DataType>
-			<Name GUID="{64A08B6B-A609-F0DA-296D-88E1DAD3F7A6}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..5] OF BOOL</Name>
+			<Name GUID="{29CAAFD0-28B6-D9D0-3B0E-64B337839191}" IecBaseType="true" AutoDeleteType="true">ARRAY [1..5] OF BOOL</Name>
 			<BitSize>40</BitSize>
 			<BaseType GUID="{18071995-0000-0000-0000-000000000030}">BOOL</BaseType>
 			<ArrayInfo>
@@ -171,7 +177,7 @@
 		</DataType>
 	</DataTypes>
 	<Project GUID="{06E29AE1-7FD1-4F58-87FC-AD943F8BCC74}" Name="PlcProject" PrjFilePath="..\..\PlcProject\PlcProject.plcproj" TmcFilePath="..\..\PlcProject\PlcProject.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" CopyTmcToTarget="true" CopyTpyToTarget="false" ClearInvalidPersist="true">
-		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc">
+		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc" TmcHash="{AC43416F-DB7E-7E27-35B4-14EB97CCD95D}">
 			<Name>PlcProject Instance</Name>
 			<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 			<Vars VarGrpType="1">
@@ -179,17 +185,22 @@
 				<Var>
 					<Name>PRG_MACHINE.bIKp_SafetyCoverOK</Name>
 					<Comment><![CDATA[monitoring input]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.bIKp_SafetyDoorsOK</Name>
 					<Comment><![CDATA[monitoring input]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.IbEAP_PrintEnabled</Name>
 					<Comment><![CDATA[Print enabled]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_MACHINE.IbEAP_TargetSpeedReached</Name>
+					<Comment><![CDATA[Target speed reached]]></Comment>
+					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.InEAP_SubstrateThickness</Name>
@@ -212,19 +223,14 @@
 					<Type>DINT</Type>
 				</Var>
 				<Var>
+					<Name>PRG_MACHINE.IbEAP_PrintMarksExist</Name>
+					<Comment><![CDATA[Print marks exist]]></Comment>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
+				</Var>
+				<Var>
 					<Name>PRG_MACHINE.InEAP_Module2ToModule3</Name>
 					<Comment><![CDATA[Distance between Module 2 and 3 [µm]]]></Comment>
 					<Type>DINT</Type>
-				</Var>
-				<Var>
-					<Name>PRG_MACHINE.IbEAP_TargetSpeedReached</Name>
-					<Comment><![CDATA[Target speed reached]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_MACHINE.IbEAP_PrintMarksExist</Name>
-					<Comment><![CDATA[Print marks exist]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.InEAP_NeutralFibreFactor</Name>
@@ -234,22 +240,22 @@
 				<Var>
 					<Name>PRG_PRINT.bIKp_LatCVal</Name>
 					<Comment><![CDATA[C-Latch valid @EL5101]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.lIKp_EncPulse</Name>
 					<Comment><![CDATA[current encoder position]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCD1}">ARRAY [1..2] OF UDINT</Type>
+					<Type GUID="{25064278-D686-DB73-C1A4-2DEAEDC17D4D}">ARRAY [1..2] OF UDINT</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.lIKp_EncLatch</Name>
 					<Comment><![CDATA[last latched postion]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCD1}">ARRAY [1..2] OF UDINT</Type>
+					<Type GUID="{25064278-D686-DB73-C1A4-2DEAEDC17D4D}">ARRAY [1..2] OF UDINT</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.bI_EncoderWcState</Name>
 					<Comment><![CDATA[EL5101 encoder WcState]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[1].sI_PhHw</Name>
@@ -259,7 +265,7 @@
 				<Var>
 					<Name>PRG_PRINT.FB_PC[1].bI_PhHwEnable</Name>
 					<Comment><![CDATA[Enable printhead n from hardware]]></Comment>
-					<Type GUID="{CF887A53-7490-A600-6B5D-04343BF0EA04}">ARRAY [1..4] OF BOOL</Type>
+					<Type GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}">ARRAY [1..4] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[2].sI_PhHw</Name>
@@ -269,7 +275,7 @@
 				<Var>
 					<Name>PRG_PRINT.FB_PC[2].bI_PhHwEnable</Name>
 					<Comment><![CDATA[Enable printhead n from hardware]]></Comment>
-					<Type GUID="{CF887A53-7490-A600-6B5D-04343BF0EA04}">ARRAY [1..4] OF BOOL</Type>
+					<Type GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}">ARRAY [1..4] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[3].sI_PhHw</Name>
@@ -279,7 +285,7 @@
 				<Var>
 					<Name>PRG_PRINT.FB_PC[3].bI_PhHwEnable</Name>
 					<Comment><![CDATA[Enable printhead n from hardware]]></Comment>
-					<Type GUID="{CF887A53-7490-A600-6B5D-04343BF0EA04}">ARRAY [1..4] OF BOOL</Type>
+					<Type GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}">ARRAY [1..4] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[4].sI_PhHw</Name>
@@ -289,7 +295,7 @@
 				<Var>
 					<Name>PRG_PRINT.FB_PC[4].bI_PhHwEnable</Name>
 					<Comment><![CDATA[Enable printhead n from hardware]]></Comment>
-					<Type GUID="{CF887A53-7490-A600-6B5D-04343BF0EA04}">ARRAY [1..4] OF BOOL</Type>
+					<Type GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}">ARRAY [1..4] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[5].sI_PhHw</Name>
@@ -299,7 +305,7 @@
 				<Var>
 					<Name>PRG_PRINT.FB_PC[5].bI_PhHwEnable</Name>
 					<Comment><![CDATA[Enable printhead n from hardware]]></Comment>
-					<Type GUID="{CF887A53-7490-A600-6B5D-04343BF0EA04}">ARRAY [1..4] OF BOOL</Type>
+					<Type GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}">ARRAY [1..4] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[6].sI_PhHw</Name>
@@ -309,7 +315,7 @@
 				<Var>
 					<Name>PRG_PRINT.FB_PC[6].bI_PhHwEnable</Name>
 					<Comment><![CDATA[Enable printhead n from hardware]]></Comment>
-					<Type GUID="{CF887A53-7490-A600-6B5D-04343BF0EA04}">ARRAY [1..4] OF BOOL</Type>
+					<Type GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}">ARRAY [1..4] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[7].sI_PhHw</Name>
@@ -319,7 +325,7 @@
 				<Var>
 					<Name>PRG_PRINT.FB_PC[7].bI_PhHwEnable</Name>
 					<Comment><![CDATA[Enable printhead n from hardware]]></Comment>
-					<Type GUID="{CF887A53-7490-A600-6B5D-04343BF0EA04}">ARRAY [1..4] OF BOOL</Type>
+					<Type GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}">ARRAY [1..4] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[8].sI_PhHw</Name>
@@ -329,7 +335,7 @@
 				<Var>
 					<Name>PRG_PRINT.FB_PC[8].bI_PhHwEnable</Name>
 					<Comment><![CDATA[Enable printhead n from hardware]]></Comment>
-					<Type GUID="{CF887A53-7490-A600-6B5D-04343BF0EA04}">ARRAY [1..4] OF BOOL</Type>
+					<Type GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}">ARRAY [1..4] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PH[1].nPhStatus</Name>
@@ -579,12 +585,12 @@
 				<Var>
 					<Name>PRG_PRINT.Fb_PaperPosDetect[1].tIKp_TimeStampPos</Name>
 					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
-					<Type GUID="{3E4D4A0A-BFAF-6F37-DD3B-7C3DCF8DF9BF}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.Fb_PaperPosDetect[1].tIKn_TimeStampNeg</Name>
 					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
-					<Type GUID="{3E4D4A0A-BFAF-6F37-DD3B-7C3DCF8DF9BF}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.Fb_PaperPosDetect[2].bIKp_CmdStartPrintSta</Name>
@@ -594,12 +600,12 @@
 				<Var>
 					<Name>PRG_PRINT.Fb_PaperPosDetect[2].tIKp_TimeStampPos</Name>
 					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
-					<Type GUID="{3E4D4A0A-BFAF-6F37-DD3B-7C3DCF8DF9BF}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.Fb_PaperPosDetect[2].tIKn_TimeStampNeg</Name>
 					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
-					<Type GUID="{3E4D4A0A-BFAF-6F37-DD3B-7C3DCF8DF9BF}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.fbStartPositionSimulation.bTrigger</Name>
@@ -609,7 +615,7 @@
 				<Var>
 					<Name>PRG_PRINT.fbStartPositionSimulation.tTrigger_TimeStamp</Name>
 					<Comment><![CDATA[ (INPUT) rigger timerstamp]]></Comment>
-					<Type GUID="{3E4D4A0A-BFAF-6F37-DD3B-7C3DCF8DF9BF}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.fbNeutralFibreDetermine.bIKp_MarkTrigger01</Name>
@@ -619,12 +625,12 @@
 				<Var>
 					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKp_TimeStampPos01</Name>
 					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
-					<Type GUID="{3E4D4A0A-BFAF-6F37-DD3B-7C3DCF8DF9BF}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKn_TimeStampNeg01</Name>
 					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
-					<Type GUID="{3E4D4A0A-BFAF-6F37-DD3B-7C3DCF8DF9BF}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.fbNeutralFibreDetermine.bIKp_MarkTrigger02</Name>
@@ -634,24 +640,24 @@
 				<Var>
 					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKp_TimeStampPos02</Name>
 					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
-					<Type GUID="{3E4D4A0A-BFAF-6F37-DD3B-7C3DCF8DF9BF}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKn_TimeStampNeg02</Name>
 					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
-					<Type GUID="{3E4D4A0A-BFAF-6F37-DD3B-7C3DCF8DF9BF}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>
 			</Vars>
 			<Vars VarGrpType="2" AreaNo="1">
 				<Name>PrgPrint Outputs</Name>
 				<Var>
 					<Name>PRG_PRINT.bO_ActivateLatch</Name>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.bOKp_EnLatC</Name>
 					<Comment><![CDATA[C-Latch enable/reset @EL5101]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.ObPrinterJobLoaded</Name>
@@ -1071,7 +1077,7 @@
 				<Var>
 					<Name>PRG_PRINT.fbInspectionSystemTrigger.OtTriggerStartTime</Name>
 					<Comment><![CDATA[ EL2252 Timestamp - where to set outputs]]></Comment>
-					<Type GUID="{3E4D4A0A-BFAF-6F37-DD3B-7C3DCF8DF9BF}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.fbInspectionSystemTrigger.OnTriggerCommand</Name>
@@ -1124,17 +1130,12 @@
 				<Var>
 					<Name>PRG_MACHINE.bIKp_SefetyRelayOk</Name>
 					<Comment><![CDATA[monitoring input]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.bIKp_SeparatorNiveau_Ok</Name>
 					<Comment><![CDATA[-BX66: monitoring input]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_MACHINE.InEAP_OperatingMode</Name>
-					<Comment><![CDATA[Operating mode]]></Comment>
-					<Type>BYTE</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.InEAP_WatchdogCycleIndex</Name>
@@ -1142,9 +1143,14 @@
 					<Type>INT</Type>
 				</Var>
 				<Var>
+					<Name>PRG_MACHINE.InEAP_OperatingMode</Name>
+					<Comment><![CDATA[Operating mode]]></Comment>
+					<Type>BYTE</Type>
+				</Var>
+				<Var>
 					<Name>PRG_MACHINE.IbEAP_Engaged</Name>
 					<Comment><![CDATA[DEM engaged]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.IbEAP_EStop</Name>
@@ -1159,17 +1165,17 @@
 				<Var>
 					<Name>PRG_MACHINE.IbEAP_PinningClosed</Name>
 					<Comment><![CDATA[Pinning shutter closed]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.IbEAP_CleaningStart</Name>
 					<Comment><![CDATA[not used yet]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.IbEAP_PanelLEDs</Name>
 					<Comment><![CDATA[Motronic panel LEDs]]></Comment>
-					<Type GUID="{3A0A41FA-E793-0040-02C3-0E86FC421616}">ARRAY [1..13] OF BOOL</Type>
+					<Type GUID="{FE1AC57F-3B24-C429-2603-F652F369B870}">ARRAY [1..13] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.fb_CleaningCU[1].bI_ReferenceSensor</Name>
@@ -1312,42 +1318,42 @@
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF70M1.bI_S2_Input</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF70M1.bI_S2_Input</Name>
 					<Comment><![CDATA[input s2 from the Epsitron Fuse]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF90M1.bI_S2_Input</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF90M1.bI_S2_Input</Name>
 					<Comment><![CDATA[input s2 from the Epsitron Fuse]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF122M1.bI_S2_Input</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF122M1.bI_S2_Input</Name>
 					<Comment><![CDATA[input s2 from the Epsitron Fuse]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF160M1.bI_S2_Input</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF160M1.bI_S2_Input</Name>
 					<Comment><![CDATA[input s2 from the Epsitron Fuse]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF70M2.bI_S2_Input</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF70M2.bI_S2_Input</Name>
 					<Comment><![CDATA[input s2 from the Epsitron Fuse]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF90M2.bI_S2_Input</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF90M2.bI_S2_Input</Name>
 					<Comment><![CDATA[input s2 from the Epsitron Fuse]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF122M2.bI_S2_Input</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF122M2.bI_S2_Input</Name>
 					<Comment><![CDATA[input s2 from the Epsitron Fuse]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF160M2.bI_S2_Input</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF160M2.bI_S2_Input</Name>
 					<Comment><![CDATA[input s2 from the Epsitron Fuse]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
@@ -1379,7 +1385,7 @@
 				<Var>
 					<Name>PRG_MACHINE.fb_ExhaustSystem[1].cI_AerosolMeasurementRxBuff</Name>
 					<Comment><![CDATA[EL6001: aerosol measurement receive data buffer]]></Comment>
-					<Type GUID="{2DEBB35E-6364-5D71-E712-09F9CACC9C11}">ARRAY [0..21] OF BYTE</Type>
+					<Type GUID="{BBFC3C84-2835-602C-793A-4CCF6A40D1E8}">ARRAY [0..21] OF BYTE</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.fb_ExhaustSystem[1].bI_AerosolMeasurementBufferFull</Name>
@@ -1424,7 +1430,7 @@
 				<Var>
 					<Name>PRG_MACHINE.fb_ExhaustSystem[2].cI_AerosolMeasurementRxBuff</Name>
 					<Comment><![CDATA[EL6001: aerosol measurement receive data buffer]]></Comment>
-					<Type GUID="{2DEBB35E-6364-5D71-E712-09F9CACC9C11}">ARRAY [0..21] OF BYTE</Type>
+					<Type GUID="{BBFC3C84-2835-602C-793A-4CCF6A40D1E8}">ARRAY [0..21] OF BYTE</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.fb_ExhaustSystem[2].bI_AerosolMeasurementBufferFull</Name>
@@ -1457,7 +1463,7 @@
 				<Var>
 					<Name>PRG_MACHINE.bO_SeparatorPumpDrainage</Name>
 					<Comment><![CDATA[ Enable separator pump for tank drainage (-MX196)]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.OnEAP_OperatingMode</Name>
@@ -1467,12 +1473,12 @@
 				<Var>
 					<Name>PRG_MACHINE.ObEAP_EngagingAllowed</Name>
 					<Comment><![CDATA[DEM engaging allowed]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.ObEAP_EngagingActive</Name>
 					<Comment><![CDATA[DEM engaging active]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.ObEAP_ShutdownReady</Name>
@@ -1487,7 +1493,7 @@
 				<Var>
 					<Name>PRG_MACHINE.ObEAP_PrintPosition</Name>
 					<Comment><![CDATA[Printing position]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.ObEAP_MismatchLength</Name>
@@ -1497,32 +1503,32 @@
 				<Var>
 					<Name>PRG_MACHINE.ObEAP_CleaningAllowed</Name>
 					<Comment><![CDATA[not used yet]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.ObEAP_CleaningActive</Name>
 					<Comment><![CDATA[Cleaning active]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.ObEAP_PrintReady</Name>
 					<Comment><![CDATA[Ready to print]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_MACHINE.ObEAP_WarnungActive</Name>
-					<Comment><![CDATA[Warning active]]></Comment>
-					<Type>BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.OnEAP_VarnishQuantity</Name>
 					<Comment><![CDATA[Varnish quantity [g/m^2]]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCD0}">ARRAY [1..2] OF DINT</Type>
+					<Type GUID="{F585EC68-350F-45ED-8409-4E110429A50F}">ARRAY [1..2] OF DINT</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.OnEAP_MaxWebSpeed</Name>
 					<Comment><![CDATA[Max web speed [m/min]]]></Comment>
 					<Type>DINT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_MACHINE.ObEAP_WarnungActive</Name>
+					<Comment><![CDATA[Warning active]]></Comment>
+					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.ObEAP_ErrorActive</Name>
@@ -1537,17 +1543,17 @@
 				<Var>
 					<Name>PRG_MACHINE.OnEAP_PrintMarkPosBits</Name>
 					<Comment><![CDATA[Print mark position (bit coded)]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCDD}">ARRAY [1..2] OF WORD</Type>
+					<Type GUID="{593083CF-E92B-2C09-0A88-F9043676EF31}">ARRAY [1..2] OF WORD</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.OnEAP_MasterSpeed</Name>
 					<Comment><![CDATA[FB_POSITION_MASTER[x].fO_Master_Speed [m/s]]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCD7}">ARRAY [1..2] OF LREAL</Type>
+					<Type GUID="{12F9F70A-56DE-B2DB-4A3C-FB49D6018C54}">ARRAY [1..2] OF LREAL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.ObPanelLEDs</Name>
 					<Comment><![CDATA[Motronic panel LEDs]]></Comment>
-					<Type GUID="{3A0A41FA-E793-0040-02C3-0E86FC421616}">ARRAY [1..13] OF BOOL</Type>
+					<Type GUID="{FE1AC57F-3B24-C429-2603-F652F369B870}">ARRAY [1..13] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.fb_CleaningCU[1].wO_ControlWord</Name>
@@ -1660,42 +1666,42 @@
 					<Type>WORD</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF70M1.bO_S1_Output</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF70M1.bO_S1_Output</Name>
 					<Comment><![CDATA[Manchester protocoll]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF90M1.bO_S1_Output</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF90M1.bO_S1_Output</Name>
 					<Comment><![CDATA[Manchester protocoll]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF122M1.bO_S1_Output</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF122M1.bO_S1_Output</Name>
 					<Comment><![CDATA[Manchester protocoll]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF160M1.bO_S1_Output</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF160M1.bO_S1_Output</Name>
 					<Comment><![CDATA[Manchester protocoll]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF70M2.bO_S1_Output</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF70M2.bO_S1_Output</Name>
 					<Comment><![CDATA[Manchester protocoll]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF90M2.bO_S1_Output</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF90M2.bO_S1_Output</Name>
 					<Comment><![CDATA[Manchester protocoll]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF122M2.bO_S1_Output</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF122M2.bO_S1_Output</Name>
 					<Comment><![CDATA[Manchester protocoll]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.fb_EpsitronFuseControlF160M2.bO_S1_Output</Name>
+					<Name>PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF160M2.bO_S1_Output</Name>
 					<Comment><![CDATA[Manchester protocoll]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
@@ -1755,7 +1761,7 @@
 				<Var>
 					<Name>PRG_INK.bI_SubPressureWcState</Name>
 					<Comment><![CDATA[EM3701 sub menc pressure WcState]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.bIKn_TankCleanerLevelEmpty</Name>
@@ -1770,7 +1776,7 @@
 				<Var>
 					<Name>PRG_INK.bIKn_TankInkLevelReached</Name>
 					<Comment><![CDATA[-BX53, BX57: HT front level reached]]></Comment>
-					<Type GUID="{CF887A53-7490-A600-6B5D-04343BF0EA04}">ARRAY [1..4] OF BOOL</Type>
+					<Type GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}">ARRAY [1..4] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.bI_Balance_AckInit</Name>
@@ -1795,7 +1801,7 @@
 				<Var>
 					<Name>PRG_INK.cI_Balance_RxBuffWord</Name>
 					<Comment><![CDATA[EL6021: Data in 0..49]]></Comment>
-					<Type GUID="{EC79C002-EC73-F686-CA4C-A2795FD67094}">ARRAY [0..49] OF UINT</Type>
+					<Type GUID="{0BF29E54-38D5-B9F8-5230-399B8034A23F}">ARRAY [0..49] OF UINT</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.bI_Barcode_AckInit</Name>
@@ -1815,7 +1821,7 @@
 				<Var>
 					<Name>PRG_INK.cI_Barcode_RxBuff</Name>
 					<Comment><![CDATA[EL6001: Barcode scanner receive data buffer]]></Comment>
-					<Type GUID="{2DEBB35E-6364-5D71-E712-09F9CACC9C11}">ARRAY [0..21] OF BYTE</Type>
+					<Type GUID="{BBFC3C84-2835-602C-793A-4CCF6A40D1E8}">ARRAY [0..21] OF BYTE</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.bI_Barcode_BufferFull</Name>
@@ -1933,9 +1939,19 @@
 					<Type>INT</Type>
 				</Var>
 				<Var>
+					<Name>PRG_INK.fb_TempControllerHys[1].bI_WcState</Name>
+					<Comment><![CDATA[WcState: 0 = data valid]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
 					<Name>PRG_INK.fb_TempControllerHys[2].iI_ActValue</Name>
 					<Comment><![CDATA[Actual value]]></Comment>
 					<Type>INT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.fb_TempControllerHys[2].bI_WcState</Name>
+					<Comment><![CDATA[WcState: 0 = data valid]]></Comment>
+					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.fb_TempControllerHys[3].iI_ActValue</Name>
@@ -1943,9 +1959,19 @@
 					<Type>INT</Type>
 				</Var>
 				<Var>
+					<Name>PRG_INK.fb_TempControllerHys[3].bI_WcState</Name>
+					<Comment><![CDATA[WcState: 0 = data valid]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
 					<Name>PRG_INK.fb_TempControllerHys[4].iI_ActValue</Name>
 					<Comment><![CDATA[Actual value]]></Comment>
 					<Type>INT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.fb_TempControllerHys[4].bI_WcState</Name>
+					<Comment><![CDATA[WcState: 0 = data valid]]></Comment>
+					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.fb_TempControllerHys[5].iI_ActValue</Name>
@@ -1953,9 +1979,19 @@
 					<Type>INT</Type>
 				</Var>
 				<Var>
+					<Name>PRG_INK.fb_TempControllerHys[5].bI_WcState</Name>
+					<Comment><![CDATA[WcState: 0 = data valid]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
 					<Name>PRG_INK.fb_TempControllerHys[6].iI_ActValue</Name>
 					<Comment><![CDATA[Actual value]]></Comment>
 					<Type>INT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.fb_TempControllerHys[6].bI_WcState</Name>
+					<Comment><![CDATA[WcState: 0 = data valid]]></Comment>
+					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.fb_TempControllerHys[7].iI_ActValue</Name>
@@ -1963,9 +1999,19 @@
 					<Type>INT</Type>
 				</Var>
 				<Var>
+					<Name>PRG_INK.fb_TempControllerHys[7].bI_WcState</Name>
+					<Comment><![CDATA[WcState: 0 = data valid]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
 					<Name>PRG_INK.fb_TempControllerHys[8].iI_ActValue</Name>
 					<Comment><![CDATA[Actual value]]></Comment>
 					<Type>INT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.fb_TempControllerHys[8].bI_WcState</Name>
+					<Comment><![CDATA[WcState: 0 = data valid]]></Comment>
+					<Type>BOOL</Type>
 				</Var>
 			</Vars>
 			<Vars VarGrpType="2" ContextId="2" AreaNo="33">
@@ -1978,21 +2024,21 @@
 				<Var>
 					<Name>PRG_INK.bOKp_EnableFillInkPumpVarnish</Name>
 					<Comment><![CDATA[Enable fill ink pump]]></Comment>
-					<Type GUID="{CF887A53-7490-A600-6B5D-04343BF0EA04}">ARRAY [1..4] OF BOOL</Type>
+					<Type GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}">ARRAY [1..4] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.wOKp_StptSpeedFillInkPumpVarnish</Name>
 					<Comment><![CDATA[Setpoint of speed for fill ink pump]]></Comment>
-					<Type GUID="{CF887A53-7490-A600-6B5D-04343BF0EA30}">ARRAY [1..4] OF WORD</Type>
+					<Type GUID="{EA55AFA5-173A-B1D8-E585-84C23FB5C985}">ARRAY [1..4] OF WORD</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.bO_HTInkConnectionClose</Name>
 					<Comment><![CDATA[-KX87: HT ink connection valve]]></Comment>
-					<Type GUID="{CF887A53-7490-A600-6B5D-04343BF0EA04}">ARRAY [1..4] OF BOOL</Type>
+					<Type GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}">ARRAY [1..4] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.bO_FlushingReturnPump</Name>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.bO_Balance_ReqInit</Name>
@@ -2015,14 +2061,14 @@
 					<Type>USINT</Type>
 				</Var>
 				<Var>
+					<Name>PRG_INK.cO_Balance_TxBuffWord</Name>
+					<Comment><![CDATA[EL6021: Data out 0..49]]></Comment>
+					<Type GUID="{0BF29E54-38D5-B9F8-5230-399B8034A23F}">ARRAY [0..49] OF UINT</Type>
+				</Var>
+				<Var>
 					<Name>PRG_INK.bO_Barcode_ReqInit</Name>
 					<Comment><![CDATA[EL6001: Barcode scanner request init]]></Comment>
 					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.cO_Balance_TxBuffWord</Name>
-					<Comment><![CDATA[EL6021: Data out 0..49]]></Comment>
-					<Type GUID="{EC79C002-EC73-F686-CA4C-A2795FD67094}">ARRAY [0..49] OF UINT</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.bO_Barcode_AckRec</Name>
@@ -2427,7 +2473,7 @@
 				<Var>
 					<Name>PRG_INK.fb_Headertank[1].bOKp_HtSelVarnishTyp</Name>
 					<Comment><![CDATA[Headertank selection varnish typ    (K211,...)]]></Comment>
-					<Type GUID="{64A08B6B-A609-F0DA-296D-88E1DAD3F7A6}">ARRAY [1..5] OF BOOL</Type>
+					<Type GUID="{29CAAFD0-28B6-D9D0-3B0E-64B337839191}">ARRAY [1..5] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.fb_Headertank[1].bOKp_HtSelCleaner</Name>
@@ -2462,7 +2508,7 @@
 				<Var>
 					<Name>PRG_INK.fb_Headertank[2].bOKp_HtSelVarnishTyp</Name>
 					<Comment><![CDATA[Headertank selection varnish typ    (K211,...)]]></Comment>
-					<Type GUID="{64A08B6B-A609-F0DA-296D-88E1DAD3F7A6}">ARRAY [1..5] OF BOOL</Type>
+					<Type GUID="{29CAAFD0-28B6-D9D0-3B0E-64B337839191}">ARRAY [1..5] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.fb_Headertank[2].bOKp_HtSelCleaner</Name>
@@ -2497,7 +2543,7 @@
 				<Var>
 					<Name>PRG_INK.fb_Headertank[3].bOKp_HtSelVarnishTyp</Name>
 					<Comment><![CDATA[Headertank selection varnish typ    (K211,...)]]></Comment>
-					<Type GUID="{64A08B6B-A609-F0DA-296D-88E1DAD3F7A6}">ARRAY [1..5] OF BOOL</Type>
+					<Type GUID="{29CAAFD0-28B6-D9D0-3B0E-64B337839191}">ARRAY [1..5] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.fb_Headertank[3].bOKp_HtSelCleaner</Name>
@@ -2532,7 +2578,7 @@
 				<Var>
 					<Name>PRG_INK.fb_Headertank[4].bOKp_HtSelVarnishTyp</Name>
 					<Comment><![CDATA[Headertank selection varnish typ    (K211,...)]]></Comment>
-					<Type GUID="{64A08B6B-A609-F0DA-296D-88E1DAD3F7A6}">ARRAY [1..5] OF BOOL</Type>
+					<Type GUID="{29CAAFD0-28B6-D9D0-3B0E-64B337839191}">ARRAY [1..5] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.fb_Headertank[4].bOKp_HtSelCleaner</Name>
@@ -2602,7 +2648,7 @@
 				<Var>
 					<Name>PRG_INK.fb_ReturnFlow[1].bOKp_ReturnFlowSelVarnishTyp</Name>
 					<Comment><![CDATA[Headertank selection varnish typ    (K261,...)]]></Comment>
-					<Type GUID="{64A08B6B-A609-F0DA-296D-88E1DAD3F7A6}">ARRAY [1..5] OF BOOL</Type>
+					<Type GUID="{29CAAFD0-28B6-D9D0-3B0E-64B337839191}">ARRAY [1..5] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.fb_ReturnFlow[1].bOKp_ReturnFlowSelRefuse</Name>
@@ -2632,7 +2678,7 @@
 				<Var>
 					<Name>PRG_INK.fb_ReturnFlow[2].bOKp_ReturnFlowSelVarnishTyp</Name>
 					<Comment><![CDATA[Headertank selection varnish typ    (K261,...)]]></Comment>
-					<Type GUID="{64A08B6B-A609-F0DA-296D-88E1DAD3F7A6}">ARRAY [1..5] OF BOOL</Type>
+					<Type GUID="{29CAAFD0-28B6-D9D0-3B0E-64B337839191}">ARRAY [1..5] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.fb_ReturnFlow[2].bOKp_ReturnFlowSelRefuse</Name>
@@ -3068,11 +3114,6 @@
 			<Vars VarGrpType="1" ContextId="3" AreaNo="48">
 				<Name>PrgSystem Inputs</Name>
 				<Var>
-					<Name>CalmarCompSystem.PRG_SYSTEMBASE.fbEmergency.IbEStop</Name>
-					<Comment><![CDATA[Emergency active signal]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
 					<Name>PRG_INK.bI_Balance_BufferFull</Name>
 					<Comment><![CDATA[EL6021: Balance buffer full]]></Comment>
 					<Type>BOOL</Type>
@@ -3108,14 +3149,14 @@
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.IbEAP_SpliceDetected</Name>
-					<Comment><![CDATA[Splice detected]]></Comment>
-					<Type GUID="{7871B701-39A2-2AF7-8AA0-D8DEC11CCCE9}">ARRAY [1..2] OF BOOL</Type>
-				</Var>
-				<Var>
 					<Name>PRG_MACHINE.InEAP_SubstrateWidth</Name>
 					<Comment><![CDATA[not used yet]]></Comment>
 					<Type>DINT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_MACHINE.IbEAP_SpliceDetected</Name>
+					<Comment><![CDATA[Splice detected]]></Comment>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.InEAP_TargetSpeed</Name>
@@ -3148,7 +3189,7 @@
 				<Var>
 					<Name>PRG_INK.cO_Barcode_TxBuff</Name>
 					<Comment><![CDATA[EL6001: Barcode scanner send buffer]]></Comment>
-					<Type GUID="{2DEBB35E-6364-5D71-E712-09F9CACC9C11}">ARRAY [0..21] OF BYTE</Type>
+					<Type GUID="{BBFC3C84-2835-602C-793A-4CCF6A40D1E8}">ARRAY [0..21] OF BYTE</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.fb_SubMencShutOffValve[1].bOKp_Valve</Name>
@@ -3597,14 +3638,14 @@
 				<Link VarA="PrgMachine Inputs^PRG_MACHINE.bIKp_PowerSupply2M2_Ok" VarB="Channel 2^-G35 Power supply 2 / 24V" Size="1"/>
 				<Link VarA="PrgMachine Inputs^PRG_MACHINE.bIKp_PowerSupply3M2_Ok" VarB="Channel 3^-G50 Power supply 3 / 24V" Size="1"/>
 				<Link VarA="PrgMachine Inputs^PRG_MACHINE.bIKp_SefetyRelayOk[2]" VarB="Channel 5^-K60 Safety relay supervision" Size="1"/>
-				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fb_EpsitronFuseControlF122M2.bI_S2_Input" VarB="Channel 8^-F122 WAGO Epsitron" Size="1"/>
-				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fb_EpsitronFuseControlF70M2.bI_S2_Input" VarB="Channel 6^-F70 WAGO Epsitron" Size="1"/>
-				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fb_EpsitronFuseControlF90M2.bI_S2_Input" VarB="Channel 7^-F90 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF122M2.bI_S2_Input" VarB="Channel 8^-F122 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF70M2.bI_S2_Input" VarB="Channel 6^-F70 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF90M2.bI_S2_Input" VarB="Channel 7^-F90 WAGO Epsitron" Size="1"/>
 				<Link VarA="PrgPrint Inputs^PRG_MACHINE.bIKp_SafetyCoverOK[2]" VarB="Channel 4^-SX62 Printer hood supervision" Size="1"/>
 			</OwnerB>
 			<OwnerB Name="TIID^Device 1 -A301 (EtherCAT)^=CO1+PCR-A170 PrintModuls (CU1128)^=CO1+PCR-A170 PrintModul 2 (CU1128-B)^=CO2+PMW-A10 PrintModul 2 (EK1100)^=CO2+PMW-A16 Supervision, WAGO(EL1008)">
 				<Link VarA="PrgMachine Inputs^PRG_MACHINE.bIKp_CircuitBreakerM2_Ok" VarB="Channel 2^Circuit breaker supervision" Size="1"/>
-				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fb_EpsitronFuseControlF160M2.bI_S2_Input" VarB="Channel 1^-F160 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF160M2.bI_S2_Input" VarB="Channel 1^-F160 WAGO Epsitron" Size="1"/>
 				<Link VarA="PrgPrint Inputs^PRG_MACHINE.bIKp_SafetyDoorsOK[2]" VarB="Channel 4^Safety door" Size="1"/>
 			</OwnerB>
 			<OwnerB Name="TIID^Device 1 -A301 (EtherCAT)^=CO1+PCR-A170 PrintModuls (CU1128)^=CO1+PCR-A170 PrintModul 2 (CU1128-B)^=CO2+PMW-A10 PrintModul 2 (EK1100)^=CO2+PMW-A17 Varnish tank levels (EL1008)">
@@ -3616,10 +3657,10 @@
 			<OwnerB Name="TIID^Device 1 -A301 (EtherCAT)^=CO1+PCR-A170 PrintModuls (CU1128)^=CO1+PCR-A170 PrintModul 2 (CU1128-B)^=CO2+PMW-A10 PrintModul 2 (EK1100)^=CO2+PMW-A21 WAGO Epsitron (EL2008)">
 				<Link VarA="PrgInk Outputs^PRG_INK.fb_TempControllerHys[3].bO_EnableHeater" VarB="Channel 7^-VT1 Heating HT3" Size="1"/>
 				<Link VarA="PrgInk Outputs^PRG_INK.fb_TempControllerHys[4].bO_EnableHeater" VarB="Channel 8^-VT2 Heating HT4" Size="1"/>
-				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fb_EpsitronFuseControlF122M2.bO_S1_Output" VarB="Channel 3^-F122 WAGO Epsitron" Size="1"/>
-				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fb_EpsitronFuseControlF160M2.bO_S1_Output" VarB="Channel 4^-F160 WAGO Epsitron" Size="1"/>
-				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fb_EpsitronFuseControlF70M2.bO_S1_Output" VarB="Channel 1^-F70 WAGO Epsitron" Size="1"/>
-				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fb_EpsitronFuseControlF90M2.bO_S1_Output" VarB="Channel 2^-F90 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF122M2.bO_S1_Output" VarB="Channel 3^-F122 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF160M2.bO_S1_Output" VarB="Channel 4^-F160 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF70M2.bO_S1_Output" VarB="Channel 1^-F70 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF90M2.bO_S1_Output" VarB="Channel 2^-F90 WAGO Epsitron" Size="1"/>
 			</OwnerB>
 			<OwnerB Name="TIID^Device 1 -A301 (EtherCAT)^=CO1+PCR-A170 PrintModuls (CU1128)^=CO1+PCR-A170 PrintModul 2 (CU1128-B)^=CO2+PMW-A10 PrintModul 2 (EK1100)^=CO2+PMW-A22 (EL2008)">
 				<Link VarA="PrgInk Outputs^PRG_INK.bO_HTInkConnectionClose[3]" VarB="Channel 4^-KX77 HT3 connection valve" Size="1"/>
@@ -3747,14 +3788,14 @@
 				<Link VarA="PrgMachine Inputs^PRG_MACHINE.bIKp_PowerSupply2M1_Ok" VarB="Channel 2^-G35 Power supply 2 / 24V" Size="1"/>
 				<Link VarA="PrgMachine Inputs^PRG_MACHINE.bIKp_PowerSupply3M1_Ok" VarB="Channel 3^-G50 Power supply 3 / 24V" Size="1"/>
 				<Link VarA="PrgMachine Inputs^PRG_MACHINE.bIKp_SefetyRelayOk[1]" VarB="Channel 5^-K60 Safety relay supervision" Size="1"/>
-				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fb_EpsitronFuseControlF122M1.bI_S2_Input" VarB="Channel 8^-F122 WAGO Epsitron" Size="1"/>
-				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fb_EpsitronFuseControlF70M1.bI_S2_Input" VarB="Channel 6^-F70 WAGO Epsitron" Size="1"/>
-				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fb_EpsitronFuseControlF90M1.bI_S2_Input" VarB="Channel 7^-F90 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF122M1.bI_S2_Input" VarB="Channel 8^-F122 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF70M1.bI_S2_Input" VarB="Channel 6^-F70 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF90M1.bI_S2_Input" VarB="Channel 7^-F90 WAGO Epsitron" Size="1"/>
 				<Link VarA="PrgPrint Inputs^PRG_MACHINE.bIKp_SafetyCoverOK[1]" VarB="Channel 4^-SX62 Printer hood supervision" Size="1"/>
 			</OwnerB>
 			<OwnerB Name="TIID^Device 1 -A301 (EtherCAT)^=CO1+PCR-A170 PrintModuls (CU1128)^=CO1+PMW-A10 PrintModul 1 (EK1100)^=CO1+PMW-A16 Supervision, WAGO (EL1008)">
 				<Link VarA="PrgMachine Inputs^PRG_MACHINE.bIKp_CircuitBreakerM1_Ok" VarB="Channel 2^Circuit breaker supervision" Size="1"/>
-				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fb_EpsitronFuseControlF160M1.bI_S2_Input" VarB="Channel 1^-F160 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Inputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF160M1.bI_S2_Input" VarB="Channel 1^-F160 WAGO Epsitron" Size="1"/>
 				<Link VarA="PrgPrint Inputs^PRG_MACHINE.bIKp_SafetyDoorsOK[1]" VarB="Channel 4^Safety door" Size="1"/>
 			</OwnerB>
 			<OwnerB Name="TIID^Device 1 -A301 (EtherCAT)^=CO1+PCR-A170 PrintModuls (CU1128)^=CO1+PMW-A10 PrintModul 1 (EK1100)^=CO1+PMW-A17 Varnish tank levels (EL1008)">
@@ -3766,10 +3807,10 @@
 			<OwnerB Name="TIID^Device 1 -A301 (EtherCAT)^=CO1+PCR-A170 PrintModuls (CU1128)^=CO1+PMW-A10 PrintModul 1 (EK1100)^=CO1+PMW-A21 WAGO Epsitron (EL2008)">
 				<Link VarA="PrgInk Outputs^PRG_INK.fb_TempControllerHys[1].bO_EnableHeater" VarB="Channel 7^-VT1 Heating HT1" Size="1"/>
 				<Link VarA="PrgInk Outputs^PRG_INK.fb_TempControllerHys[2].bO_EnableHeater" VarB="Channel 8^-VT2 Heating HT2" Size="1"/>
-				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fb_EpsitronFuseControlF122M1.bO_S1_Output" VarB="Channel 3^-F122 WAGO Epsitron" Size="1"/>
-				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fb_EpsitronFuseControlF160M1.bO_S1_Output" VarB="Channel 4^-F160 WAGO Epsitron" Size="1"/>
-				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fb_EpsitronFuseControlF70M1.bO_S1_Output" VarB="Channel 1^-F70 WAGO Epsitron" Size="1"/>
-				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fb_EpsitronFuseControlF90M1.bO_S1_Output" VarB="Channel 2^-F90 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF122M1.bO_S1_Output" VarB="Channel 3^-F122 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF160M1.bO_S1_Output" VarB="Channel 4^-F160 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF70M1.bO_S1_Output" VarB="Channel 1^-F70 WAGO Epsitron" Size="1"/>
+				<Link VarA="PrgMachine Outputs^PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF90M1.bO_S1_Output" VarB="Channel 2^-F90 WAGO Epsitron" Size="1"/>
 			</OwnerB>
 			<OwnerB Name="TIID^Device 1 -A301 (EtherCAT)^=CO1+PCR-A170 PrintModuls (CU1128)^=CO1+PMW-A10 PrintModul 1 (EK1100)^=CO1+PMW-A22 (EL2008)">
 				<Link VarA="PrgInk Outputs^PRG_INK.bO_HTInkConnectionClose[1]" VarB="Channel 4^-KX77 HT1 connection valve" Size="1"/>

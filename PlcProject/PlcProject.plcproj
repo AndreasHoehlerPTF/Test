@@ -21,7 +21,7 @@ Fribourg/Switzerland (2017)</Description>
     <Company>WIFAG-Polytype</Company>
     <Released>false</Released>
     <ObjectProtection>{00000000-0000-0000-0000-000000000000}</ObjectProtection>
-    <ProjectVersion>1.0.0</ProjectVersion>
+    <ProjectVersion>1.1.0</ProjectVersion>
     <ProgramVersion>3.1.4023.0</ProgramVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -77,6 +77,10 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="DUTs\Projects\Structures\ST_REM_VAR_P.TcDUT">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="GlobalImagePool.TcGIPO" />
+    <Compile Include="GlobalTextList.TcGTLO">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="GVLs\Configuration\CONFIGURATION.TcGVL">
       <SubType>Code</SubType>
     </Compile>
@@ -90,18 +94,11 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="GVLs\Configuration\REMANENT.TcGVL">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="GlobalImagePool.TcGIPO" />
-    <Compile Include="GlobalTextList.TcGTLO">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\CheckBounds.TcPOU">
       <SubType>Code</SubType>
       <ExcludeFromBuild>false</ExcludeFromBuild>
     </Compile>
     <Compile Include="POUs\CheckPointer.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\FC_CONV_M_TO_SUBPX_V2.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\CleaningStation\FB_CleaningMotorAxisCH.TcPOU">
@@ -143,6 +140,9 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\FB_MOTION_TO_INKSYSTEM_IF.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\FB_WeuPowerControl.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\FB_PurgeControllerSequence.TcPOU">
@@ -234,6 +234,10 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
       <ExcludeFromBuild>true</ExcludeFromBuild>
+    </Compile>
+    <Compile Include="POUs\Products\_VISU_FUSE_CONTROL.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="POUs\Products\_VISU_StartPositionDummy.TcVIS">
       <SubType>Code</SubType>
@@ -382,10 +386,6 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="VISUs\Projects\Machine\VISU_FUSE_CONTROL.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
     <Compile Include="VISUs\Projects\Machine\VISU_CLEAN_PROCESS.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
@@ -459,14 +459,16 @@ Fribourg/Switzerland (2017)</Description>
     <PlaceholderReference Include="CalmarCompPrint">
       <DefaultResolution>CalmarCompPrint, * (WIFAG-Polytype)</DefaultResolution>
       <Namespace>CalmarCompPrint</Namespace>
+      <Parameters>
+        <Parameter ListName="GVL_PRINTDEF" xmlns="">
+          <Key>ICPR_MAX_NB_PASSES</Key>
+          <Value>5</Value>
+        </Parameter>
+      </Parameters>
     </PlaceholderReference>
     <PlaceholderReference Include="CalmarCompSystem">
       <DefaultResolution>CalmarCompSystem, * (WIFAG-Polytype)</DefaultResolution>
       <Namespace>CalmarCompSystem</Namespace>
-    </PlaceholderReference>
-    <PlaceholderReference Include="CalmarLibConfig">
-      <DefaultResolution>CalmarLibConfig, * (WIFAG-Polytype)</DefaultResolution>
-      <Namespace>CalmarLibConfig</Namespace>
     </PlaceholderReference>
     <PlaceholderReference Include="RecipeManagement">
       <DefaultResolution>Recipe Management, 3.3.1.0 (System)</DefaultResolution>
@@ -574,22 +576,19 @@ Fribourg/Switzerland (2017)</Description>
   </ItemGroup>
   <ItemGroup>
     <PlaceholderResolution Include="CalmarCommons">
-      <Resolution>CalmarCommons, 1.5.10 (WIFAG-Polytype)</Resolution>
+      <Resolution>CalmarCommons, 1.7.0.0 (WIFAG-Polytype)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CalmarCompInkSystem">
-      <Resolution>CalmarCompInkSystem, 1.5.1.8 (WIFAG-Polytype)</Resolution>
+      <Resolution>CalmarCompInkSystem, 1.7.0.0 (WIFAG-Polytype)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CalmarCompMachine">
-      <Resolution>CalmarCompMachine, 1.6.0.6 (WIFAG-Polytype)</Resolution>
+      <Resolution>CalmarCompMachine, 1.7.0.0 (WIFAG-Polytype)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CalmarCompPrint">
-      <Resolution>CalmarCompPrint, 2.0.1.23 (WIFAG-Polytype)</Resolution>
+      <Resolution>CalmarCompPrint, 2.1.0.0 (WIFAG-Polytype)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CalmarCompSystem">
-      <Resolution>CalmarCompSystem, 1.5.0.5 (WIFAG-Polytype)</Resolution>
-    </PlaceholderResolution>
-    <PlaceholderResolution Include="CalmarLibConfig">
-      <Resolution>CalmarLibConfig, 1.2.0 (WIFAG-Polytype)</Resolution>
+      <Resolution>CalmarCompSystem, 1.7.0.0 (WIFAG-Polytype)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CmpIecTask">
       <Resolution>CmpIecTask, 3.5.13.0 (System)</Resolution>

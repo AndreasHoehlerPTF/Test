@@ -16,8 +16,6 @@
 (*************************************************************************************************)
 
 VAR_INPUT
-  pI_ConversionErr                : POINTER TO UDINT;  (*counts catched data type conversion overflows*)
-
   (*EL1252*)
   bIKp_CmdStartPrintSta     AT%I* : BOOL;        (*Command to start print station*)
   tIKp_TimeStampPos         AT%I* : T_DCTIME64;  (*TimeStamp Pos_Edge @EL1252*)
@@ -118,7 +116,7 @@ IF    fI_Resolution = 0 THEN iL_Dbg_0Div := iL_Dbg_0Div + 1; RETURN;
 ELSIF fI_MarkHeight = 0 THEN iL_Dbg_0Div := iL_Dbg_0Div + 1; RETURN;
 END_IF;
 
-iL_InhibitLength := FC_LREAL_TO_DINT((fI_SubstrateLength - fL_InhibitSubstrateDecrease) * (1 / (0.0254 / fI_Resolution)), pI_ConversionErr);
+iL_InhibitLength := FC_LREAL_TO_DINT((fI_SubstrateLength - fL_InhibitSubstrateDecrease) * (1 / (0.0254 / fI_Resolution)));
 //bL_SpeedValid  := fI_ConveyorSpeed > fC_MIN_CONVEYOR_SPEED;
 bL_SpeedValid    := bI_SpeedValid;
 
@@ -143,7 +141,7 @@ IF bI_Sensor1_State AND NOT bL_memS1_State AND NOT bL_inhibSensor1 AND bL_SpeedV
 (* Treatment of the information *)
 	fL_DeltaDistance := (fL_CurrentTimeStamp - fI_Sensor1_TimeStamp) * 0.001 * fI_ConveyorSpeed;	(* Distance in pulses that the substrate has traveled between the sensor detection and the PLC treatment *)
 	fL_TempVar       := fL_DeltaDistance * (1 / (0.0254 / fI_Resolution));  (*1/1px*)	(* Travel of the substrate between the time of acquisition and the time of treatment *)
-	iL_DeltaPosition := FC_LREAL_TO_DINT(fL_TempVar, pI_ConversionErr);
+	iL_DeltaPosition := FC_LREAL_TO_DINT(fL_TempVar);
 	iO_Offset_X0     := iI_CurrentPos - iL_DeltaPosition;	(* Position where the sheet has been detected *)
 END_IF;
 

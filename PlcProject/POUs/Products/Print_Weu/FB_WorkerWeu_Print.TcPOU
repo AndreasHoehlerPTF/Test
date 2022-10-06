@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="FB_WorkerWeu_Print" Id="{a3c0fca9-0a63-49f3-a9fd-25e7fe09223b}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_WorkerWeu_Print EXTENDS FB_WorkerWeu
 VAR_INPUT
@@ -90,10 +90,6 @@ END_VAR
 VAR_INPUT
   iCT              : I_CT;                         (*container at triggered event position*)
 END_VAR
-
-VAR
-  nConvErr        : UDINT;
-END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[Attach:=FALSE;
@@ -135,7 +131,7 @@ IF bEnable AND SUPER^.Attach(iCT:=iCT) THEN
   
   // Set Y print position
   _fPosY := fPrintYOffset;
-  fB_PcAdapter.setPrintYShift(nYShift:=FC_LREAL_TO_DINT(_fPosY, ADR(nConvErr)));
+  fB_PcAdapter.setPrintYShift(nYShift:=FC_LREAL_TO_DINT(_fPosY));
 
   // check
   IF _nPosXS < nEncoderPos THEN
@@ -294,11 +290,7 @@ sPcState.sJobStatus       := sJobStatus;   // obsolete ???
       </Get>
     </Property>
     <Method Name="work" Id="{cfb4a899-7ea9-4389-855e-b56f1970d69a}">
-      <Declaration><![CDATA[METHOD  work
-VAR
-  nConvErr        : UDINT;
-END_VAR
-]]></Declaration>
+      <Declaration><![CDATA[METHOD  work]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF NOT bEnable THEN RETURN; END_IF
 
@@ -337,7 +329,7 @@ IF _pAttachedCt <> 0 AND bEnable THEN // Work only with attached container
   ELSIF _bPaStarted THEN
     // Set Y print position
     _fPosY := fPrintYOffset;
-    fB_PcAdapter.setPrintYShift(nYShift := FC_LREAL_TO_DINT(_fPosY, ADR(nConvErr)));
+    fB_PcAdapter.setPrintYShift(nYShift := FC_LREAL_TO_DINT(_fPosY));
 
     //Release container when print finished
     IF fbPa.bDone OR fbPa.bStop THEN

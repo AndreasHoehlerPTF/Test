@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="PRG_SYSTEM" Id="{aa0ca443-15e5-42a0-a398-481694de7e3b}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM PRG_SYSTEM
 (*************************************************************************************************)
@@ -26,12 +26,13 @@ VAR
   sI_Modules                 : ARRAY[1..4] OF ST_MODULE_DEFINITION;
   iL_NumOfModules            : INT := 0;
 
-	bL_MessageReset            : BOOL;
-	bL_MessageResetPart1       : BOOL;
-	bL_MessageResetPart2       : BOOL;
+  nMsgResetRequests          : UINT;
+//	bL_MessageReset            : BOOL;
+//	bL_MessageResetPart1       : BOOL;
+//	bL_MessageResetPart2       : BOOL;
   fb_RTrigMsgResetRequest    : R_TRIG;                      (*Rising edge of message reset request*)
-  fb_TonMsgResetRequest1     : TON;                         (*Timeout for message reset request*)
-  fb_TonMsgResetRequest2     : TON;                         (*Timeout for message reset request*)
+//  fb_TonMsgResetRequest1     : TON;                         (*Timeout for message reset request*)
+//  fb_TonMsgResetRequest2     : TON;                         (*Timeout for message reset request*)
 
   stProgramVersion           : ST_LibVersion;               (*version information of project from TwinCAT dialog entry*)
   aCurrentDateTime           : STRING;
@@ -55,45 +56,21 @@ fb_RTrigMsgResetRequest(CLK := PRG_MACHINE.IbEAP_MessageReset);
 
 (*Some errors in the PLC needs to reset twice to clear the error completely.*)
 (*Message reset from Gallus will be send twice to the PUC.*)
-IF fb_RTrigMsgResetRequest.Q THEN
-  bL_MessageReset      := TRUE;
-  bL_MessageResetPart1 := TRUE;
-  bL_MessageResetPart2 := TRUE;
-END_IF
-
-fb_TonMsgResetRequest1( IN := bL_MessageResetPart1
-                      , PT := T#5S);
-fb_TonMsgResetRequest2( IN := bL_MessageResetPart2
-                      , PT := T#10S);
-
-IF bL_MessageResetPart1 THEN
-  IF sC_Ads_System.sO_CommandMsgReset.bI_CommandExec THEN
-    bL_MessageReset := FALSE;
-  END_IF
-  IF fb_TonMsgResetRequest1.Q THEN
-    bL_MessageReset      := TRUE;
-    bL_MessageResetPart1 := FALSE;
-  END_IF
-ELSIF bL_MessageResetPart2 THEN
-  IF sC_Ads_System.sO_CommandMsgReset.bI_CommandExec THEN
-    bL_MessageReset      := FALSE;
-    bL_MessageResetPart2 := FALSE;
-  END_IF
-  IF fb_TonMsgResetRequest2.Q THEN
-    bL_MessageReset      := FALSE;
-    bL_MessageResetPart1 := FALSE;
-    bL_MessageResetPart2 := FALSE;
-  END_IF
-ELSE
-  bL_MessageReset := FALSE;
+{warning 'TODO: test if msg reset still works'}
+IF fb_RTrigMsgResetRequest.Q THEN nMsgResetRequests := 2; END_IF
+IF nMsgResetRequests > 0 THEN
+  IF NOT PRG_SYSTEMBASE.resetPucMessages() THEN
+    // request done
+    nMsgResetRequests := nMsgResetRequests - 1;
+	END_IF
 END_IF
 
 (*Get current time*)
 aCurrentDateTime := F_Concat3(F_TimeGetDate(), ' ', F_TimeGetTime()); 
 
 (*Call system base*)
-PRG_SYSTEMBASE.bI_MsgResetRequest := bL_MessageReset;
 PRG_SYSTEMBASE();
+PRG_MACHINE.updateSleepLock(); // must be called after SystemBase, to overwrite CanEx
 
 (********************************* END OF PRG ****************************************************)]]></ST>
     </Implementation>
@@ -117,14 +94,16 @@ sC_Ads_System.iVersion        := iC_VERSION_PRODUCT;
 
 // module specific setup
 PRG_SYSTEMBASE.setup( pI_Ads_Info               := ADR(sC_Ads_Info)
-                    , pI_Ads_System             := ADR(sC_Ads_System)
-                    , bI_EStopInputNegativLogic := bCSYS_EStopInputNegativLogic);
+                    , pI_Ads_System             := ADR(sC_Ads_System));
 // --> done in PRG_SYSTEMBASE
 
 
 
 //PRG_SYSTEMBASE.sI_AppInfo := _AppInfo;
-
+IF F_CmpLibVersion(stLibVersion_CalmarCompSystem, 1, 6, 1, 0) < 0 THEN
+  // because of FB_Maintenance and used template visu in VISU_SYSTEM
+  F_Log(LogSeverity:=E_LogSeverity.Error, 'PRG_SYSTEMBASE requires CalmarCompSystem >= 1.6.1');
+END_IF
 
 (*--- set library and project versions*)
 PRG_SYSTEMBASE.SetVersion(aI_Name:='Tc2_System', stLibVersion_Tc2_System);
@@ -162,18 +141,29 @@ bL_InitOK := TRUE;]]></ST>
       <LineId Id="1028" Count="2" />
       <LineId Id="932" Count="0" />
       <LineId Id="934" Count="0" />
-      <LineId Id="1103" Count="38" />
+      <LineId Id="1103" Count="5" />
+      <LineId Id="1231" Count="0" />
+      <LineId Id="1109" Count="0" />
+      <LineId Id="1225" Count="1" />
+      <LineId Id="1228" Count="0" />
+      <LineId Id="1230" Count="0" />
+      <LineId Id="1229" Count="0" />
+      <LineId Id="1227" Count="0" />
+      <LineId Id="1141" Count="0" />
       <LineId Id="1183" Count="1" />
       <LineId Id="1142" Count="0" />
       <LineId Id="986" Count="0" />
-      <LineId Id="1095" Count="0" />
-      <LineId Id="988" Count="1" />
+      <LineId Id="988" Count="0" />
+      <LineId Id="1272" Count="0" />
+      <LineId Id="989" Count="0" />
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="PRG_SYSTEM.Init">
       <LineId Id="931" Count="17" />
-      <LineId Id="986" Count="1" />
-      <LineId Id="952" Count="33" />
+      <LineId Id="986" Count="0" />
+      <LineId Id="952" Count="4" />
+      <LineId Id="987" Count="2" />
+      <LineId Id="957" Count="28" />
       <LineId Id="1" Count="0" />
     </LineIds>
   </POU>

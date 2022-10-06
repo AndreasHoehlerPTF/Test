@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="FB_HWLATCH" Id="{f63b1916-3dd4-4ba8-a11b-6870e9117de7}" SpecialFunc="None">
     <Declaration><![CDATA[(* $Id$ *)
 FUNCTION_BLOCK FB_HWLATCH
@@ -43,8 +43,7 @@ END_VAR]]></Declaration>
 IF lI_Latch <> lL_Latch_Reg AND bI_LatCVal THEN
   ll_Test := lI_Latch - lL_Latch_Reg;
 	lL_Latch_Reg := lI_Latch;
-	iO_Offset_X0 := lI_Master_Position - FC_LREAL_TO_DINT( (DINT_TO_LREAL(UDINT_TO_DINT(lI_Reference - lI_Latch)) * fI_ResolutionInput * (fI_ResolutionOutput / 25400) )
-                                                       , ADR(PRG_SYSTEMBASE.lI_ConversionErr));
+	iO_Offset_X0 := lI_Master_Position - FC_LREAL_TO_DINT( (DINT_TO_LREAL(UDINT_TO_DINT(lI_Reference - lI_Latch)) * fI_ResolutionInput * (fI_ResolutionOutput / 25400) ));
 	bO_StartTrig := TRUE;
 ELSE
 	bO_StartTrig := FALSE;
@@ -60,7 +59,7 @@ END_IF]]></ST>
     <LineIds Name="FB_HWLATCH">
       <LineId Id="76" Count="0" />
       <LineId Id="129" Count="0" />
-      <LineId Id="77" Count="3" />
+      <LineId Id="77" Count="2" />
       <LineId Id="82" Count="9" />
       <LineId Id="2" Count="0" />
     </LineIds>

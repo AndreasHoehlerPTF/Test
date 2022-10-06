@@ -42,7 +42,9 @@ VAR
   lCtr, lCtr2                               : DINT;           (*local iteration counter - default*)
   iL_I, iL_I2                               : INT;            (*instance counter*)
   iCT                                       : I_CT;
- 
+  nTemp                                     : UDINT;
+  nConvError, nConvErr_mem                  : UDINT;
+  
   (*Infos from other tasks*)
   bL_PrintUnitInPrintPosition               : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
   bL_Engaged                                : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
@@ -71,6 +73,7 @@ VAR
   FB_PC                                     : ARRAY [1..iCPr_NB_PC] OF FB_PC;               (*PC - Print Controller*)
   sAdsPrintController                       : ARRAY [1..iCPr_NB_PC] OF ST_ADS_PC;
   sL_BLK_PC                                 : ARRAY [1..iCPr_NB_PC] OF ST_MAP_BLK;
+  pFB_PC                                    : ARRAY [1..iCPr_NB_PC] OF POINTER TO FB_PC;    (* pointer array to PCs*)
   FB_PH                                     : ARRAY [1..iCPr_NB_PH] OF FB_PH;           (*PH - Print Head*)
   sAdsPrintHead                             : ARRAY [1..iCPr_NB_PH] OF ST_ADS_PH;
   sL_BLK_PH                                 : ARRAY [1..iCPr_NB_PH] OF ST_MAP_BLK;
@@ -373,7 +376,6 @@ FOR iL_I := 1 TO iCPr_NB_PM DO
   // - positions, speed ---------------------------------------------
   (*Reference Master (Used in Endless Mode with drift compensation)*)
   (*---input---*)
-  Fb_Ref_Master[iL_I].pI_ConversionErr       := ADR(PRG_SYSTEMBASE.lI_ConversionErr);
   Fb_Ref_Master[iL_I].bI_Reset               := bL_ResetPosition[iL_I] OR bL_HardwareSync[iL_I];  (*AutoReset*)
   Fb_Ref_Master[iL_I].bI_Simulate            := bSimPosMaster;
   Fb_Ref_Master[iL_I].fI_SimSpeed            := fSimSpeed;
@@ -388,7 +390,6 @@ FOR iL_I := 1 TO iCPr_NB_PM DO
   (*---input---*)
   fL_ResolutionEncoderDriftContr[iL_I] := fL_ResolutionEncoder[iL_I] * fB_DriftControl[iL_I].fO_SpeedCorrectionFactor;
   fL_ResolutionPhPxDriftContr   [iL_I] := INT_TO_LREAL(iL_ResolutionPhPx[ePr_PU_UNIT_1]) * fB_DriftControl[iL_I].fO_SpeedCorrectionFactor;
-  Fb_Ph_Master[iL_I].pI_ConversionErr       := ADR(PRG_SYSTEMBASE.lI_ConversionErr);
   Fb_Ph_Master[iL_I].bI_Reset               := bL_ResetPosition[iL_I] OR bL_HardwareSync[iL_I];  (*AutoReset*)
   Fb_Ph_Master[iL_I].bI_Simulate            := bSimPosMaster;
   Fb_Ph_Master[iL_I].fI_SimSpeed            := fSimSpeed;
@@ -476,7 +477,6 @@ FOR iL_I := 1 TO iCPr_NB_PM DO
 
 
   (*Paper position & start detection*)
-  Fb_PaperPosDetect[iL_I].pI_ConversionErr         := ADR(PRG_SYSTEMBASE.lI_ConversionErr);
   Fb_PaperPosDetect[iL_I].bI_Reset                 := bL_ResetPosition[iL_I] OR bL_HardwareSync[iL_I];  (*AutoReset*)
   Fb_PaperPosDetect[iL_I].bI_WithMark              := NOT bL_EnableEncTrig;
   Fb_PaperPosDetect[iL_I].bI_MarksInverted         := bMarksInverted;
@@ -514,13 +514,12 @@ FOR iL_I := 1 TO iCPr_NB_PM DO
 	END_IF
   (*apply SpeedCompensation and GeneralShift*)
   nL_X0_Comp[iL_I] := nL_X0[iL_I]
-                    //- FC_REAL_TO_DINT(fL_SpeedComp[iL_I] * (1 / (0.0254 / (iL_ResolutionSubPx[ePr_PU_UNIT_1] * iL_ResolutionPhPx[ePr_PU_UNIT_1]))), ADR(PRG_SYSTEMBASE.lI_ConversionErr))
-                      - FC_LREAL_TO_DINT(fL_SpeedComp[iL_I] * (1 / (0.0254 / (iL_ResolutionSubPx[ePr_PU_UNIT_1] * fL_ResolutionPhPxDriftContr[iL_I]))), ADR(PRG_SYSTEMBASE.lI_ConversionErr))
-                      - FC_CONV_M_TO_SUBPX_V2( DINT_TO_LREAL(sAdsPrintModule[iL_I].sI_GeneralShiftX.lI_Val) / 1_000_000
+                    //- FC_REAL_TO_DINT(fL_SpeedComp[iL_I] * (1 / (0.0254 / (iL_ResolutionSubPx[ePr_PU_UNIT_1] * iL_ResolutionPhPx[ePr_PU_UNIT_1]))))
+                      - FC_LREAL_TO_DINT(fL_SpeedComp[iL_I] * (1 / (0.0254 / (iL_ResolutionSubPx[ePr_PU_UNIT_1] * fL_ResolutionPhPxDriftContr[iL_I]))))
+                      - FC_CONV_M_TO_SUBPX( DINT_TO_LREAL(sAdsPrintModule[iL_I].sI_GeneralShiftX.lI_Val) / 1_000_000
                                            //, iL_ResolutionPhPx [ePr_PU_UNIT_1]
-                                             , fL_ResolutionPhPxDriftContr[iL_I]
-                                             , iL_ResolutionSubPx[ePr_PU_UNIT_1]
-                                             , ADR(PRG_SYSTEMBASE.lI_ConversionErr));
+                                             , TO_LREAL(fL_ResolutionPhPxDriftContr[iL_I])
+                                             , iL_ResolutionSubPx[ePr_PU_UNIT_1]);
   
   // Compensations (Dift) -----------------------
   (*Register Control*)
@@ -756,9 +755,17 @@ fbInspectionSystemTrigger( iI_CurrentPos         := SEL(bL_Engaged[1], Fb_Ref_Ma
                        //, bI_ManualTrigger      := fbStartPositionSimulation.bStartTrig
                          );
 
-  // Neutral fibre calculation with additional mark sensors
- fbNeutralFibreDetermine(fI_ConveyorSpeed := SEL(bL_Engaged[1], Fb_Ref_Master[2].fO_Master_Speed   , Fb_Ref_Master[1].fO_Master_Speed));
-  
+// Neutral fibre calculation with additional mark sensors
+fbNeutralFibreDetermine(fI_ConveyorSpeed := SEL(bL_Engaged[1], Fb_Ref_Master[2].fO_Master_Speed   , Fb_Ref_Master[1].fO_Master_Speed));
+
+// Report errors
+nTemp := nConvError - nConvErr_mem;
+FOR lCtr:=1 TO TO_DINT(nTemp) DO
+  F_Report_Error(ErrType:=EN_REPORT_ERROR_TYPE.Report_Error_Conversion);
+END_FOR
+nConvErr_mem := nConvError;
+
+ 
 (****************************************************************************)
 (* Global states *)
 (* ------------------------------------------------------------------------ *)
@@ -830,8 +837,7 @@ END_VAR]]></Declaration>
 (*    uses PC[x] FoE channel *)
 (* ------------------------------------------------------------------------ *)
 (* --- START: --- *)
-fb_fwhw_update( sI_fbPc   := FB_PC
-              , iI_NbPhPc := iCPr_NB_PH_PC);
+fb_fwhw_update( pI_fbPc := pFB_PC);
 (* --- END: --- *)
 
 
@@ -989,7 +995,7 @@ FOR lCtr := 1 TO iCPr_NB_PU DO
 
   (*Config FB_COUNT*)
   fb_PuCount[lCtr].pI_sAdsPrintUnit               := ADR(sAdsPrintUnit[lCtr]);
-  fb_PuCount[lCtr].pI_ZeroPointerErr              := ADR(PRG_SYSTEMBASE.lI_ZeroPointerErr);
+  fb_PuCount[lCtr].pI_ZeroPointerErr              := ADR(nConvError);
 
 	(*-- ADS --*)
   aL_Name := sC_Config_P.aC_PU_NAME[lCtr];
@@ -1069,7 +1075,6 @@ FOR lCtr := 1 TO iCPr_NB_PM DO
   fbVencoder[lCtr]();
 
   (*Config REFERENCE Position*)
-  Fb_Ref_Master[lCtr].pI_ConversionErr       := ADR(PRG_SYSTEMBASE.lI_ConversionErr);
   Fb_Ref_Master[lCtr].fI_ResolutionInput     := fL_ResolutionEncoder[lCtr];
   Fb_Ref_Master[lCtr].fI_ResolutionOutPh     := iL_ResolutionPhPx   [ePr_PU_UNIT_1];
   Fb_Ref_Master[lCtr].fI_ResolutionOutSubPx  := iL_ResolutionSubPx  [ePr_PU_UNIT_1];
@@ -1081,7 +1086,6 @@ FOR lCtr := 1 TO iCPr_NB_PM DO
   Fb_Ref_Master[lCtr].bI_Reset := FALSE;
   
   (*Config MASTER Position*)
-  Fb_Ph_Master[lCtr].pI_ConversionErr       := ADR(PRG_SYSTEMBASE.lI_ConversionErr);
   Fb_Ph_Master[lCtr].fI_ResolutionInput     := fL_ResolutionEncoder[lCtr];
   Fb_Ph_Master[lCtr].fI_ResolutionOutPh     := iL_ResolutionPhPx   [ePr_PU_UNIT_1];
   Fb_Ph_Master[lCtr].fI_ResolutionOutSubPx  := iL_ResolutionSubPx  [ePr_PU_UNIT_1];
@@ -1155,6 +1159,9 @@ FOR lCtr := 1 TO iCPr_NB_PC DO
 	sAdsPrintController[lCtr].sI_EnableHeater.bO_BoolCanSet := TRUE;
 	sAdsPrintController[lCtr].sI_EnablePrint .bC_BoolExist  := TRUE;
 	sAdsPrintController[lCtr].sI_EnablePrint .bO_BoolCanSet := TRUE;
+  
+    // build pc pointer array
+  pFB_PC[lCtr] := ADR(FB_PC[lCtr]);
 END_FOR;
 
 
@@ -1282,14 +1289,13 @@ END_FOR*)
 (* - firmware*)
 fb_fwhw_update.aI_appl_file_path := F_Concat3(aC_PlcConfigPath, aC_PlcFlashFileSubPath, 'user.appl');
 fb_fwhw_update.aI_fpga_file_path := F_Concat3(aC_PlcConfigPath, aC_PlcFlashFileSubPath, 'user.fpga');
-fb_fwhw_update( sI_fbPc          := FB_PC
-              , iI_NbPhPc        := iCPr_NB_PH_PC);
+fb_fwhw_update( pI_fbPc := pFB_PC);
 fb_fwhw_update.init();
 
 (* - hib remote upfate*)
 fb_hib_rup.bI_Enable   := TRUE;
 fb_hib_rup.aI_FilePath := F_Concat3(aC_PlcConfigPath, aC_PlcFlashFileSubPath, 'user.hib');
-fb_hib_rup(sI_Ary_Fb := fb_pc_hib_rupd, sI_Ary_Fb_Pc := FB_PC);
+fb_hib_rup( sI_Ary_Fb:=fb_pc_hib_rupd, pI_Ary_Fb_Pc:=pFB_PC);
 
 
 (*-- Mask file*)
@@ -1304,7 +1310,7 @@ FOR lCtr := 1 TO iCPr_NB_PC DO
 		END_IF
 	END_FOR
 END_FOR
-fb_fdl_mask(sI_fbpc:=FB_PC, iI_NbPhPc:=iCPr_NB_PH_PC);
+fb_fdl_mask(pI_fbpc:=pFB_PC);
 fb_fdl_mask.Init(
   aDownloaderName := 'Mask downloader',
   bFilePerPh      := TRUE,
@@ -1333,7 +1339,7 @@ FOR lCtr := 1 TO iCPr_NB_PC DO
 		END_IF
 	END_FOR
 END_FOR
-fb_fdl_waveform(sI_fbpc:=FB_PC, iI_NbPhPc:=iCPr_NB_PH_PC);
+fb_fdl_waveform(pI_fbpc:=pFB_PC);
 fb_fdl_waveform.Init(
   aDownloaderName := 'Waveform downloader',
   bFilePerPh      := FALSE,
@@ -1682,81 +1688,18 @@ fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted 
       </Implementation>
     </Action>
     <LineIds Name="PRG_PRINT">
-      <LineId Id="65420" Count="12" />
-      <LineId Id="67093" Count="0" />
-      <LineId Id="65433" Count="1" />
-      <LineId Id="67095" Count="0" />
-      <LineId Id="65435" Count="3" />
-      <LineId Id="66510" Count="0" />
-      <LineId Id="67096" Count="0" />
-      <LineId Id="69114" Count="0" />
-      <LineId Id="65441" Count="24" />
-      <LineId Id="69409" Count="0" />
-      <LineId Id="65466" Count="13" />
-      <LineId Id="67097" Count="0" />
-      <LineId Id="65481" Count="25" />
-      <LineId Id="65898" Count="0" />
-      <LineId Id="65900" Count="0" />
-      <LineId Id="65507" Count="15" />
-      <LineId Id="67672" Count="2" />
-      <LineId Id="65523" Count="9" />
-      <LineId Id="69702" Count="1" />
-      <LineId Id="66187" Count="0" />
-      <LineId Id="66190" Count="0" />
-      <LineId Id="66475" Count="0" />
-      <LineId Id="66472" Count="0" />
-      <LineId Id="66474" Count="0" />
-      <LineId Id="66473" Count="0" />
-      <LineId Id="67388" Count="0" />
-      <LineId Id="65533" Count="8" />
-      <LineId Id="67959" Count="0" />
-      <LineId Id="67958" Count="0" />
-      <LineId Id="65542" Count="3" />
-      <LineId Id="67960" Count="1" />
-      <LineId Id="65546" Count="16" />
-      <LineId Id="65587" Count="18" />
-      <LineId Id="68823" Count="0" />
-      <LineId Id="65606" Count="2" />
-      <LineId Id="65902" Count="0" />
-      <LineId Id="65609" Count="2" />
-      <LineId Id="69704" Count="0" />
-      <LineId Id="65612" Count="1" />
-      <LineId Id="66511" Count="0" />
-      <LineId Id="65614" Count="16" />
-      <LineId Id="65632" Count="6" />
-      <LineId Id="65905" Count="0" />
-      <LineId Id="65639" Count="1" />
-      <LineId Id="65903" Count="0" />
-      <LineId Id="65641" Count="0" />
-      <LineId Id="65646" Count="5" />
-      <LineId Id="66188" Count="0" />
-      <LineId Id="65653" Count="0" />
-      <LineId Id="69116" Count="0" />
-      <LineId Id="65654" Count="17" />
-      <LineId Id="68245" Count="0" />
-      <LineId Id="65672" Count="84" />
-      <LineId Id="65758" Count="7" />
-      <LineId Id="67076" Count="0" />
-      <LineId Id="67075" Count="0" />
-      <LineId Id="65767" Count="45" />
-      <LineId Id="66189" Count="0" />
-      <LineId Id="65813" Count="21" />
-      <LineId Id="65901" Count="0" />
-      <LineId Id="65835" Count="23" />
-      <LineId Id="65865" Count="2" />
-      <LineId Id="66793" Count="0" />
-      <LineId Id="66506" Count="0" />
-      <LineId Id="66479" Count="0" />
-      <LineId Id="66505" Count="0" />
-      <LineId Id="66480" Count="0" />
-      <LineId Id="66507" Count="0" />
-      <LineId Id="66481" Count="0" />
-      <LineId Id="66478" Count="0" />
-      <LineId Id="65871" Count="2" />
-      <LineId Id="65876" Count="4" />
-      <LineId Id="68532" Count="1" />
-      <LineId Id="65881" Count="0" />
-      <LineId Id="65888" Count="8" />
+      <LineId Id="69998" Count="77" />
+      <LineId Id="70077" Count="13" />
+      <LineId Id="70092" Count="86" />
+      <LineId Id="70180" Count="42" />
+      <LineId Id="70224" Count="237" />
+      <LineId Id="70475" Count="0" />
+      <LineId Id="70477" Count="1" />
+      <LineId Id="70480" Count="1" />
+      <LineId Id="70476" Count="0" />
+      <LineId Id="70474" Count="0" />
+      <LineId Id="70473" Count="0" />
+      <LineId Id="70462" Count="8" />
       <LineId Id="45822" Count="0" />
     </LineIds>
     <LineIds Name="PRG_PRINT.Control">
@@ -1780,7 +1723,8 @@ fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted 
       <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="PRG_PRINT.DownloadFiles">
-      <LineId Id="6" Count="36" />
+      <LineId Id="6" Count="3" />
+      <LineId Id="11" Count="31" />
       <LineId Id="60" Count="0" />
       <LineId Id="43" Count="0" />
       <LineId Id="56" Count="0" />
@@ -1811,11 +1755,16 @@ fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted 
       <LineId Id="1870" Count="8" />
       <LineId Id="1451" Count="1" />
       <LineId Id="1824" Count="1" />
-      <LineId Id="1453" Count="34" />
+      <LineId Id="1453" Count="9" />
+      <LineId Id="1464" Count="10" />
+      <LineId Id="1476" Count="11" />
       <LineId Id="1848" Count="0" />
-      <LineId Id="1488" Count="158" />
+      <LineId Id="1488" Count="59" />
+      <LineId Id="1896" Count="2" />
+      <LineId Id="1548" Count="98" />
       <LineId Id="1649" Count="22" />
-      <LineId Id="1678" Count="93" />
+      <LineId Id="1678" Count="4" />
+      <LineId Id="1684" Count="87" />
       <LineId Id="1863" Count="0" />
       <LineId Id="1862" Count="0" />
       <LineId Id="1772" Count="0" />

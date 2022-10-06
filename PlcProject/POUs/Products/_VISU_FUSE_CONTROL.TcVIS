@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
-  <Visu Name="VISU_FUSE_CONTROL" Id="{b3ce711f-ed21-4c2e-80a8-4f424f8625b4}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <Visu Name="_VISU_FUSE_CONTROL" Id="{b3ce711f-ed21-4c2e-80a8-4f424f8625b4}">
     <XmlArchive>
       <Data>
         <o xml:space="preserve" t="VisualObject">
           <n n="LastVisuLanguageModelEntry" />
-          <v n="UniqueIdGenerator">"3"</v>
+          <v n="UniqueIdGenerator">"5"</v>
           <o n="VisualElemList" t="VisualElemList">
             <l n="VisualElementList" t="VisualElemCollection" cet="GenericVisualElem">
               <o>
@@ -402,7 +402,7 @@
                         <l n="TypeNodeChildren" t="ArrayList" cet="BasicTypeNode">
                           <o>
                             <v n="Flags">2L</v>
-                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fb_EpsitronFuseControlF70M1"</v>
+                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF70M1"</v>
                             <v n="BasicTypeNodeAcceptsExpression">true</v>
                             <n n="BasicTypeNodeFastAccess" />
                             <a n="BasicTypeNodeEnumValues" et="String" />
@@ -458,7 +458,7 @@
                     </o>
                     <o>
                       <v n="Id">2582601064L</v>
-                      <v n="Value">"PRG_MACHINE.fb_EpsitronFuseControlF70M1"</v>
+                      <v n="Value">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF70M1"</v>
                     </o>
                   </l>
                 </o>
@@ -876,7 +876,7 @@
                         <l n="TypeNodeChildren" t="ArrayList" cet="BasicTypeNode">
                           <o>
                             <v n="Flags">2L</v>
-                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fb_EpsitronFuseControlF90M1"</v>
+                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF90M1"</v>
                             <v n="BasicTypeNodeAcceptsExpression">true</v>
                             <n n="BasicTypeNodeFastAccess" />
                             <a n="BasicTypeNodeEnumValues" et="String" />
@@ -932,7 +932,7 @@
                     </o>
                     <o>
                       <v n="Id">2582601064L</v>
-                      <v n="Value">"PRG_MACHINE.fb_EpsitronFuseControlF90M1"</v>
+                      <v n="Value">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF90M1"</v>
                     </o>
                   </l>
                 </o>
@@ -1350,7 +1350,7 @@
                         <l n="TypeNodeChildren" t="ArrayList" cet="BasicTypeNode">
                           <o>
                             <v n="Flags">2L</v>
-                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fb_EpsitronFuseControlF70M2"</v>
+                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF70M2"</v>
                             <v n="BasicTypeNodeAcceptsExpression">true</v>
                             <n n="BasicTypeNodeFastAccess" />
                             <a n="BasicTypeNodeEnumValues" et="String" />
@@ -1406,7 +1406,7 @@
                     </o>
                     <o>
                       <v n="Id">2582601064L</v>
-                      <v n="Value">"PRG_MACHINE.fb_EpsitronFuseControlF70M2"</v>
+                      <v n="Value">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF70M2"</v>
                     </o>
                   </l>
                 </o>
@@ -1824,7 +1824,7 @@
                         <l n="TypeNodeChildren" t="ArrayList" cet="BasicTypeNode">
                           <o>
                             <v n="Flags">2L</v>
-                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fb_EpsitronFuseControlF90M2"</v>
+                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF90M2"</v>
                             <v n="BasicTypeNodeAcceptsExpression">true</v>
                             <n n="BasicTypeNodeFastAccess" />
                             <a n="BasicTypeNodeEnumValues" et="String" />
@@ -1880,7 +1880,7 @@
                     </o>
                     <o>
                       <v n="Id">2582601064L</v>
-                      <v n="Value">"PRG_MACHINE.fb_EpsitronFuseControlF90M2"</v>
+                      <v n="Value">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF90M2"</v>
                     </o>
                   </l>
                 </o>
@@ -2298,7 +2298,7 @@
                         <l n="TypeNodeChildren" t="ArrayList" cet="BasicTypeNode">
                           <o>
                             <v n="Flags">2L</v>
-                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fb_EpsitronFuseControlF122M2"</v>
+                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF122M2"</v>
                             <v n="BasicTypeNodeAcceptsExpression">true</v>
                             <n n="BasicTypeNodeFastAccess" />
                             <a n="BasicTypeNodeEnumValues" et="String" />
@@ -2354,7 +2354,7 @@
                     </o>
                     <o>
                       <v n="Id">2582601064L</v>
-                      <v n="Value">"PRG_MACHINE.fb_EpsitronFuseControlF122M2"</v>
+                      <v n="Value">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF122M2"</v>
                     </o>
                     <o>
                       <v n="Id">2880254039L</v>
@@ -2776,7 +2776,7 @@
                         <l n="TypeNodeChildren" t="ArrayList" cet="BasicTypeNode">
                           <o>
                             <v n="Flags">2L</v>
-                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fb_EpsitronFuseControlF160M2"</v>
+                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF160M2"</v>
                             <v n="BasicTypeNodeAcceptsExpression">true</v>
                             <n n="BasicTypeNodeFastAccess" />
                             <a n="BasicTypeNodeEnumValues" et="String" />
@@ -2832,7 +2832,7 @@
                     </o>
                     <o>
                       <v n="Id">2582601064L</v>
-                      <v n="Value">"PRG_MACHINE.fb_EpsitronFuseControlF160M2"</v>
+                      <v n="Value">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF160M2"</v>
                     </o>
                     <o>
                       <v n="Id">2880254039L</v>
@@ -3254,7 +3254,7 @@
                         <l n="TypeNodeChildren" t="ArrayList" cet="BasicTypeNode">
                           <o>
                             <v n="Flags">2L</v>
-                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fb_EpsitronFuseControlF122M1"</v>
+                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF122M1"</v>
                             <v n="BasicTypeNodeAcceptsExpression">true</v>
                             <n n="BasicTypeNodeFastAccess" />
                             <a n="BasicTypeNodeEnumValues" et="String" />
@@ -3310,7 +3310,7 @@
                     </o>
                     <o>
                       <v n="Id">2582601064L</v>
-                      <v n="Value">"PRG_MACHINE.fb_EpsitronFuseControlF122M1"</v>
+                      <v n="Value">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF122M1"</v>
                     </o>
                     <o>
                       <v n="Id">2880254039L</v>
@@ -3732,7 +3732,7 @@
                         <l n="TypeNodeChildren" t="ArrayList" cet="BasicTypeNode">
                           <o>
                             <v n="Flags">2L</v>
-                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fb_EpsitronFuseControlF160M1"</v>
+                            <v n="BasicTypeNodeValue">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF160M1"</v>
                             <v n="BasicTypeNodeAcceptsExpression">true</v>
                             <n n="BasicTypeNodeFastAccess" />
                             <a n="BasicTypeNodeEnumValues" et="String" />
@@ -3788,7 +3788,7 @@
                     </o>
                     <o>
                       <v n="Id">2582601064L</v>
-                      <v n="Value">"PRG_MACHINE.fb_EpsitronFuseControlF160M1"</v>
+                      <v n="Value">"PRG_MACHINE.fbPowerControl.fb_EpsitronFuseControlF160M1"</v>
                     </o>
                     <o>
                       <v n="Id">2880254039L</v>
@@ -4084,8 +4084,8 @@
                 <v>5846d2e4-96d2-4c78-b788-b13bed4c8dd1</v>
                 <v>ContainsPoint</v>
                 <v>989061bf-f08c-46fe-ad3a-c03dbc9080c5</v>
-                <v>SetStaticState</v>
-                <v>a2f579a4-2003-4986-9dec-923d555da177</v>
+                <v>HasInputAccess</v>
+                <v>d655bb7e-3352-4cba-9574-3fdf0ed4f931</v>
                 <v>HasInputAccessIntern</v>
                 <v>ea1a7c75-7bcc-4078-bfca-2099e81d78a7</v>
                 <v>GetTooltip</v>
@@ -4104,6 +4104,8 @@
                 <v>6a49a4b2-6563-4d9e-b41e-d3fe2d4c1602</v>
                 <v>SetClientData</v>
                 <v>8c056c2e-c2bc-4e8e-9713-43d774791172</v>
+                <v>HasVisibilityAccessIntern</v>
+                <v>2eba303f-2977-44b8-a796-394d774967ad</v>
                 <v>GetInstance</v>
                 <v>dd70cd62-117f-4851-a00c-b4235aaaf3c4</v>
                 <v>GetClientData</v>
@@ -4122,14 +4124,12 @@
                 <v>95b4b28b-599e-4270-a07a-30d70d9c810e</v>
                 <v>Initialize</v>
                 <v>4494659c-1e4b-4954-be3d-fe3077dfbb56</v>
-                <v>HasInputAccess</v>
-                <v>d655bb7e-3352-4cba-9574-3fdf0ed4f931</v>
-                <v>HasVisibilityAccessIntern</v>
-                <v>2eba303f-2977-44b8-a796-394d774967ad</v>
+                <v>Destruct</v>
+                <v>028b7c62-6b38-4580-b012-e807b48b5883</v>
+                <v>SetStaticState</v>
+                <v>a2f579a4-2003-4986-9dec-923d555da177</v>
                 <v>GetSurroundingRect</v>
                 <v>391e3a63-6ff3-47b9-aa68-2e5e96f01934</v>
-                <v>ElementInfo</v>
-                <v>8165f284-9d2d-47c1-b8bc-829eff162ab1</v>
                 <v>GetResult</v>
                 <v>7949f349-8a65-4001-9ed2-4d68c226f4fe</v>
                 <v>GetLocalUsergroup</v>
@@ -4152,8 +4152,8 @@
                 <v>d401f8e8-dcda-46a2-8511-2af85ff3f48a</v>
                 <v>HandleInput</v>
                 <v>3c732407-867b-480f-bfb8-8fde0414bb23</v>
-                <v>Destruct</v>
-                <v>028b7c62-6b38-4580-b012-e807b48b5883</v>
+                <v>ElementInfo</v>
+                <v>8165f284-9d2d-47c1-b8bc-829eff162ab1</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{b3ce711f-ed21-4c2e-80a8-4f424f8625b4}</v>
@@ -4166,10 +4166,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable_1" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>128097bf-08bc-4a3d-8856-7a664a624281</v>
-                <v>FB_Exit</v>
-                <v>458fec48-240d-483e-bba3-c05f80314bf7</v>
                 <v>FB_Reinit</v>
                 <v>1be65ca7-c421-4574-998e-a76efbadd840</v>
+                <v>FB_Exit</v>
+                <v>458fec48-240d-483e-bba3-c05f80314bf7</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{5ede64e2-c293-4db9-b37e-01d32af1f6db}</v>
@@ -4217,14 +4217,14 @@
           <o n="TextDocument" t="TextDocument">
             <a n="TextLines" cet="TextLine">
               <o>
-                <v n="Id">2L</v>
+                <v n="Id">4L</v>
                 <n n="Tag" />
                 <v n="Text">"VAR_IN_OUT"</v>
               </o>
               <o>
-                <v n="Id">3L</v>
+                <v n="Id">5L</v>
                 <n n="Tag" />
-                <v n="Text">"	"</v>
+                <v n="Text">"	mInst : FB_WeuPowerControl;"</v>
               </o>
               <o>
                 <v n="Id">1L</v>

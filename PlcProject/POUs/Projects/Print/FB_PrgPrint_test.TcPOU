@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="FB_PrgPrint_test" Id="{6437269a-fd39-489f-80d8-8f72b2e62aa4}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_PrgPrint_test EXTENDS FB_BasePrint
 VAR_INPUT
@@ -37,8 +37,7 @@ END_VAR
 
 
 (****  Job Management in ComponentsPrints ****)
-fb_JobManagement(sI_Ary_Fb_Pc:=PRG_PRINT.FB_PC);
-]]></ST>
+fb_JobManagement(pI_Ary_Fb_Pc:= PRG_PRINT.pFB_PC);]]></ST>
     </Implementation>
     <Property Name="bReady" Id="{c9cc332b-d6a1-4ec4-ad5d-98da39087955}">
       <Declaration><![CDATA[PROPERTY bReady : BOOL]]></Declaration>
@@ -92,7 +91,7 @@ _pAdsPu := pAdsPu;
 setupJob();
 
 // or default job // sJobConfig := fb_JobManagement.getJobSettings();
-fb_JobManagement.Init(aI_AmsNetId_Io:=sC_AMSNETID_IO, pI_JobSettings:=ADR(sJobConfig));
+fb_JobManagement.Init(pI_JobSettings:=ADR(sJobConfig));
 
 bInitialized := TRUE;]]></ST>
       </Implementation>
@@ -256,7 +255,7 @@ WritePUSettings := FALSE;]]></ST>
       <LineId Id="30" Count="0" />
       <LineId Id="27" Count="0" />
       <LineId Id="25" Count="0" />
-      <LineId Id="20" Count="1" />
+      <LineId Id="20" Count="0" />
       <LineId Id="9" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrgPrint_test.bReady.Get">

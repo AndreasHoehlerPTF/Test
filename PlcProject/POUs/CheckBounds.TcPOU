@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="CheckBounds" Id="{9a87b348-8614-4aab-bd2c-8c3fb6806d33}" SpecialFunc="CheckBounds">
     <Declaration><![CDATA[// Implicitly generated code : DO NOT EDIT
 FUNCTION CheckBounds : DINT
@@ -26,17 +26,20 @@ END_VAR
 {noflow}
 IF  index < lower THEN
   CheckBounds := lower;
-  PRG_SYSTEMBASE.lI_BoundsErr := PRG_SYSTEMBASE.lI_BoundsErr + 1;
+  F_Report_Error(ErrType:=EN_REPORT_ERROR_TYPE.Report_Error_Bounds);
 ELSIF  index > upper THEN
   CheckBounds := upper;
-  PRG_SYSTEMBASE.lI_BoundsErr := PRG_SYSTEMBASE.lI_BoundsErr + 1;
+  F_Report_Error(ErrType:=EN_REPORT_ERROR_TYPE.Report_Error_Bounds);
 ELSE  
   CheckBounds := index;
 END_IF
 {flow}]]></ST>
     </Implementation>
     <LineIds Name="CheckBounds">
-      <LineId Id="3" Count="10" />
+      <LineId Id="3" Count="6" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="12" Count="1" />
       <LineId Id="2" Count="0" />
     </LineIds>
   </POU>

@@ -1,0 +1,153 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <POU Name="FB_WeuPowerControl" Id="{d92520a8-12bf-4491-80dd-581cd128b94f}" SpecialFunc="None">
+    <Declaration><![CDATA[(*
+  PowerSupply control (WAGO Epsitron)
+  NOTE: has direct mapped I/Os
+*)
+FUNCTION_BLOCK FB_WeuPowerControl EXTENDS T_NamedBase
+VAR_OUTPUT
+  bO_F70M1FuseOk                            : BOOL;   (*F70 M1 fuse ok*)
+  bO_F90M1FuseOk                            : BOOL;   (*F90 M1 fuse ok*)
+  bO_F122M1FuseOk                           : BOOL;   (*F122 M1 fuse ok*)
+  bO_F160M1FuseOk                           : BOOL;   (*F160 M1 fuse ok*)
+  bO_F70M2FuseOk                            : BOOL;   (*F70 M2 fuse ok*)
+  bO_F90M2FuseOk                            : BOOL;   (*F90 M2 fuse ok*)
+  bO_F122M2FuseOk                           : BOOL;   (*F122 M2 fuse ok*)
+  bO_F160M2FuseOk                           : BOOL;   (*F160 M2 fuse ok*)
+END_VAR
+VAR
+  bAckMsg : BOOL;
+  
+  fb_EpsitronFuseControlF70M1  : FB_EpsitronFuseControl := ( aI_Name         := 'F70: M2.1 print heads'
+                                                         , aI_NameChannel1 := '-CB1.1, -AB1.1'
+                                                         , aI_NameChannel2 := '-AB1.3, -AB1.5'
+                                                         , aI_NameChannel3 := '-CB1.2, -AB1.2'
+                                                         , aI_NameChannel4 := '-AB1.4, -AB1.6'
+                                                         );
+  fb_EpsitronFuseControlF90M1  : FB_EpsitronFuseControl := ( aI_Name         := 'F90: M2.2 print heads'
+                                                         , aI_NameChannel1 := '-CB2.1, -AB2.1'
+                                                         , aI_NameChannel2 := '-AB2.3, -AB2.5'
+                                                         , aI_NameChannel3 := '-CB2.2, -AB2.2'
+                                                         , aI_NameChannel4 := '-AB2.4, -AB2.6'
+                                                         );
+  fb_EpsitronFuseControlF122M1 : FB_EpsitronFuseControl := ( aI_Name         := 'F122: M2 heaters'
+                                                         , aI_NameChannel1 := '-VT1: bottom, front'
+                                                         , aI_NameChannel2 := '-VT1: top'
+                                                         , aI_NameChannel3 := '-VT2: bottom, front'
+                                                         , aI_NameChannel4 := '-VT2: top'
+                                                         );
+  fb_EpsitronFuseControlF160M1 : FB_EpsitronFuseControl := ( aI_Name         := 'F160: M2 24 general'
+                                                         , aI_NameChannel1 := 'UPS / CPU'
+                                                         , aI_NameChannel2 := 'General supply'
+                                                         , aI_NameChannel3 := 'Bus terminals, etc'
+                                                         , aI_NameChannel4 := '-MX61 pump separator'
+                                                         );
+  fb_EpsitronFuseControlF70M2  : FB_EpsitronFuseControl := ( aI_Name         := 'F70: M3.1 print heads'
+                                                         , aI_NameChannel1 := '-CB1.1, -AB1.1'
+                                                         , aI_NameChannel2 := '-AB1.3, -AB1.5'
+                                                         , aI_NameChannel3 := '-CB1.2, -AB1.2'
+                                                         , aI_NameChannel4 := '-AB1.4, -AB1.6'
+                                                         );
+  fb_EpsitronFuseControlF90M2  : FB_EpsitronFuseControl := ( aI_Name         := 'F90: M3.2 print heads'
+                                                         , aI_NameChannel1 := '-CB2.1, -AB2.1'
+                                                         , aI_NameChannel2 := '-AB2.3, -AB2.5'
+                                                         , aI_NameChannel3 := '-CB2.2, -AB2.2'
+                                                         , aI_NameChannel4 := '-AB2.4, -AB2.6'
+                                                         );
+  fb_EpsitronFuseControlF122M2 : FB_EpsitronFuseControl := ( aI_Name         := 'F122: M3 heaters'
+                                                         , aI_NameChannel1 := '-VT1: bottom, front'
+                                                         , aI_NameChannel2 := '-VT1: top'
+                                                         , aI_NameChannel3 := '-VT2: bottom, front'
+                                                         , aI_NameChannel4 := '-VT2: top'
+                                                         );
+  fb_EpsitronFuseControlF160M2 : FB_EpsitronFuseControl := ( aI_Name         := 'F160: M3 24 general'
+                                                         , aI_NameChannel1 := 'UPS / CPU'
+                                                         , aI_NameChannel2 := 'General supply'
+                                                         , aI_NameChannel3 := 'Bus terminals, etc'
+                                                         , aI_NameChannel4 := '-MX61 pump separator'
+                                                         );
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*F70 M1*)
+fb_EpsitronFuseControlF70M1();
+bO_F70M1FuseOk  := NOT (   (fb_EpsitronFuseControlF70M1.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF70M1.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF70M1.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF70M1.iO_Channel4Status = 3));
+(*F90 M1*)
+fb_EpsitronFuseControlF90M1();
+bO_F90M1FuseOk  := NOT (   (fb_EpsitronFuseControlF90M1.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF90M1.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF90M1.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF90M1.iO_Channel4Status = 3));
+(*F122 M1*)
+fb_EpsitronFuseControlF122M1();
+bO_F122M1FuseOk := NOT (   (fb_EpsitronFuseControlF122M1.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF122M1.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF122M1.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF122M1.iO_Channel4Status = 3));
+(*F160 M1*)
+fb_EpsitronFuseControlF160M1();
+bO_F160M1FuseOk := NOT (   (fb_EpsitronFuseControlF160M1.iO_Channel1Status = 3)
+                      OR (fb_EpsitronFuseControlF160M1.iO_Channel2Status = 3)
+                      OR (fb_EpsitronFuseControlF160M1.iO_Channel3Status = 3)
+                      OR (fb_EpsitronFuseControlF160M1.iO_Channel4Status = 3));
+(*F70 M2*)
+fb_EpsitronFuseControlF70M2();
+bO_F70M2FuseOk  := NOT (   (fb_EpsitronFuseControlF70M2.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF70M2.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF70M2.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF70M2.iO_Channel4Status = 3));
+(*F90 M2*)
+fb_EpsitronFuseControlF90M2();
+bO_F90M2FuseOk  := NOT (   (fb_EpsitronFuseControlF90M2.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF90M2.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF90M2.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF90M2.iO_Channel4Status = 3));
+(*F122 M2*)
+fb_EpsitronFuseControlF122M2();
+bO_F122M2FuseOk := NOT (   (fb_EpsitronFuseControlF122M2.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF122M2.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF122M2.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF122M2.iO_Channel4Status = 3));
+(*F160 M2*)
+fb_EpsitronFuseControlF160M2();
+bO_F160M2FuseOk := NOT (   (fb_EpsitronFuseControlF160M2.iO_Channel1Status = 3)
+                        OR (fb_EpsitronFuseControlF160M2.iO_Channel2Status = 3)
+                        OR (fb_EpsitronFuseControlF160M2.iO_Channel3Status = 3)
+                        OR (fb_EpsitronFuseControlF160M2.iO_Channel4Status = 3));
+                      
+                      
+(*Acknowledge error*)
+IF bAckMsg THEN
+  fb_EpsitronFuseControlF70M1 .mAckError();
+  fb_EpsitronFuseControlF90M1 .mAckError();
+  fb_EpsitronFuseControlF122M1.mAckError();
+  fb_EpsitronFuseControlF160M1.mAckError();
+  fb_EpsitronFuseControlF70M2 .mAckError();
+  fb_EpsitronFuseControlF90M2 .mAckError();
+  fb_EpsitronFuseControlF122M2.mAckError();
+  fb_EpsitronFuseControlF160M2.mAckError();
+  bAckMsg := FALSE;
+END_IF
+]]></ST>
+    </Implementation>
+    <Method Name="ackError" Id="{72ab5866-bae3-4d05-9e5a-2c64d47ac102}">
+      <Declaration><![CDATA[METHOD ackError]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bAckMsg := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_WeuPowerControl">
+      <LineId Id="177" Count="59" />
+      <LineId Id="306" Count="0" />
+      <LineId Id="237" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WeuPowerControl.ackError">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

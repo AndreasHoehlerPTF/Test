@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="PRG_INK" Id="{afcab994-f568-4c43-8a58-3d4d653d253f}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM PRG_INK
 (*************************************************************************************************)
@@ -240,6 +240,8 @@ VAR
 
   (*Counter*)
   cL_State                                    : BYTE := cL_INIT;                       (*state init*)
+  nTemp                                       : UDINT;
+  nConvError                                  : UDINT;
   iL_Sel_BlkType                              : INT  := 1;                             (*used for module information visualisation*)
   iL_Counter                                  : INT;                                   (*working counter*)
   iL_Counter2                                 : INT;                                   (*working counter*)
@@ -261,7 +263,9 @@ VAR
   sMappingInfo                                : T_MapInfo;        // Block mapping configuration
   ISystemBase                                 : I_SystemBase;     // reference to system base
   pModuleDef                                  : POINTER TO FB_ModuleDef;    // Module definition in system
-
+  iSystemCmd                                  : I_SystemCmd;                // System Command interface
+  iSystemStatus                               : I_SystemStatus;             // System Status interface
+  
   sAdsIkHeaderTank                            : ARRAY[1..iCIk_NB_HEADERTANK]      OF ST_ADS_IK_HEADERTANK;
   sAdsIkHeaderTankGroup                       : ARRAY[1..iCIk_NB_HEADERTANK_GROUP]OF ST_ADS_HeaderTankGroup;
 
@@ -1217,7 +1221,7 @@ ELSE (*Else when init Ok*)
     fL_MFunction := 1.0 * DINT_TO_REAL(lR_AnalogMaxDigitCleaner - lR_AnalogMinDigitCleaner)
                         / DINT_TO_REAL(wIDp_AnalogMaxPercentCleaner - wIDp_AnalogMinPercentCleaner); (*calculation ramp for analog-output of pump*)
   END_IF;
-  wL_StptSpeedCleanInkPumpDigit := FC_REAL_TO_WORD(fL_MFunction * wL_StptSpeedCleanInkPumpPercent + DINT_TO_REAL(lR_AnalogMinDigitCleaner), ADR(PRG_SYSTEMBASE.lI_ConversionErr));  (*calculated pump speed in digits*)
+  wL_StptSpeedCleanInkPumpDigit := FC_REAL_TO_WORD(fL_MFunction * wL_StptSpeedCleanInkPumpPercent + DINT_TO_REAL(lR_AnalogMinDigitCleaner));  (*calculated pump speed in digits*)
   
   FOR iL_Counter := 1 TO iCIk_NB_CLEANER_PUMPS DO
     (*---input---*)
@@ -1358,7 +1362,6 @@ ELSE (*Else when init Ok*)
     sL_PumpConditions.bL_HeadertankFillAllowed      := NOT fb_Headertank[iL_Counter].bL_DisableHeadertankFill;
 
     (*---input---*)
-    fb_FillInkVarnish[iL_Counter].pI_ConversionErr     := ADR(PRG_SYSTEMBASE.lI_ConversionErr);
 		fb_FillInkVarnish[iL_Counter].sI_SystemCmd         := sL_SystemCmd;
 		fb_FillInkVarnish[iL_Counter].sI_InkPumpConditions := sL_PumpConditions;
 		fb_FillInkVarnish[iL_Counter].wI_AnalogMaxDigit    := wIDP_AnalogMaxDigitVarnish;
@@ -1376,7 +1379,6 @@ ELSE (*Else when init Ok*)
     fb_FillInkVarnish[iL_Counter].wI_LevelDelayTime    := sC_Config_I.wC_INKPUMP_LEVELDELAY_TIME;
 
     IF sAdsIkHeaderTank[iL_Counter].bI_EnableRamp THEN
-      fb_Ramp[iL_Counter].pI_ConversionErr     := ADR(PRG_SYSTEMBASE.lI_ConversionErr);
       fb_Ramp[iL_Counter].II_YAnalogMaxDigit   := IIDp_MaxDigitRampe;
       fb_Ramp[iL_Counter].II_YAnalogMinDigit   := IIDp_MinDigitRampe;
       fb_Ramp[iL_Counter].II_YAnalogMaxPercent := IIDp_MaxPercentRampe;
@@ -1885,6 +1887,9 @@ CASE cL_State OF
                 // Wait until system(base) is booted
                 IF ISystemBase.bBooting THEN RETURN; END_IF
                 
+                // Command / Status interface
+                PRG_SYSTEMBASE.getSystemCmdStatusInterface(iSystemCmd=>iSystemCmd, iSystemStatus=>iSystemStatus);
+                
                 // Build mapping information for ADS
                 Mapping();
                 
@@ -2298,49 +2303,46 @@ END_FOR;
 (*DEGASSING*)
 (*************************************************************************************************)
 FOR iL_CounterDgas := 1 TO iCIk_NB_DGAS DO
-  PRG_SYSTEMBASE.fbSleep.mRegisterObserver(iObserver := fb_DgasMencContr[iL_CounterDgas]);
+  iSystemCmd.registerForSleepUpdate(iObserver:=fb_DgasMencContr[iL_CounterDgas]);
   
   fb_DgasMencContr[iL_CounterDgas].iRequestMencMinus       := fb_DgasPumpMinus[iL_CounterDgas];
   fb_DgasMencContr[iL_CounterDgas].iRequestMencPlus        := fb_DgasValvePlus[iL_CounterDgas];
   fb_DgasMencContr[iL_CounterDgas].iPurgeController        := fb_PurgeControllerDummy;  (*PurgeBusy not relevant*)
   fb_DgasMencContr[iL_CounterDgas].pConf                   := sC_Config_I.cC_CONF_DGAS_CONTR;
   fb_DgasMencContr[iL_CounterDgas].mInit( pAdsIf         := ADR(sAdsIkDgas [iL_CounterDgas])        (*> ads reference*)
-                                        , pMap           := ADR(sL_BLK_DGAS[iL_CounterDgas])        (*> mapping definition reference*)
-                                        , pConversionErr := ADR(PRG_SYSTEMBASE.lI_ConversionErr));  (*> counts conversion overflows*)
+                                        , pMap           := ADR(sL_BLK_DGAS[iL_CounterDgas]));        (*> mapping definition reference*)
   fb_DgasPumpMinus[iL_CounterDgas].mInit( aI_Name        := 'Dgas pump');
 
   (*MainValve K111*)
-  PRG_SYSTEMBASE.fbSleep.mRegisterObserver(iObserver := fb_DgasMainValve[iL_CounterDgas]);
+  iSystemCmd.registerForSleepUpdate(iObserver:=fb_DgasMainValve[iL_CounterDgas]);
   fb_DgasMainValve[iL_CounterDgas].mEnable();
 END_FOR;
 
 (*MENISCUS*)
 (*************************************************************************************************)
 FOR iL_CounterMenc := 1 TO iCIk_NB_MENC DO
-  PRG_SYSTEMBASE.fbSleep.mRegisterObserver(iObserver := fb_MeniscusMencContr[iL_CounterMenc]);
+  iSystemCmd.registerForSleepUpdate(iObserver:=fb_MeniscusMencContr[iL_CounterMenc]);
   
   fb_MeniscusMencContr[iL_CounterMenc].iRequestMencMinus       := fb_MeniscusValveMinus[iL_CounterMenc];
   fb_MeniscusMencContr[iL_CounterMenc].iRequestMencPlus        := fb_MeniscusValvePlus [iL_CounterMenc];
   fb_MeniscusMencContr[iL_CounterMenc].iPurgeController        := fb_PurgeControllerDummy;  (*PurgeBusy not relevant*)
   fb_MeniscusMencContr[iL_CounterMenc].pConf                   := sC_Config_I.cC_CONF_MENC_CONTR;
   fb_MeniscusMencContr[iL_CounterMenc].mInit( pAdsIf         := ADR(sAdsIkMenc [iL_CounterMenc])        (*> ads reference*)
-                                            , pMap           := ADR(sL_BLK_MENC[iL_CounterMenc])        (*> mapping definition reference*)
-                                            , pConversionErr := ADR(PRG_SYSTEMBASE.lI_ConversionErr));  (*> counts conversion overflows*)
+                                            , pMap           := ADR(sL_BLK_MENC[iL_CounterMenc]));      (*> mapping definition reference*)
 END_FOR;
 fb_MeniscusPump.mInit(aI_Name := 'Main meniscus pump');
 
 (*SUB MENISCUS*)
 (*************************************************************************************************)
 FOR iL_CounterSubMenc := 1 TO iCIk_NB_SUB_MENC DO
-  PRG_SYSTEMBASE.fbSleep.mRegisterObserver(iObserver := fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc]);
+  iSystemCmd.registerForSleepUpdate(iObserver:=fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc]);
   
   fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].iRequestMencMinus       := fb_MeniscusValveMinus[iCIk_NB_MENC + iL_CounterSubMenc];
   fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].iRequestMencPlus        := fb_MeniscusValvePlus [iCIk_NB_MENC + iL_CounterSubMenc];
   fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].iPurgeController        := fb_PurgeControllerDummy;  (*PurgeBusy not relevant*)
   fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].pConf                   := sC_Config_I.cC_CONF_SUB_MENC_CONTR;
   fb_MeniscusMencContr[iCIk_NB_MENC + iL_CounterSubMenc].mInit( pAdsIf         := ADR(sAdsIkMenc [iCIk_NB_MENC + iL_CounterSubMenc])  (*> ads reference*)
-                                                              , pMap           := ADR(sL_BLK_MENC[iCIk_NB_MENC + iL_CounterSubMenc])  (*> mapping definition reference*)
-                                                              , pConversionErr := ADR(PRG_SYSTEMBASE.lI_ConversionErr));              (*> counts conversion overflows*)
+                                                              , pMap           := ADR(sL_BLK_MENC[iCIk_NB_MENC + iL_CounterSubMenc]));  (*> mapping definition reference*)
 END_FOR;
 
 
@@ -2348,11 +2350,10 @@ END_FOR;
 (*************************************************************************************************)
 (*Headertank heater*)
 FOR iL_Counter := 1 TO iCIk_NB_TEMP_HYS DO
-  PRG_SYSTEMBASE.fbSleep    .mRegisterObserver(iObserver := fb_TempControllerHys[iL_Counter]);
-  PRG_SYSTEMBASE.fbEmergency.mRegisterObserver(iObserver := fb_TempControllerHys[iL_Counter]);
+  iSystemCmd.registerForSleepUpdate(iObserver:=fb_TempControllerHys[iL_Counter]);
+  iSystemCmd.registerForEmergencyUpdate(iObserver:=fb_TempControllerHys[iL_Counter]);
 
-  fb_TempControllerHys[iL_Counter].mInit( pAdsIf         := ADR(sAdsIkHeater[iL_Counter])           (*> ads reference*)
-                                        , pConversionErr := ADR(PRG_SYSTEMBASE.lI_ConversionErr));  (*> counts conversion overflows*)
+  fb_TempControllerHys[iL_Counter].mInit( pAdsIf         := ADR(sAdsIkHeater[iL_Counter]));           (*> ads reference*)
   fb_TempControllerHys[iL_Counter].mEnable();
 END_FOR;
 
@@ -2366,14 +2367,12 @@ FOR iL_Counter := 1 TO iCIk_NB_PURGE_CONTR DO
   fb_PurgeController[iL_Counter].pActivateSequence := bCIk_PURGE_CONTR_SEQUENCE[iL_Counter];
   fb_PurgeController[iL_Counter].pAirOk            := TRUE;
   fb_PurgeController[iL_Counter].mInit( pAdsIf         := ADR(sAdsIkPurgeController[iL_Counter])  (*> ads reference*)
-                                      , pMap           := ADR(sL_BLK_PURGE_CONTR   [iL_Counter])  (*> mapping definition reference*)
-                                      , pConversionErr := ADR(PRG_SYSTEMBASE.lI_ConversionErr));  (*> counts conversion overflows*)
+                                      , pMap           := ADR(sL_BLK_PURGE_CONTR   [iL_Counter]));  (*> mapping definition reference*)
 END_FOR
 
 FOR iL_Counter := 1 TO iCIk_NB_PURGE_GROUP DO
   fb_PurgeGroup     [iL_Counter].mInit( pAdsIf         := ADR(sAdsIkPurgeGroup  [iL_Counter])     (*> ads reference*)
-                                      , pMap           := ADR(sL_BLK_PURGE_GROUP[iL_Counter])     (*> mapping definition reference*)
-                                      , pConversionErr := ADR(PRG_SYSTEMBASE.lI_ConversionErr));  (*> counts conversion overflows*)
+                                      , pMap           := ADR(sL_BLK_PURGE_GROUP[iL_Counter]));     (*> mapping definition reference*)
 
   IF cL_State = cL_INIT_PRG THEN
     fb_PurgeController[cCIk_MAP_PURGE_GROUP_CONTR[iL_Counter]].mRegisterGroup(fb_PurgeGroup[iL_Counter]);
@@ -2405,7 +2404,7 @@ FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK DO
   fb_FillInkVarnish[iL_Counter].Init();
 
   (*Circulation ink controller*)
-  PRG_SYSTEMBASE.fbSleep.mRegisterObserver(iObserver := fb_CirculationInk[iL_Counter]);
+  iSystemCmd.registerForSleepUpdate(iObserver:=fb_CirculationInk[iL_Counter]);
   
   fb_CirculationInk[iL_Counter].iPurgeController := fb_PurgeController[iCIk_MAP_HEADERTANK_PURGE_CONTR[iL_Counter]];
   fb_CirculationInk[iL_Counter].iMencController  := fb_MeniscusMencContr[iCIk_MAP_HEADERTANK_MENC_STA[iL_Counter]];
@@ -2460,7 +2459,7 @@ END_FOR;
 FOR iL_Counter := 1 TO iCIk_NB_INKBALANCE DO
   fb_Balance[iL_Counter].pI_BalanceOffset := ADR(fL_BalanceOffset[iL_Counter]);
 
-  fb_BalanceLink.pI_ZeroPointerErr                 := ADR(PRG_SYSTEMBASE.lI_ZeroPointerErr);
+  fb_BalanceLink.pI_ZeroPointerErr                 := ADR(nConvError);
   fb_BalanceLink.iI_UsedBalanceMux                 := iCIk_NB_BALANCE_MUX;
   fb_BalanceLink.bI_ZS_SelectedChannel[iL_Counter] := FALSE;
   fb_BalanceLink.bI_CS_SelectedChannel[iL_Counter] := FALSE;
@@ -2479,7 +2478,7 @@ END_FOR;
 (*Recipe read/write*)
 (*************************************************************************************************)
 IF cL_State = cL_INIT_PRG THEN
-  pFbRecipeMngr := PRG_SYSTEMBASE.fbRecipeAutoMngmt.register(
+  pFbRecipeMngr := PRG_SYSTEMBASE.registerRecipe(
     aI_RecipePath           := CONCAT(aC_PlcConfigPath, aC_PlcRecipeSubPath),
     aI_RecipeDefinitionName := sC_Ads_Info.aType  (*is set in Mapping*)
   );
@@ -3209,9 +3208,11 @@ fb_VisuMeniscusMencController(sI_Ary_Fb := fb_MeniscusMencContr, sI_Ary_Ads := s
       <LineId Id="79943" Count="0" />
       <LineId Id="87869" Count="0" />
       <LineId Id="79951" Count="0" />
-      <LineId Id="79954" Count="52" />
+      <LineId Id="79954" Count="38" />
+      <LineId Id="79994" Count="12" />
       <LineId Id="94447" Count="0" />
-      <LineId Id="80008" Count="60" />
+      <LineId Id="80008" Count="2" />
+      <LineId Id="80012" Count="56" />
       <LineId Id="89052" Count="0" />
       <LineId Id="80070" Count="9" />
       <LineId Id="81494" Count="19" />
@@ -3313,7 +3314,10 @@ fb_VisuMeniscusMencController(sI_Ary_Fb := fb_MeniscusMencContr, sI_Ary_Ads := s
       <LineId Id="1287" Count="2" />
       <LineId Id="1306" Count="0" />
       <LineId Id="507" Count="6" />
-      <LineId Id="1307" Count="15" />
+      <LineId Id="1307" Count="5" />
+      <LineId Id="1735" Count="1" />
+      <LineId Id="1734" Count="0" />
+      <LineId Id="1313" Count="9" />
       <LineId Id="514" Count="1" />
       <LineId Id="1242" Count="0" />
       <LineId Id="1732" Count="0" />
@@ -3361,25 +3365,27 @@ fb_VisuMeniscusMencController(sI_Ary_Fb := fb_MeniscusMencContr, sI_Ary_Ads := s
       <LineId Id="1079" Count="0" />
       <LineId Id="1127" Count="0" />
       <LineId Id="1065" Count="0" />
-      <LineId Id="1057" Count="6" />
+      <LineId Id="1737" Count="0" />
+      <LineId Id="1058" Count="5" />
       <LineId Id="1134" Count="0" />
-      <LineId Id="1064" Count="0" />
       <LineId Id="1158" Count="0" />
-      <LineId Id="1130" Count="3" />
+      <LineId Id="1130" Count="1" />
+      <LineId Id="1738" Count="0" />
+      <LineId Id="1133" Count="0" />
       <LineId Id="1066" Count="0" />
       <LineId Id="1054" Count="0" />
       <LineId Id="1080" Count="0" />
       <LineId Id="1128" Count="0" />
-      <LineId Id="1067" Count="8" />
-      <LineId Id="1135" Count="0" />
-      <LineId Id="1076" Count="0" />
+      <LineId Id="1067" Count="0" />
+      <LineId Id="1739" Count="0" />
+      <LineId Id="1069" Count="7" />
       <LineId Id="1159" Count="0" />
       <LineId Id="1077" Count="0" />
       <LineId Id="1081" Count="0" />
       <LineId Id="1129" Count="0" />
       <LineId Id="1084" Count="0" />
-      <LineId Id="1086" Count="7" />
-      <LineId Id="1136" Count="0" />
+      <LineId Id="1740" Count="0" />
+      <LineId Id="1087" Count="6" />
       <LineId Id="1085" Count="0" />
       <LineId Id="1151" Count="0" />
       <LineId Id="1538" Count="0" />
@@ -3387,11 +3393,9 @@ fb_VisuMeniscusMencController(sI_Ary_Fb := fb_MeniscusMencContr, sI_Ary_Ads := s
       <LineId Id="1126" Count="0" />
       <LineId Id="1150" Count="0" />
       <LineId Id="1100" Count="0" />
-      <LineId Id="1112" Count="0" />
-      <LineId Id="1114" Count="0" />
+      <LineId Id="1741" Count="1" />
       <LineId Id="1113" Count="0" />
       <LineId Id="1103" Count="0" />
-      <LineId Id="1137" Count="0" />
       <LineId Id="1107" Count="0" />
       <LineId Id="1102" Count="0" />
       <LineId Id="1486" Count="0" />
@@ -3402,11 +3406,11 @@ fb_VisuMeniscusMencController(sI_Ary_Fb := fb_MeniscusMencContr, sI_Ary_Ads := s
       <LineId Id="1482" Count="1" />
       <LineId Id="1485" Count="0" />
       <LineId Id="1481" Count="0" />
-      <LineId Id="1209" Count="2" />
+      <LineId Id="1209" Count="1" />
       <LineId Id="1208" Count="0" />
       <LineId Id="1203" Count="0" />
       <LineId Id="1212" Count="2" />
-      <LineId Id="1220" Count="2" />
+      <LineId Id="1221" Count="1" />
       <LineId Id="1215" Count="0" />
       <LineId Id="1223" Count="0" />
       <LineId Id="1216" Count="1" />
@@ -3416,7 +3420,9 @@ fb_VisuMeniscusMencController(sI_Ary_Fb := fb_MeniscusMencContr, sI_Ary_Ads := s
       <LineId Id="937" Count="1" />
       <LineId Id="941" Count="4" />
       <LineId Id="1251" Count="5" />
-      <LineId Id="1725" Count="6" />
+      <LineId Id="1725" Count="1" />
+      <LineId Id="1743" Count="0" />
+      <LineId Id="1728" Count="3" />
       <LineId Id="952" Count="0" />
       <LineId Id="1706" Count="1" />
       <LineId Id="1655" Count="42" />

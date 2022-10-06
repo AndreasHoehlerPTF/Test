@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <GVL Name="Definitions" Id="{b1e2f023-9af0-4663-a1f8-d114142fdd31}">
     <Declaration><![CDATA[{attribute 'Tc2GvlVarNames'}
 VAR_GLOBAL CONSTANT
@@ -20,7 +20,7 @@ VAR_GLOBAL CONSTANT
   aC_VERSION_PRODUCT            : STRING   := '01.000.000';
   iC_VERSION_PRODUCT            : INT      := 010000;
 
-  sC_AMSNETID_LOCALHOST         : STRING   := '172.21.10.11.1.1';   (* AMS_NET_ID of Localhost *)
+  sC_AMSNETID_LOCALHOST         : STRING   := '';                   (* AMS_NET_ID of Localhost *)
   sC_AMSNETID_IO                : STRING   := '172.21.10.11.2.1';   (* AMS_NET_ID of IO *)
 
   aC_WifagDataPath              : STRING[255] := 'C:\ProgramData\WifagPolytype\';     (*Path of Wifag ProgramData*)
@@ -33,7 +33,22 @@ VAR_GLOBAL CONSTANT
   aC_PlcMaskFileSubPath         : STRING   := '05_Mask\';      (*stiching mask file sub-directory*)
   aC_PlcMapFileSubPath          : STRING   := '06_Map\';       (*correction map file sub-directory*)
   aC_PlcRecipeSubPath           : STRING   := '02_Plc\Recipe\';(*recipe file sub-directory*)  
-  aC_PlcBlockIdSubPath          : STRING   := '02_Plc\BlockId\';(*blockId file sub-directory*)  
+  aC_PlcBlockIdSubPath          : STRING   := '02_Plc\BlockId\';(*blockId file sub-directory*)
+  aC_PlcAlarmDbSubPath          : STRING   := '02_Plc\AlarmDb\';(*alarm db file sub-directory*)
+  
+  aC_PlcProjectCfgPath          : T_MaxString := 'C:\ProgramData\WifagPolytype\WEUPrintUnitPlc\02_Plc\DPST-1026-WEU 2 Demo\WEU2\PlcProject\Configuration\';
+  
+  
+  iG_PC_ADDRESS                 : ARRAY[1..32] OF UINT := [1050,
+                                                           1051,
+                                                           1052,
+                                                           1053,
+                                                           1054,
+                                                           1055,
+                                                           1056,
+                                                           1057,
+                                                           1058,
+                                                           1059];
 
 END_VAR]]></Declaration>
   </GVL>
