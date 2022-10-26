@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="FB_PrintModule" Id="{cb9319db-6969-4a30-812e-4f2d714eb08a}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_PrintModule EXTENDS T_NamedBase
 VAR_INPUT
@@ -14,14 +14,35 @@ VAR_INPUT
 END_VAR
 
 VAR
+  //config
   _nIdx                   : UDINT;   // for visu selection only (remove later) 
-  _pAds                   : POINTER TO ST_ADS_PC; (*ads config/status interface*)
+  _pAdsPm                 : POINTER TO ST_ADS_PM; //ads config/status interface
+  _fResolutionPrint       : LREAL;
+  _fResolutionSubPx       : LREAL;
+  _fEncoderResolution     : LREAL;   // encoder resolution for EL5101 (input um/pulse)
+  
+  // status
 
-  (*Messaging*)
+  
+  // instances
+  fbPrintPosition         : FB_PrintPositionDmax;
+  
+  // helper
+  fSpeed, fSpeedMpMin     : LREAL;
+  lPos_SubPx, lPos_Px     : DINT;
+  fPos_um                 : LREAL;
+  
+  
+  // messaging
   fb_MsgQueue             : FB_MSG_QUEUE;                 (*Message queue*)
   fb_MsgHandler           : FB_MSG_HANDLER;               (*Message handler*)
   sL_MsgConfig            : ST_MSG_CONFIG;                (*Message config*)
   fb_Msg                  : ARRAY [1..iC_NUM_MSG] OF FB_MESSAGE;  (*Messages*)
+  
+  // view
+  
+  // testing
+  _bSim : BOOL;
 END_VAR
 
 VAR CONSTANT
@@ -29,48 +50,101 @@ VAR CONSTANT
   iC_NUM_MSG              : INT := 8;
 END_VAR]]></Declaration>
     <Implementation>
-      <ST><![CDATA[(*Messaging*)
-fb_MsgHandler();
+      <ST><![CDATA[
 
-fB_Msg[1](bI_Status := IbPrinterHood);
-fB_Msg[2](bI_Status := IbServiceDoors);
-fB_Msg[3](bI_Status := IbExhaustVacuumWarning);
-fB_Msg[4](bI_Status := IbExhaustVacuumError);
-fB_Msg[5](bI_Status := IbExhaustFUError);
-fB_Msg[6](bI_Status := IbDriftControlError);
-fB_Msg[7](bI_Status := IbSafetyNOk);
-fB_Msg[8](bI_Status := IbDriftControlMissMarks);
+fbPrintPosition();
+fSpeed := fbPrintPosition.getSpeed(fSpeedMpMin=>fSpeedMpMin);
+lPos_SubPx := fbPrintPosition.getPosition(nPosition_px=>lPos_Px, fPosition_um=>fPos_um);
 
-fb_MsgQueue();
 
-(********************************* END OF FB *****************************************************)]]></ST>
+
+Messaging();]]></ST>
     </Implementation>
+    <Folder Name="Position" Id="{12a320fc-93c2-445f-a96d-a4cd86407a32}" />
+    <Folder Name="Sim" Id="{6de8d664-1ecd-4e7c-9e04-bad56ccd972b}" />
+    <Property Name="bSim" Id="{0f604c0e-9e5d-44dd-b620-672fedba6798}" FolderPath="Sim\">
+      <Declaration><![CDATA[PROPERTY bSim : BOOL]]></Declaration>
+      <Get Name="Get" Id="{eed6e031-ccb0-4834-afd4-be86a2055e6a}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSim := _bSim;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{0514b0f1-83fc-4960-94d7-be479b9c0ddd}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[_bSim := bSim;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="fEncoderResolution" Id="{7b76ff9d-3552-4e96-b7c1-eeed2dc4e44b}" FolderPath="Position\">
+      <Declaration><![CDATA[(*
+  Encoder resolution.
+*)
+PROPERTY fEncoderResolution : LREAL]]></Declaration>
+      <Get Name="Get" Id="{b14c77fd-b6aa-4ec1-9da0-882cd005b6f0}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[fEncoderResolution := _fEncoderResolution;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{0ff2555c-4a0e-4ef4-be5a-22cbb71c7c0d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[_fEncoderResolution := fEncoderResolution;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Method Name="init" Id="{4338a7a6-6293-49ad-a96d-3660b8a91900}">
       <Declaration><![CDATA[METHOD init : BOOL
 VAR_INPUT
-  nIdx                : UDINT;
-  pAds                : POINTER TO ST_ADS_PM;
+  nIdx                : UDINT;                // module id
+  pAdsPm              : POINTER TO ST_ADS_PM; // module ads interface
 
-  (*Messaging*)
+  // config print
+  fPrintResolution    : LREAL := 600;         // print(head) resolution in [dpi]
+  fSubPxResolution    : LREAL := 32;          // SubPixel resolution [SubPx], resolution factor (fI_PrintResolution*fI_SubPxResolution=>Output resolution)
+  fTaskCycleTime      : LREAL;                // Task cycle time in [s]
+
   nBlockId            : INT;                  // block id for message
 END_VAR
-]]></Declaration>
+VAR CONSTANT
+  fC_PROD_MASTER_SPEED                      : LREAL := 5.0;    (*[m/min]*)
+END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[_nIdx := nIdx;
-
-IF pAds = 0 THEN
+        <ST><![CDATA[IF pAdsPm = 0 THEN
   LogError('Invalid parameter');
   RETURN;
 END_IF
 
 // save config
-_pAds := pAds;
+_nIdx := nIdx;
+_pAdsPm := pAdsPm;
+_fResolutionPrint := fPrintResolution;
+_fResolutionSubPx := fSubPxResolution;
+
+// positioning
+fbPrintPosition.Init(
+  fPrintResolution:=fPrintResolution,
+  fSubPxResolution:=fSubPxResolution,
+  fTaskCycleTime:=fTaskCycleTime,
+  fProdSpeedMpMin:=fC_PROD_MASTER_SPEED
+);
+
 
 (*Messaging*)
 sL_MsgConfig.bI_Enable       := TRUE;
 sL_MsgConfig.pI_FbMsgHandler := ADR(fb_MsgHandler);
 fb_MsgHandler.pI_MsgQueue    := ADR(fb_MsgQueue);
-fb_MsgQueue.pI_MsgInterface  := ADR(_pAds^.sO_Message);
+fb_MsgQueue.pI_MsgInterface  := ADR(_pAdsPm^.sO_Message);
 fb_MsgQueue.cI_MaxElement    := 6;
 
 (*Messages*)
@@ -108,30 +182,66 @@ fb_Msg[8].iI_MsgNumber       := eCPr_SHEET_MARK_DETECTION;
 ]]></ST>
       </Implementation>
     </Method>
+    <Method Name="Messaging" Id="{643d2082-2a1e-46ab-80d2-9108069a18fe}">
+      <Declaration><![CDATA[METHOD Messaging
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(*Messaging*)
+fb_MsgHandler();
+
+fB_Msg[1](bI_Status := IbPrinterHood);
+fB_Msg[2](bI_Status := IbServiceDoors);
+fB_Msg[3](bI_Status := IbExhaustVacuumWarning);
+fB_Msg[4](bI_Status := IbExhaustVacuumError);
+fB_Msg[5](bI_Status := IbExhaustFUError);
+fB_Msg[6](bI_Status := IbDriftControlError);
+fB_Msg[7](bI_Status := IbSafetyNOk);
+fB_Msg[8](bI_Status := IbDriftControlMissMarks);
+
+fb_MsgQueue();
+]]></ST>
+      </Implementation>
+    </Method>
     <LineIds Name="FB_PrintModule">
-      <LineId Id="28" Count="2" />
-      <LineId Id="40" Count="0" />
-      <LineId Id="31" Count="0" />
-      <LineId Id="61" Count="1" />
-      <LineId Id="71" Count="0" />
-      <LineId Id="73" Count="0" />
-      <LineId Id="63" Count="0" />
-      <LineId Id="101" Count="0" />
-      <LineId Id="37" Count="2" />
+      <LineId Id="134" Count="1" />
+      <LineId Id="133" Count="0" />
+      <LineId Id="156" Count="1" />
+      <LineId Id="159" Count="1" />
+      <LineId Id="158" Count="0" />
       <LineId Id="9" Count="0" />
     </LineIds>
+    <LineIds Name="FB_PrintModule.bSim.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.bSim.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.fEncoderResolution.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.fEncoderResolution.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
     <LineIds Name="FB_PrintModule.init">
-      <LineId Id="5" Count="0" />
-      <LineId Id="39" Count="0" />
-      <LineId Id="32" Count="6" />
-      <LineId Id="15" Count="0" />
-      <LineId Id="17" Count="14" />
-      <LineId Id="50" Count="0" />
-      <LineId Id="54" Count="14" />
-      <LineId Id="70" Count="3" />
-      <LineId Id="85" Count="0" />
-      <LineId Id="82" Count="2" />
+      <LineId Id="104" Count="5" />
+      <LineId Id="178" Count="0" />
+      <LineId Id="110" Count="0" />
+      <LineId Id="176" Count="1" />
+      <LineId Id="180" Count="0" />
+      <LineId Id="163" Count="0" />
+      <LineId Id="162" Count="0" />
+      <LineId Id="164" Count="0" />
+      <LineId Id="166" Count="2" />
+      <LineId Id="165" Count="0" />
+      <LineId Id="161" Count="0" />
+      <LineId Id="111" Count="39" />
       <LineId Id="14" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.Messaging">
+      <LineId Id="6" Count="12" />
+      <LineId Id="5" Count="0" />
     </LineIds>
   </POU>
 </TcPlcObject>

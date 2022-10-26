@@ -1,25 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="FB_InspectionSystemTrigger" Id="{ec098ee4-1e1e-4fe3-8952-b23d7a573fda}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK FB_InspectionSystemTrigger EXTENDS FB_Commons
-(*************************************************************************************************)
-(*  FILENAME:    FB_InspectionSystemTrigger                                                      *)
-(*  PROJECT:     CALMAR PUPLC                                                                    *)
-(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2021)            *)
-(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
-(*  VERSION:     <version>                                                                       *)
-(*************************************************************************************************)
-(*  DESCRIPTION:                                                                   <description> *)
-(*    Generate timestamp trigger output based on timestamp sensor input. Two variants            *)
-(*    exist, a timebased approach where the trigger time is calculated at the time the sensor    *)
-(*    event occurs, and a second approach where the sensor event time is translated to a sensor  *)
-(*    event position, and a trigger is generated when the calculated trigger position has almost *)
-(*    been reached. The second approach has the advantage that is is less susceptible to speed   *)
-(*    variations.                                                                                *)
-(*                                                                                </description> *)
-(*************************************************************************************************)
-
-{library public}
+    <Declaration><![CDATA[(*
+    Generate timestamp trigger output based on timestamp sensor input. Two variants    
+    exist, a timebased approach where the trigger time is calculated at the time the sensor
+    event occurs, and a second approach where the sensor event time is translated to a sensor
+    event position, and a trigger is generated when the calculated trigger position has almost 
+    been reached. The second approach has the advantage that is is less susceptible to speed
+    variations.
+*)
+FUNCTION_BLOCK FB_InspectionSystemTrigger EXTENDS FB_Commons
+{library PUBLIC}
 VAR_INPUT
   (*System signals*)
   bI_SensorState                  : BOOL;                   // Sensor signal
@@ -46,10 +37,10 @@ VAR
   bInitOk                         : BOOL;           // initialized
   bSpeedValid                     : BOOL;           // speed is valid
   bTriggerArmed                   : BOOL;           // trigger is armed
-  rT_Sensor                       : R_TRIG;        // rising edge trigger sensor
+  rT_Sensor                       : R_TRIG;         // rising edge trigger sensor
   
   (*configuration*)
-  _nResolution                    : INT := 1;       // Printhead Resolution [e.g. 600] x Subpixel Resolution [e.g. 32]*)
+  _nResolution                    : LREAL := 1;     // Printhead Resolution [e.g. 600] x Subpixel Resolution [e.g. 32]*)
   _bUsePositionTrigger            : BOOL;           // FALSE: Calculate time with speed and position distance@sensor event, TRUE: Calculate sensor event position, launch trigger based on position
   _fTriggerLength                 : LREAL := 10;    // Length of trigger signal in ms, min. 3 bus cycles
   
@@ -157,7 +148,7 @@ CASE eState OF
 
   cL_WAITALMOSTSTART: (*Only active when bI_UsePositionTrigger=TRUE: wait until Start position almost reached, then set timestamp*)
     (*Remaining distance in [m], converted to REAL to avoid integer wrap problems*)
-    fRemDist             := fR_DeltaDistance + (DINT_TO_REAL(_nX0) - DINT_TO_REAL(iI_CurrentPos)) * 0.0254 / INT_TO_REAL(_nResolution);
+    fRemDist             := fR_DeltaDistance + (DINT_TO_LREAL(_nX0) - DINT_TO_LREAL(iI_CurrentPos)) * 0.0254 / _nResolution;
     fPreTriggerPosition  := fC_PreTrigFactor * fCycleTime * fI_ConveyorSpeed;
 
     IF fRemDist < fPreTriggerPosition THEN
@@ -219,21 +210,17 @@ OtTriggerStartTime := tTrigger_EventTime;
     <Method Name="Init" Id="{46eda74d-1233-4e75-9dff-c1e3efdde8f4}">
       <Declaration><![CDATA[METHOD Init
 VAR_INPUT
-  nResolution                   : INT := 1;        (*Printhead Resolution [e.g. 600] x Subpixel Resolution [e.g. 32]*)
+  nResolution                   : LREAL := 1;      (*Printhead Resolution [e.g. 600] x Subpixel Resolution [e.g. 32]*)
   bUsePositionTrigger           : BOOL;            (*FALSE: Calculate time with speed and position distance@sensor evont*)
 END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[(*zero divisions*)
-IF nResolution = 0 THEN 
-  bInitOk := FALSE;
+IF nResolution = 0 THEN RETURN; LogError('Invalid parameter'); END_IF;
 
-  RETURN; 
-END_IF;
-
+// save config
 _nResolution         := nResolution;
 _bUsePositionTrigger := bUsePositionTrigger;
-
 
 bInitOk := TRUE;]]></ST>
       </Implementation>
@@ -365,14 +352,11 @@ END_VAR
     <LineIds Name="FB_InspectionSystemTrigger.Init">
       <LineId Id="6" Count="0" />
       <LineId Id="5" Count="0" />
-      <LineId Id="13" Count="0" />
-      <LineId Id="23" Count="0" />
-      <LineId Id="11" Count="1" />
+      <LineId Id="29" Count="0" />
       <LineId Id="15" Count="0" />
       <LineId Id="14" Count="0" />
       <LineId Id="17" Count="0" />
       <LineId Id="16" Count="0" />
-      <LineId Id="10" Count="0" />
       <LineId Id="9" Count="0" />
     </LineIds>
     <LineIds Name="FB_InspectionSystemTrigger.LogTsDiff">

@@ -1,18 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="FB_NeutralFibreDetermine" Id="{09e5318c-d36f-4976-9501-8d59b352594a}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_NeutralFibreDetermine EXTENDS FB_Commons
-(*************************************************************************************************)
-(*  FILENAME:    FB_NeutralFibreDetermine                                                      *)
-(*  PROJECT:     CALMAR PUPLC                                                                    *)
-(*  COPYRIGHT:   All rights reserved (c) Wifag//Polytype, Fribourg/Switzerland (2022)            *)
-(*  ENVIRONMENT: TwinCAT PLC                                                                     *)
-(*  VERSION:     <version>                                                                       *)
-(*************************************************************************************************)
-(*  DESCRIPTION:                                                                   <description> *)
-(*                                                                                </description> *)
-(*************************************************************************************************)
-
 {library public}
 VAR_INPUT
   (*EL1252*)
@@ -35,13 +24,13 @@ VAR
   bSpeedValid                     : BOOL;           // speed is valid
   
   (*configuration*)
-  _nResolution                    : INT := 1;       // Printhead Resolution [e.g. 600] x Subpixel Resolution [e.g. 32]*)
+  _nResolution                    : LREAL := 1;     // Printhead Resolution [e.g. 600] x Subpixel Resolution [e.g. 32]*)
 
   fbRTrigMark01                   : R_TRIG;
   fbRTrigMark02                   : R_TRIG;
   
-  fL_DurationMark01to02           : REAL;       (*Mark 1 to 2 [ms]*)
-  fL_LengthMark01to02             : REAL;       (*Mark 1 to 2 [mm]*)
+  fL_DurationMark01to02           : LREAL;      (*Mark 1 to 2 [ms]*)
+  fL_LengthMark01to02             : LREAL;      (*Mark 1 to 2 [mm]*)
   nL_DeltaMark01to02              : DINT;       (*Mark 1 to 2 [SubPx]*)
 END_VAR
 ]]></Declaration>
@@ -56,9 +45,9 @@ IF fbRTrigMark01.Q THEN
 END_IF
 
 IF fbRTrigMark02.Q THEN
-	fL_DurationMark01to02 := LREAL_TO_REAL(ULINT_TO_LREAL(tIKp_TimeStampPos02) - ULINT_TO_LREAL(tIKp_TimeStampPos01)) / 1_000_000.0; (*[ms]*)
-	fL_LengthMark01to02   := LREAL_TO_REAL((fL_DurationMark01to02 / 1000) * fI_ConveyorSpeed) * 1000;       (*[mm]*)
-	nL_DeltaMark01to02    := LREAL_TO_DINT(fL_LengthMark01to02 * _nResolution / 25.4);  (*[SubPx]*)
+	fL_DurationMark01to02 := (ULINT_TO_LREAL(tIKp_TimeStampPos02) - ULINT_TO_LREAL(tIKp_TimeStampPos01)) / 1_000_000.0; (*[ms]*)
+	fL_LengthMark01to02   := ((fL_DurationMark01to02 / 1000) * fI_ConveyorSpeed) * 1000;    (*[mm]*)
+	nL_DeltaMark01to02    := LREAL_TO_DINT((fL_LengthMark01to02 * _nResolution) / 25.4);    (*[SubPx]*)
 END_IF
 
 (********************************* END OF FB *****************************************************)]]></ST>
@@ -66,17 +55,14 @@ END_IF
     <Method Name="Init" Id="{0e5d9d38-5568-4252-a7a4-4a674ac176b4}">
       <Declaration><![CDATA[METHOD Init
 VAR_INPUT
-  nResolution                   : INT := 1;        (*Printhead Resolution [e.g. 600] x Subpixel Resolution [e.g. 32]*)
+  nResolution                   : LREAL := 1;        (*Printhead Resolution [e.g. 600] x Subpixel Resolution [e.g. 32]*)
 END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[(*zero divisions*)
-IF nResolution = 0 THEN 
-  bInitOk := FALSE;
+IF nResolution = 0 THEN LogError('Invalid parameter'); RETURN; END_IF;
 
-  RETURN; 
-END_IF;
-
+// configration
 _nResolution := nResolution;
 
 bInitOk := TRUE;]]></ST>
@@ -101,9 +87,7 @@ bInitOk := TRUE;]]></ST>
     <LineIds Name="FB_NeutralFibreDetermine.Init">
       <LineId Id="6" Count="0" />
       <LineId Id="5" Count="0" />
-      <LineId Id="13" Count="0" />
-      <LineId Id="23" Count="0" />
-      <LineId Id="11" Count="1" />
+      <LineId Id="28" Count="0" />
       <LineId Id="15" Count="0" />
       <LineId Id="14" Count="0" />
       <LineId Id="10" Count="0" />

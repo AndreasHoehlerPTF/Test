@@ -39,25 +39,6 @@ VAR_OUTPUT
 END_VAR
 
 VAR
-  lCtr, lCtr2                               : DINT;           (*local iteration counter - default*)
-  iL_I, iL_I2                               : INT;            (*instance counter*)
-  iCT                                       : I_CT;
-  nTemp                                     : UDINT;
-  nConvError, nConvErr_mem                  : UDINT;
-  
-  (*Infos from other tasks*)
-  bL_PrintUnitInPrintPosition               : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
-  bL_Engaged                                : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
-  bL_PmPrintEnabled                         : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
-  bL_PrintMarksExist                        : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
-  nL_WebStretchFactor                       : DINT;             (*PRG_MACHINE: web stretch factor*)
-  nL_LateralRegister                        : DINT;             (*PRG_MACHINE: lateral register [µm]*)
-  fL_WebStretchCalculated                   : LREAL;            (*Calculated web stretch factor, removed interface scaling*)
-  nL_Module2ToModule3                       : DINT;             (*PRG_MACHINE: distance between Module 2 and 3 [µm]*)
-  bL_TargetSpeedReached                     : BOOL;             (*PRG_MACHINE: Target speed reached*)
-  nL_NeutralFibreFactor                     : DINT;             (*PRG_MACHINE: neutral fibre factor [%]*)
-  bL_ReceiptMessage                         : BOOL;             (*PRG_MACHINE: fb_MsgQueueMachine[1].bO_ReceiptMessage*)
-
   // ADS interface instances & mapping and responsible FBs
   // -------------------------------------------------------------
   FB_PU                                     : ARRAY [1..iCPr_NB_PU] OF FB_PU;               (*PU - Print Unit*)
@@ -91,8 +72,54 @@ VAR
   pModuleDef                                : POINTER TO FB_ModuleDef;    // Module definition in system
   sC_Config_P                               : ST_CONFIG_P;      // PRG configuration  
 
+  (* --- Maintainance variables ---*)
+  fbOd                                      : FB_OD;        // CoE object dictionary
+  (* - file download - *)
+  (* -- fw/hw upgrade -- *)
+  fb_fwhw_update                            : FB_CALMAR_UPDATE;
+	(* -- hib remote update -- *)
+	fb_pc_hib_rupd                            : ARRAY[1..iCPr_NB_PC] OF FB_PC_HIB_RUPD;(*HIB remote update channles*)
+  fb_hib_rup                                : FB_HIB_UPDATE;                         (*HIB remote updater*)
+  (* -- stiching mask manager -- *)
+  fb_fdl_mask                               : FB_FILE_DOWNLOAD;                      (*Mask file downloader*)
+  (** -- waveform manager -- *)
+  fb_fdl_waveform                           : FB_FILE_DOWNLOAD;                      (*waveform file downloader*)
+  bWaveformDownloadErr                      : BOOL;                                  (*a waveform douwnload exitst (needed in RIGEN5 only)*)
+  tOn_waveform                              : ARRAY[1..iCPr_NB_PC] OF TON;
+  bL_waveform_request                       : ARRAY[1..iCPr_NB_PC] OF BOOL;
+  lL_PhActStoragetankAssignmentIndex        : ARRAY[1..iCPr_NB_PH] OF DINT;
+  lL_MemPhActStoragetankAssignmentIndex     : ARRAY[1..iCPr_NB_PH] OF DINT;
+  
+  (*----- Logging -----*)
+  LogPrSetup                                : T_NamedBase;  // just a I_LogSourceMacro implementation (logging PRINT module setup things)
+  
 
-(*************************************************************************************************)
+  
+ // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+ // TO CLEANUP
+ // || || || || || || ||
+ // V  V  V  V  V  V  V 
+  lCtr, lCtr2                               : DINT;           (*local iteration counter - default*)
+  iL_I, iL_I2                               : INT;            (*instance counter*)
+  iCT                                       : I_CT;
+  nTemp                                     : UDINT;
+  nConvError, nConvErr_mem                  : UDINT;
+
+  (*Infos from other tasks*)
+  bL_PrintUnitInPrintPosition               : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
+  bL_Engaged                                : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
+  bL_PmPrintEnabled                         : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
+  bL_PrintMarksExist                        : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
+  nL_WebStretchFactor                       : DINT;             (*PRG_MACHINE: web stretch factor*)
+  nL_LateralRegister                        : DINT;             (*PRG_MACHINE: lateral register [µm]*)
+  fL_WebStretchCalculated                   : LREAL;            (*Calculated web stretch factor, removed interface scaling*)
+  nL_Module2ToModule3                       : DINT;             (*PRG_MACHINE: distance between Module 2 and 3 [µm]*)
+  bL_TargetSpeedReached                     : BOOL;             (*PRG_MACHINE: Target speed reached*)
+  nL_NeutralFibreFactor                     : DINT;             (*PRG_MACHINE: neutral fibre factor [%]*)
+  bL_ReceiptMessage                         : BOOL;             (*PRG_MACHINE: fb_MsgQueueMachine[1].bO_ReceiptMessage*)
+ 
+ 
+
  (*internal (generic) print variables*)
   bL_HardwareSync                           : ARRAY [1..iCPr_NB_PM] OF BOOL;
   bL_ResetPosition                          : ARRAY [1..iCPr_NB_PM] OF BOOL;
@@ -101,10 +128,6 @@ VAR
   bL_PmPrinting                             : ARRAY [1..iCPr_NB_PM] OF BOOL;
 
   (*----- print, offfset and motion variables ------*)
-  //fbPrintPosition                           : FB_PrintPositionWeu;
-  //lPos_SubPx                                : DINT;
-  //lPos_Px                                   : DINT;
-  //fPos_um                                   : LREAL;
   nYShift_center                            : UDINT;                    // Y-Shift for centering ph in RAM
   bAxisMovement                             : BOOL;   (*Machine axis ios moving*)
 
@@ -125,13 +148,11 @@ VAR
   fL_HeadOffsetPlate                        : REAL := 0.000_2;   (*Head offset to base plate [m]*)
   fL_SubstrateThickness                     : REAL := 0.000_1;   (*Substrate thickness [m]*)
 
-  (*----- Logging -----*)
-  LogPrSetup                                : T_NamedBase;  // just a I_LogSourceMacro implementation (logging PRINT module setup things)
-    
-  fbVencoder                                : ARRAY [1..iCPr_NB_PM] OF FB_V_ENCODER;
-  Fb_Ph_Master                              : ARRAY [1..iCPr_NB_PM] OF FB_POSITION_MASTER;
-  Fb_Ref_Master                             : ARRAY [1..iCPr_NB_PM] OF FB_POSITION_MASTER;
-  fb_StartHwLatch                           : ARRAY [1..iCPr_NB_PM] OF FB_HWLATCH;
+
+
+  //Fb_Ph_Master                              : ARRAY [1..iCPr_NB_PM] OF FB_POSITION_MASTER;
+  //Fb_Ref_Master                             : ARRAY [1..iCPr_NB_PM] OF FB_POSITION_MASTER;
+  //fb_StartHwLatch                           : ARRAY [1..iCPr_NB_PM] OF FB_HWLATCH;
   Fb_PaperPosDetect                         : ARRAY [1..iCPr_NB_PM] OF FB_START_POS_DETECT_WEU;
   fB_DriftControl                           : ARRAY [1..iCPr_NB_PM] OF FB_DRIFTCONTROL;
   bL_DisableDriftControl                    : BOOL;   (*Visu: disable DriftControl*)
@@ -148,11 +169,6 @@ VAR
   bL_Manu_StartTrigger                      : ARRAY [1..iCPr_NB_PM] OF BOOL;   (*Manual StartTrigger*)
   bL_EnableEncTrig                          : BOOL;                            (*Enable encoder C channel trigger signal [bool]*)
   lL_EncPulse                               : ARRAY [1..iCPr_NB_PM] OF UDINT;  (*Position reference pulse count in [count]*)
-
-  (* -- Manual Spitting -- *)
-  fb_Spit                                   : FB_PC_SPITTING;                          (*manual spitting control, one inst. for all PC (bradcast)*)
-  bL_Spit_CmdData                           : ARRAY [1..iCPr_NB_PC] OF BOOL;          (**)
-  bL_Spit_CmdFire                           : ARRAY [1..iCPr_NB_PC] OF BOOL;          (**)
 
   (*-- configs*)
   bL_InitRemVar                             : BOOL := TRUE;
@@ -173,23 +189,7 @@ VAR
   fb_PuCount                                : ARRAY [1..iCPr_NB_PU] OF FB_CountWeu;
 
   
-  (* --- Maintainance variables ---*)
-  fbOd                                      : FB_OD;        // CoE object dictionary
-  (* - file download - *)
-  (* -- fw/hw upgrade -- *)
-  fb_fwhw_update                            : FB_CALMAR_UPDATE;
-	(* -- hib remote update -- *)
-	fb_pc_hib_rupd                            : ARRAY[1..iCPr_NB_PC] OF FB_PC_HIB_RUPD;(*HIB remote update channles*)
-  fb_hib_rup                                : FB_HIB_UPDATE;                         (*HIB remote updater*)
-  (* -- stiching mask manager -- *)
-  fb_fdl_mask                               : FB_FILE_DOWNLOAD;                      (*Mask file downloader*)
-  (** -- waveform manager -- *)
-  fb_fdl_waveform                           : FB_FILE_DOWNLOAD;                      (*waveform file downloader*)
-  bWaveformDownloadErr                      : BOOL;                                  (*a waveform douwnload exitst (needed in RIGEN5 only)*)
-  tOn_waveform                              : ARRAY[1..iCPr_NB_PC] OF TON;
-  bL_waveform_request                       : ARRAY[1..iCPr_NB_PC] OF BOOL;
-  lL_PhActStoragetankAssignmentIndex        : ARRAY[1..iCPr_NB_PH] OF DINT;
-  lL_MemPhActStoragetankAssignmentIndex     : ARRAY[1..iCPr_NB_PH] OF DINT;
+
 
   fb_RTrigStopRequestVarnishChange          : R_TRIG;
   
@@ -216,8 +216,8 @@ VAR
   (*Test / Debug / View -----------------------------*)  
   (* Simulation *)
   fSimSpeed                                 : LREAL := 1;   // simulation speed
-  bSimEncoder                               : BOOL;         // simulate encoder 
-  bSimPosMaster                             : BOOL;         // simulate ph master positions
+  bSimPosition                              : BOOL;         // simulate encoder 
+
   fbStartPositionSimulation                 : FB_StartPositionDummy;
   fbRTrigStartPositionSimulation            : R_TRIG;
   bL_SimMarkStartActive                     : ARRAY [1..iCPr_NB_PM] OF BOOL;   (*start trigger simulation active*)
@@ -252,7 +252,7 @@ VAR
   (*Debug & Insight*)
   fbPrgPrintTest                            : FB_PrgPrint_test;
   ePrint_LogLevel                           : E_LogSeverity  := E_LogSeverity.Debug;
-  fbProfiler                                : FB_PrintProfiler;
+  fbProfiler                                : FB_PrgProfiler;
 END_VAR
 
 VAR PERSISTENT
@@ -267,9 +267,7 @@ END_VAR
 VAR CONSTANT
 (*GENERAL*)
 (*************************************************************************************************)
-
-  fC_MIN_MASTER_SPEED                       : LREAL := 0.05;   (*[m/s]*)
-  fC_PROD_MASTER_SPEED                      : LREAL := 5.0;    (*[m/min]*)
+  
 
   cEncoderImpU                              : LREAL := 10_000 * 4;    (*Impulses * 4 times sampling [Imp/U]*)
     
@@ -304,6 +302,20 @@ IF NOT bO_InitOk THEN
   RETURN;
 END_IF;
 
+(* Call ACTIONS *)
+(*************************************************************************************************)
+Control();          (*Controlling part*)
+DownloadFiles();    (*Call file downloads*)
+RemVar();           (*Call update remanent data action*)
+Testing();          (*Call test code*)
+Visu();             (*Call visualisation control*)
+
+
+
+FOR iL_I := 1 TO iCPr_NB_PM DO
+  fbPrintModule[i]();
+END_FOR
+
 
 (* <- Infos from other tasks*)
 FOR iL_I := 1 TO iCPr_NB_PM DO
@@ -324,15 +336,6 @@ nL_NeutralFibreFactor               := PRG_MACHINE.InEAP_NeutralFibreFactor;
 bL_ReceiptMessage                   := PRG_MACHINE.fb_MsgQueueMachine[1].bO_ReceiptMessage;
 (* -> Infos to other tasks *)
 bAxisMovement := NOT bL_MachineStopped[1];           //fbPrintPosition.bMoving;
-
-
-(* Call ACTIONS *)
-(*************************************************************************************************)
-Control();          (*Controlling part*)
-DownloadFiles();    (*Call file downloads*)
-RemVar();           (*Call update remanent data action*)
-Testing();          (*Call test code*)
-Visu();             (*Call visualisation control*)
 
 
 // HW Sync
@@ -365,13 +368,13 @@ FOR iL_I := 1 TO iCPr_NB_PM DO
   fL_ResolutionEncoder[iL_I] := ((lEncoderCylinderDiameter[iL_I] / 1000 / 2) + (fL_SubstrateThickness * DINT_TO_REAL(nL_NeutralFibreFactor) / 100)) * 2 * PI * 1_000_000 / cEncoderImpU;
 
   // Encoder source
-  fbVencoder[iL_I].bI_Simulate   := bSimEncoder;
+  fbVencoder[iL_I].bI_Simulate   := bSimPosition;
   fbVencoder[iL_I].fI_SetSpeed   := LREAL_TO_REAL(fSimSpeed);
   fbVencoder[iL_I].bI_Reset      := bL_ResetPosition[iL_I];
   fbVencoder[iL_I].fI_Resolution := 1 / fL_ResolutionEncoder[iL_I];
   fbVencoder[iL_I]();     // simulation encoder (position only, not hw latch)
   IF bL_PmPrintEnabled[iL_I] (*AND bL_PrintEnabledSync[iL_I]*) THEN 
-    lL_EncPulse[iL_I] := SEL(bSimEncoder, lIKp_EncPulse[iL_I], fbVencoder[iL_I].lO_VEncoderPulse); // avoid spurious encoder pulses if module is not active (security)
+    lL_EncPulse[iL_I] := SEL(bSimPosition, lIKp_EncPulse[iL_I], fbVencoder[iL_I].lO_VEncoderPulse); // avoid spurious encoder pulses if module is not active (security)
   END_IF 
   // - positions, speed ---------------------------------------------
   (*Reference Master (Used in Endless Mode with drift compensation)*)
@@ -512,15 +515,19 @@ FOR iL_I := 1 TO iCPr_NB_PM DO
   IF bL_Manu_StartTrigger[iL_I] THEN
     nL_X0[iL_I]           := Fb_Ph_Master[iL_I].lO_Master_Position;
 	END_IF
-  (*apply SpeedCompensation and GeneralShift*)
-  nL_X0_Comp[iL_I] := nL_X0[iL_I]
-                    //- FC_REAL_TO_DINT(fL_SpeedComp[iL_I] * (1 / (0.0254 / (iL_ResolutionSubPx[ePr_PU_UNIT_1] * iL_ResolutionPhPx[ePr_PU_UNIT_1]))))
-                      - FC_LREAL_TO_DINT(fL_SpeedComp[iL_I] * (1 / (0.0254 / (iL_ResolutionSubPx[ePr_PU_UNIT_1] * fL_ResolutionPhPxDriftContr[iL_I]))))
-                      - FC_CONV_M_TO_SUBPX( DINT_TO_LREAL(sAdsPrintModule[iL_I].sI_GeneralShiftX.lI_Val) / 1_000_000
-                                           //, iL_ResolutionPhPx [ePr_PU_UNIT_1]
-                                             , TO_LREAL(fL_ResolutionPhPxDriftContr[iL_I])
-                                             , iL_ResolutionSubPx[ePr_PU_UNIT_1]);
   
+  (*apply SpeedCompensation and GeneralShift*)
+  IF iL_ResolutionSubPx[1] <> 0 AND fL_ResolutionPhPxDriftContr[iL_I] <> 0 THEN 
+    nL_X0_Comp[iL_I] := nL_X0[iL_I]
+                      //- FC_REAL_TO_DINT(fL_SpeedComp[iL_I] * (1 / (0.0254 / (iL_ResolutionSubPx[ePr_PU_UNIT_1] * iL_ResolutionPhPx[ePr_PU_UNIT_1]))))
+                        - FC_LREAL_TO_DINT(fL_SpeedComp[iL_I] * (1 / (0.0254 / (iL_ResolutionSubPx[ePr_PU_UNIT_1] * fL_ResolutionPhPxDriftContr[iL_I]))))
+                        - FC_CONV_M_TO_SUBPX( DINT_TO_LREAL(sAdsPrintModule[iL_I].sI_GeneralShiftX.lI_Val) / 1_000_000
+                                             //, iL_ResolutionPhPx [ePr_PU_UNIT_1]
+                                               , TO_LREAL(fL_ResolutionPhPxDriftContr[iL_I])
+                                               , iL_ResolutionSubPx[ePr_PU_UNIT_1]);
+  ELSE
+   nL_X0_Comp[iL_I] := nL_X0[iL_I];
+	END_IF
   // Compensations (Dift) -----------------------
   (*Register Control*)
   fB_DriftControl[iL_I].bI_Reset                :=    bL_ResetPosition[iL_I]
@@ -785,26 +792,6 @@ bO_TotalWcState :=    bI_EncoderWcState[1]
 (*--- END: Profiling ---*)
 (*======================================================*)
 
-(*======================================================*)
-(*--- START: Manual Spitting---*)
-	(*inputs controlled only by VISU*)
-	fb_Spit();
-	FOR lCtr := 1 TO iCPr_NB_PC DO
-		bL_Spit_CmdData[lCtr] := fb_Spit.bO_Spit_CmdData;
-		bL_Spit_CmdFire[lCtr] := fb_Spit.bO_Spit_CmdFire;
-	END_FOR
-
-(*	(*update valued in CoE writer*)
-	FOR iL_Counter := 1 TO iCPr_NB_PC DO
-		PRG_SERVICE.sL_Spit_Conf[iL_Counter] := fb_Spit.sI_Spit;
-	END_FOR
-
-	(*set write trigger from here*)
-	PRG_SERVICE.bL_Spit_ConfUpd := fb_Spit.bO_Spit_ConfChanged; *)
-
-(*--- END: Manaual spitting ---*)
-(*======================================================*)
-
 
 (*======================================================*)
 (*--- START: Messaging ---*)
@@ -1063,7 +1050,7 @@ FOR lCtr := 1 TO iCPr_NB_PM DO
   sAdsPrintModule[lCtr].sI_GeneralShiftY.lC_Max     := sC_Config_P.lL_PU_GENERALSHIFT_Y_SET_MAX;
 
   fbPrintModule[lCtr].init( nIdx     := TO_UDINT(lCtr)
-                          , pAds     := ADR(sAdsPrintModule[lCtr])
+                          , pAdsPm   := ADR(sAdsPrintModule[lCtr])
                           , nBlockId := ePr_BLK_PM);
   
 	(*-- FB --*)
@@ -1378,10 +1365,10 @@ fb_Msg[iC_MSG_4_FOE_HIBFW_ERR].iI_MsgNumber      := eCPr_FOE_HIBFW_DL_ERR;
 
 
 // Inspection system
-fbInspectionSystemTrigger.Init(nResolution := UDINT_TO_INT(nC_PrintResolution * nC_SubPixelResolution), bUsePositionTrigger := FALSE);
+fbInspectionSystemTrigger.Init(nResolution := nC_PrintResolution * nC_SubPixelResolution, bUsePositionTrigger := FALSE);
 
 // Neutral fibre calculation with additional mark sensors
-fbNeutralFibreDetermine.Init(nResolution := UDINT_TO_INT(nC_PrintResolution * nC_SubPixelResolution));
+fbNeutralFibreDetermine.Init(nResolution := nC_PrintResolution * nC_SubPixelResolution);
 
 
 (*************************************************************************************************)
@@ -1688,24 +1675,17 @@ fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted 
       </Implementation>
     </Action>
     <LineIds Name="PRG_PRINT">
-      <LineId Id="69998" Count="77" />
-      <LineId Id="70077" Count="13" />
-      <LineId Id="70092" Count="86" />
-      <LineId Id="70180" Count="42" />
-      <LineId Id="70224" Count="237" />
-      <LineId Id="70475" Count="0" />
-      <LineId Id="70477" Count="1" />
-      <LineId Id="70480" Count="1" />
-      <LineId Id="70476" Count="0" />
-      <LineId Id="70474" Count="0" />
-      <LineId Id="70473" Count="0" />
-      <LineId Id="70462" Count="8" />
+      <LineId Id="71671" Count="12" />
+      <LineId Id="72152" Count="0" />
+      <LineId Id="72154" Count="0" />
+      <LineId Id="72153" Count="0" />
+      <LineId Id="72155" Count="1" />
+      <LineId Id="71684" Count="467" />
       <LineId Id="45822" Count="0" />
     </LineIds>
     <LineIds Name="PRG_PRINT.Control">
       <LineId Id="99" Count="3" />
       <LineId Id="98" Count="0" />
-      <LineId Id="59" Count="19" />
       <LineId Id="121" Count="0" />
       <LineId Id="104" Count="1" />
       <LineId Id="126" Count="0" />

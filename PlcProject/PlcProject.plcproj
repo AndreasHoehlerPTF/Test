@@ -37,13 +37,16 @@ Fribourg/Switzerland (2017)</Description>
     </Folder>
     <Folder Include="POUs\Products" />
     <Folder Include="POUs\Products\InkCirculation" />
-    <Folder Include="POUs\Products\CleaningStation" />
+    <Folder Include="POUs\Products\Machine" />
+    <Folder Include="POUs\Products\Machine\CleaningStation" />
+    <Folder Include="POUs\Products\Dmax" />
     <Folder Include="POUs\Products\Print_Weu" />
     <Folder Include="POUs\Products\Print_Weu\UV_LED_Modul" />
     <Folder Include="POUs\Projects" />
     <Folder Include="POUs\Projects\InkSystem" />
     <Folder Include="POUs\Projects\Machine" />
     <Folder Include="POUs\Projects\Print" />
+    <Folder Include="POUs\Projects\Print\_Test" />
     <Folder Include="POUs\Projects\System" />
     <Folder Include="Project Information" />
     <Folder Include="Version" />
@@ -101,17 +104,13 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\CheckPointer.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\CleaningStation\FB_CleaningMotorAxisCH.TcPOU">
+    <Compile Include="POUs\Products\Dmax\FB_PrintPositionDmax.TcPOU">
       <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
     </Compile>
-    <Compile Include="POUs\Products\CleaningStation\FB_CleaningMotorAxisCU.TcPOU">
+    <Compile Include="POUs\Products\Dmax\F_EncoderSpeedComp.TcPOU">
       <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\CleaningStation\FB_CleaningMotorAxisPU.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\CleaningStation\FB_Cleaning_ValvePump.TcPOU">
-      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
     </Compile>
     <Compile Include="POUs\Products\FB_InspectionSystemTrigger.TcPOU">
       <SubType>Code</SubType>
@@ -123,15 +122,8 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Products\FB_DRIFTCONTROL.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\FB_ExhaustSystemPrint.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\Products\FB_HWLATCH.TcPOU">
       <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\FB_NeutralFibreDetermine.TcPOU">
-      <SubType>Code</SubType>
-      <LinkAlways>true</LinkAlways>
     </Compile>
     <Compile Include="POUs\Products\FB_ModuleSynchronisation.TcPOU">
       <SubType>Code</SubType>
@@ -140,9 +132,6 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\FB_MOTION_TO_INKSYSTEM_IF.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\FB_WeuPowerControl.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\FB_PurgeControllerSequence.TcPOU">
@@ -158,6 +147,24 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Products\InkCirculation\_VISU_InkCirculation.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Machine\CleaningStation\FB_CleaningMotorAxisCH.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Machine\CleaningStation\FB_CleaningMotorAxisCU.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Machine\CleaningStation\FB_CleaningMotorAxisPU.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Machine\CleaningStation\FB_Cleaning_ValvePump.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Machine\FB_ExhaustSystemPrint.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Machine\FB_WeuPowerControl.TcPOU">
+      <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\E_PosDomain.TcTLEO">
       <SubType>Code</SubType>
@@ -178,6 +185,10 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
+    <Compile Include="POUs\Products\Print_Weu\FB_NeutralFibreDetermine.TcPOU">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
     <Compile Include="POUs\Products\Print_Weu\FB_Pm_WEU.TcPOU">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
@@ -189,13 +200,6 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
       <ExcludeFromBuild>true</ExcludeFromBuild>
-    </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_PrintPositionWeu.TcPOU">
-      <SubType>Code</SubType>
-      <ExcludeFromBuild>true</ExcludeFromBuild>
-    </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_PrintProfiler.TcPOU">
-      <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\FB_StartPositionDummy.TcPOU">
       <SubType>Code</SubType>
@@ -249,13 +253,13 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Projects\Machine\PRG_MACHINE.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Projects\Print\FB_PrgPrint_test.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\Projects\Print\PRG_PRINT.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Projects\Print\PRG_TEST.TcPOU">
+    <Compile Include="POUs\Projects\Print\_Test\FB_PrgPrint_test.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Projects\Print\_Test\PRG_TEST.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Projects\System\PRG_SYSTEM.TcPOU">
@@ -595,23 +599,6 @@ Fribourg/Switzerland (2017)</Description>
     </PlaceholderResolution>
   </ItemGroup>
   <ItemGroup>
-    <SubObject Include="FB_PrintPositionWeu.bSimEnable" />
-    <SubObject Include="FB_PrintPositionDmax.bSimEnable" />
-    <SubObject Include="FB_PrintPositionWeu.bSimEnable.Get" />
-    <SubObject Include="FB_PrintPositionDmax.bSimEnable.Get" />
-    <SubObject Include="FB_PrintPositionWeu.bSimEnable.Set" />
-    <SubObject Include="FB_PrintPositionDmax.bSimEnable.Set" />
-    <SubObject Include="FB_PrintPositionWeu.getPosition" />
-    <SubObject Include="FB_PrintPositionDmax.getPosition" />
-    <SubObject Include="FB_PrintPositionWeu.getSpeed" />
-    <SubObject Include="FB_PrintPositionWeu.Init" />
-    <SubObject Include="FB_PrintPositionWeu.reset" />
-    <SubObject Include="FB_PrintPositionWeu.SimEnter" />
-    <SubObject Include="FB_PrintPositionDmax.SimEnter" />
-    <SubObject Include="FB_PrintPositionWeu.SimExit" />
-    <SubObject Include="FB_PrintPositionDmax.SimExit" />
-    <SubObject Include="FB_PrintPositionWeu.SimUpdate" />
-    <SubObject Include="FB_PrintPositionDmax.SimUpdate" />
     <SubObject Include="FB_WorkerWeu_Print.aPaState" />
     <SubObject Include="FB_WorkerWeu_Print.aPaState.Get" />
     <SubObject Include="FB_WorkerWeu_Print.Attach" />
