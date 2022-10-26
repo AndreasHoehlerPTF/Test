@@ -394,8 +394,6 @@ END_IF
 (* --------------------------------------------------------------------------------------------------------------- *)
 (* Execute module                                                                                                  *)
 (* --------------------------------------------------------------------------------------------------------------- *)
-(*Dummy read unusd inputs*)
-
 
 (* Call ACTIONS *)
 (*************************************************************************************************)
@@ -1097,7 +1095,8 @@ bO_TotalWcState := FALSE;
 
 (********************************* END OF PRG ****************************************************)]]></ST>
     </Implementation>
-    <Action Name="Init" Id="{f71dbef1-9bad-434d-a8b1-1cc85b784922}">
+    <Method Name="Init" Id="{87daa508-2997-4fbc-84c2-1c801f6329dd}">
+      <Declaration><![CDATA[METHOD Init : BOOL]]></Declaration>
       <Implementation>
         <ST><![CDATA[(* -- System & Module setup ---------------------------------------------------------------------*)
 ISystemBase := PRG_SYSTEMBASE.getSystemBaseInterface();
@@ -1129,44 +1128,6 @@ initMsg();
 (*Function Blocks Init*)
 (*************************************************************************************************)
 (*Cleaning station*)
-//Link reference to machine base
-//X: clean unit
-//Y: clean head
-//Z: print unit
-FOR iL_Counter := 1 TO iCMa_NB_Cp DO
-  fb_CleanProcess     [iL_Counter].I_MachineStatus := fb_Machine;
-  fb_CleaningCU       [iL_Counter].I_MachineStatus := fb_Machine;
-  fb_CleaningPU       [iL_Counter].I_MachineStatus := fb_Machine;
-  fb_CleaningCH       [iL_Counter].I_MachineStatus := fb_Machine;
-  fb_CleaningValvePump[iL_Counter].I_MachineStatus := fb_Machine;
-  
-  //Init blocks
-  fb_CleanProcess[iL_Counter].pC_MsgInterface := ADR(sADS_CleanProcess[iL_Counter].sO_Message);
-  fb_CleanProcess[iL_Counter].iC_BlockId      := eMa_BLK_CLEANPROC;
-  
-  fb_CleanProcess     [iL_Counter].mInit();
-  fb_CleaningCU       [iL_Counter].mInit();
-  fb_CleaningPU       [iL_Counter].mInit();
-  fb_CleaningCH       [iL_Counter].mInit();
-  fb_CleaningValvePump[iL_Counter].mInit();
-  
-  //Register cleaning devices
-  fb_CleanProcess[iL_Counter].mRegisterDevice(fb_CleaningCU[iL_Counter]);
-  fb_CleanProcess[iL_Counter].mRegisterDevice(fb_CleaningPU[iL_Counter]);
-  fb_CleanProcess[iL_Counter].mRegisterDevice(fb_CleaningCH[iL_Counter]);
-  fb_CleanProcess[iL_Counter].mRegisterDevice(fb_CleaningValvePump[iL_Counter]);
-
-  fb_MotionInterlock[iL_Counter].fCCU_SafePosition[1]      := 0.005;
-  fb_MotionInterlock[iL_Counter].fCCU_SafePosition[2]      := 0.584;
-  fb_MotionInterlock[iL_Counter].fCCU_SafePosition[3]      := 0.586;
-  fb_MotionInterlock[iL_Counter].fCPU_SafePosition[1]      := 0.160;
-  fb_MotionInterlock[iL_Counter].fCPU_SafePosition[2]      := 0.165;
-  fb_MotionInterlock[iL_Counter].fCCU_CleaningPosition     := 0.584;
-  fb_MotionInterlock[iL_Counter].fCCU_Tolerance            := 0.002;
-  fb_MotionInterlock[iL_Counter].fCPU_Tolerance            := 0.0005;
-END_FOR;
-
-
 (*Module 1*)
 sADS_CleanProcess[1].aO_Name                  := 'Clean Process M2';
 sADS_CleanProcess[1].bO_AxisProcessMovingVisible := FALSE;
@@ -1254,6 +1215,42 @@ fb_CleaningPU[2].fB_Axis.fI_EncoderScaling    := 1048576			(*65536*);
 sADS_CleanAxis[8].sO_AxisPosition.fC_Min      := 0;     (*Dummy*)
 sADS_CleanAxis[8].sO_AxisPosition.fC_Max      := 1000;  (*Dummy*)
 
+//Link reference to machine base
+//X: clean unit
+//Y: clean head
+//Z: print unit
+FOR iL_Counter := 1 TO iCMa_NB_Cp DO
+  fb_CleanProcess     [iL_Counter].I_MachineStatus := fb_Machine;
+  fb_CleaningCU       [iL_Counter].I_MachineStatus := fb_Machine;
+  fb_CleaningPU       [iL_Counter].I_MachineStatus := fb_Machine;
+  fb_CleaningCH       [iL_Counter].I_MachineStatus := fb_Machine;
+  fb_CleaningValvePump[iL_Counter].I_MachineStatus := fb_Machine;
+  
+  //Init blocks
+  fb_CleanProcess[iL_Counter].pC_MsgInterface := ADR(sADS_CleanProcess[iL_Counter].sO_Message);
+  fb_CleanProcess[iL_Counter].iC_BlockId      := eMa_BLK_CLEANPROC;
+  
+  fb_CleanProcess     [iL_Counter].mInit();
+  fb_CleaningCU       [iL_Counter].mInit();
+  fb_CleaningPU       [iL_Counter].mInit();
+  fb_CleaningCH       [iL_Counter].mInit();
+  fb_CleaningValvePump[iL_Counter].mInit();
+  
+  //Register cleaning devices
+  fb_CleanProcess[iL_Counter].mRegisterDevice(fb_CleaningCU[iL_Counter]);
+  fb_CleanProcess[iL_Counter].mRegisterDevice(fb_CleaningPU[iL_Counter]);
+  fb_CleanProcess[iL_Counter].mRegisterDevice(fb_CleaningCH[iL_Counter]);
+  fb_CleanProcess[iL_Counter].mRegisterDevice(fb_CleaningValvePump[iL_Counter]);
+
+  fb_MotionInterlock[iL_Counter].fCCU_SafePosition[1]      := 0.005;
+  fb_MotionInterlock[iL_Counter].fCCU_SafePosition[2]      := 0.584;
+  fb_MotionInterlock[iL_Counter].fCCU_SafePosition[3]      := 0.586;
+  fb_MotionInterlock[iL_Counter].fCPU_SafePosition[1]      := 0.160;
+  fb_MotionInterlock[iL_Counter].fCPU_SafePosition[2]      := 0.165;
+  fb_MotionInterlock[iL_Counter].fCCU_CleaningPosition     := 0.584;
+  fb_MotionInterlock[iL_Counter].fCCU_Tolerance            := 0.002;
+  fb_MotionInterlock[iL_Counter].fCPU_Tolerance            := 0.0005;
+END_FOR;
 
 (* -- Mapping -----------------------------------------------------------------------------------*)
 Mapping();
@@ -1277,13 +1274,12 @@ RemVar();
 bO_InitOk :=  TRUE;
 ]]></ST>
       </Implementation>
-    </Action>
+    </Method>
     <Method Name="initMsg" Id="{54fbfa43-574e-4fa3-8f94-35924b949982}">
       <Declaration><![CDATA[METHOD PRIVATE initMsg
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[
-
 (*Machine messaging*)
 sL_MsgConfigMachine[1].bI_Enable                  := TRUE;
 sL_MsgConfigMachine[1].pI_FbMsgHandler            := ADR(fb_MachineMsgHandler[1]);
@@ -1436,7 +1432,8 @@ fb_CleaningPU[2].fI_PositionPrint   := 1;
     </Method>
     <LineIds Name="PRG_MACHINE">
       <LineId Id="83840" Count="4" />
-      <LineId Id="83846" Count="32" />
+      <LineId Id="83846" Count="5" />
+      <LineId Id="83854" Count="24" />
       <LineId Id="85877" Count="2" />
       <LineId Id="83879" Count="0" />
       <LineId Id="85880" Count="0" />
@@ -1491,27 +1488,11 @@ fb_CleaningPU[2].fI_PositionPrint   := 1;
       <LineId Id="75881" Count="0" />
     </LineIds>
     <LineIds Name="PRG_MACHINE.Init">
-      <LineId Id="986" Count="0" />
-      <LineId Id="802" Count="6" />
-      <LineId Id="812" Count="3" />
-      <LineId Id="819" Count="2" />
-      <LineId Id="988" Count="0" />
-      <LineId Id="825" Count="4" />
-      <LineId Id="984" Count="0" />
-      <LineId Id="983" Count="0" />
-      <LineId Id="844" Count="0" />
-      <LineId Id="990" Count="0" />
-      <LineId Id="845" Count="128" />
-      <LineId Id="1003" Count="0" />
-      <LineId Id="974" Count="2" />
-      <LineId Id="991" Count="0" />
-      <LineId Id="993" Count="9" />
-      <LineId Id="992" Count="0" />
-      <LineId Id="977" Count="5" />
-      <LineId Id="1" Count="0" />
+      <LineId Id="6" Count="173" />
+      <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="PRG_MACHINE.initMsg">
-      <LineId Id="6" Count="45" />
+      <LineId Id="7" Count="44" />
       <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="PRG_MACHINE.Mapping">

@@ -14,49 +14,31 @@
 (*    Main functions: register the module blocks, ADS block generation, ADS module mapping.      *)
 (*                                                                                </description> *)
 (*************************************************************************************************)
-
 VAR
+  bL_InitOK                  : BOOL := FALSE;
+  
   sC_Ads_Info                : ST_ADS_INFO;
   sC_Ads_System              : ST_ADS_SYSTEM;
-  ISystemBase                : I_SystemBase;     // reference to system base
+  ISystemBase                : I_SystemBase;                // reference to system base
 
-  bL_InitOK                  : BOOL := FALSE;
-  iL_Ctr                     : INT;
-  
-  sI_Modules                 : ARRAY[1..4] OF ST_MODULE_DEFINITION;
-  iL_NumOfModules            : INT := 0;
-
-  nMsgResetRequests          : UINT;
-//	bL_MessageReset            : BOOL;
-//	bL_MessageResetPart1       : BOOL;
-//	bL_MessageResetPart2       : BOOL;
-  fb_RTrigMsgResetRequest    : R_TRIG;                      (*Rising edge of message reset request*)
-//  fb_TonMsgResetRequest1     : TON;                         (*Timeout for message reset request*)
-//  fb_TonMsgResetRequest2     : TON;                         (*Timeout for message reset request*)
-
-  stProgramVersion           : ST_LibVersion;               (*version information of project from TwinCAT dialog entry*)
+  stProgramVersion           : ST_LibVersion;               // version information of project from TwinCAT dialog entry
   aCurrentDateTime           : STRING;
-
-  (*Recipe read/write*)
-  bL_CheckRecipeDirDone      : BOOL := FALSE;               (*Check if recipe directory exists.*)
-  aL_RecipePath              : STRING[255] := '';           (*Path of recipe*)
-  fb_CreateRecipeDir         : FB_CreateDir;                (*Create directory for recipe*)
-END_VAR]]></Declaration>
+  
+  // Message control
+  nMsgResetRequests          : UINT;
+  fb_RTrigMsgResetRequest    : R_TRIG;
+END_VAR
+]]></Declaration>
     <Implementation>
-      <ST><![CDATA[(*************************************************************************************************)
-(*Call init*)
-IF NOT bL_InitOK THEN
-  Init();
-END_IF;
+      <ST><![CDATA[// Init
+IF NOT bL_InitOK THEN Init(); END_IF;
 
-
-(*Infos from other tasks*)
-
-fb_RTrigMsgResetRequest(CLK := PRG_MACHINE.IbEAP_MessageReset);
-
-(*Some errors in the PLC needs to reset twice to clear the error completely.*)
-(*Message reset from Gallus will be send twice to the PUC.*)
+(* Message control
+  Some errors in the PLC needs TO reset twice TO clear the error completely.
+  Message reset from Gallus will be send twice to the PUC.
+*)
 {warning 'TODO: test if msg reset still works'}
+fb_RTrigMsgResetRequest(CLK := PRG_MACHINE.IbEAP_MessageReset);
 IF fb_RTrigMsgResetRequest.Q THEN nMsgResetRequests := 2; END_IF
 IF nMsgResetRequests > 0 THEN
   IF NOT PRG_SYSTEMBASE.resetPucMessages() THEN
@@ -71,8 +53,7 @@ aCurrentDateTime := F_Concat3(F_TimeGetDate(), ' ', F_TimeGetTime());
 (*Call system base*)
 PRG_SYSTEMBASE();
 PRG_MACHINE.updateSleepLock(); // must be called after SystemBase, to overwrite CanEx
-
-(********************************* END OF PRG ****************************************************)]]></ST>
+]]></ST>
     </Implementation>
     <Action Name="Init" Id="{04362747-00ea-4552-b3f9-e147026f4bfa}">
       <Implementation>
@@ -136,16 +117,17 @@ bL_InitOK := TRUE;]]></ST>
       </Implementation>
     </Action>
     <LineIds Name="PRG_SYSTEM">
-      <LineId Id="928" Count="0" />
-      <LineId Id="930" Count="0" />
-      <LineId Id="1028" Count="2" />
-      <LineId Id="932" Count="0" />
-      <LineId Id="934" Count="0" />
-      <LineId Id="1103" Count="5" />
-      <LineId Id="1231" Count="0" />
+      <LineId Id="1028" Count="0" />
+      <LineId Id="1322" Count="0" />
+      <LineId Id="1315" Count="0" />
+      <LineId Id="1104" Count="0" />
+      <LineId Id="1319" Count="0" />
+      <LineId Id="1318" Count="0" />
+      <LineId Id="1320" Count="1" />
+      <LineId Id="1105" Count="0" />
       <LineId Id="1109" Count="0" />
       <LineId Id="1225" Count="1" />
-      <LineId Id="1228" Count="0" />
+      <LineId Id="1313" Count="0" />
       <LineId Id="1230" Count="0" />
       <LineId Id="1229" Count="0" />
       <LineId Id="1227" Count="0" />
@@ -155,7 +137,6 @@ bL_InitOK := TRUE;]]></ST>
       <LineId Id="986" Count="0" />
       <LineId Id="988" Count="0" />
       <LineId Id="1272" Count="0" />
-      <LineId Id="989" Count="0" />
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="PRG_SYSTEM.Init">
