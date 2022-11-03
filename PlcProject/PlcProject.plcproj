@@ -36,10 +36,14 @@ Fribourg/Switzerland (2017)</Description>
       <ObjectProtection>00000000-0000-0000-0000-000000000000</ObjectProtection>
     </Folder>
     <Folder Include="POUs\Products" />
-    <Folder Include="POUs\Products\InkCirculation" />
+    <Folder Include="POUs\Products\Ink\InkCirculation" />
     <Folder Include="POUs\Products\Machine" />
     <Folder Include="POUs\Products\Machine\CleaningStation" />
     <Folder Include="POUs\Products\Dmax" />
+    <Folder Include="POUs\Products\Ink" />
+    <Folder Include="POUs\Products\obsolete">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </Folder>
     <Folder Include="POUs\Products\Print_Weu" />
     <Folder Include="POUs\Products\Print_Weu\UV_LED_Modul" />
     <Folder Include="POUs\Projects" />
@@ -53,7 +57,6 @@ Fribourg/Switzerland (2017)</Description>
     <Folder Include="VISUs">
       <ObjectProtection>00000000-0000-0000-0000-000000000000</ObjectProtection>
     </Folder>
-    <Folder Include="VISUs\Products" />
     <Folder Include="VISUs\Projects" />
     <Folder Include="VISUs\Projects\InkSystem" />
     <Folder Include="VISUs\Projects\Machine" />
@@ -104,7 +107,23 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\CheckPointer.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Products\Dmax\FB_ContainerDefGrid.TcPOU">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="POUs\Products\Dmax\FB_CTManagerDefGrid.TcPOU">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="POUs\Products\Dmax\FB_DropSpeedComp.TcPOU">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
     <Compile Include="POUs\Products\Dmax\FB_PrintPositionDmax.TcPOU">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="POUs\Products\Dmax\FB_StartPositionDummy.TcPOU">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
@@ -112,18 +131,13 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
+    <Compile Include="POUs\Products\Dmax\_VISU_DropSpeedComp_Setup.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
     <Compile Include="POUs\Products\FB_InspectionSystemTrigger.TcPOU">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
-    </Compile>
-    <Compile Include="POUs\Products\FB_CappingCommand.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\FB_DRIFTCONTROL.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\FB_HWLATCH.TcPOU">
-      <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\FB_ModuleSynchronisation.TcPOU">
       <SubType>Code</SubType>
@@ -134,17 +148,13 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Products\FB_MOTION_TO_INKSYSTEM_IF.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\FB_PurgeControllerSequence.TcPOU">
+    <Compile Include="POUs\Products\Ink\FB_PurgeControllerSequence.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\FB_FIFO_DINT.TcPOU">
-      <SubType>Code</SubType>
-      <ExcludeFromBuild>false</ExcludeFromBuild>
-    </Compile>
-    <Compile Include="POUs\Products\InkCirculation\FB_InkCirculation.TcPOU">
+    <Compile Include="POUs\Products\Ink\InkCirculation\FB_InkCirculation.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\InkCirculation\_VISU_InkCirculation.TcVIS">
+    <Compile Include="POUs\Products\Ink\InkCirculation\_VISU_InkCirculation.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -160,30 +170,41 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Products\Machine\CleaningStation\FB_Cleaning_ValvePump.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Products\Machine\FB_CappingCommand.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Products\Machine\FB_ExhaustSystemPrint.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\Machine\FB_WeuPowerControl.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Products\Machine\_VISU_FUSE_CONTROL.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\obsolete\FB_CountWeu.TcPOU">
+      <SubType>Code</SubType>
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </Compile>
+    <Compile Include="POUs\Products\obsolete\FB_DRIFTCONTROL.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\obsolete\FB_FIFO_DINT.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\obsolete\FB_HWLATCH.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\obsolete\FB_StartPositionDummy_HOA.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\obsolete\_VISU_DRIFTCONTROL.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
     <Compile Include="POUs\Products\Print_Weu\E_PosDomain.TcTLEO">
       <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_ContainerWeu.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_CountWeu.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_CTManagerWeu.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_CTManagerView.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_DropSpeedComp.TcPOU">
-      <SubType>Code</SubType>
-      <LinkAlways>true</LinkAlways>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\FB_NeutralFibreDetermine.TcPOU">
       <SubType>Code</SubType>
@@ -201,10 +222,10 @@ Fribourg/Switzerland (2017)</Description>
       <LinkAlways>true</LinkAlways>
       <ExcludeFromBuild>true</ExcludeFromBuild>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_StartPositionDummy.TcPOU">
+    <Compile Include="POUs\Products\Print_Weu\FB_StartPositionWeu.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_START_POS_DETECT_WEU.TcPOU">
+    <Compile Include="POUs\Products\Print_Weu\FB_MarkDetection_Triangle.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\FB_WorkerWeu_Print.TcPOU">
@@ -215,10 +236,20 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
+    <Compile Include="POUs\Products\Print_Weu\ST_MarkDefinition_Triangle.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\ST_ModuleMachineState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Products\Print_Weu\UV_LED_Modul\FB_UvLedModule.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\UV_LED_Modul\_VISU_UvLedModule.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\VISU_PAPER_POS_DETECT.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -234,12 +265,7 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="POUs\Products\VISU_CTFlow.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-      <ExcludeFromBuild>true</ExcludeFromBuild>
-    </Compile>
-    <Compile Include="POUs\Products\_VISU_FUSE_CONTROL.TcVIS">
+    <Compile Include="POUs\Products\VISU_DropSpeedComp_Setup.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -297,18 +323,6 @@ Fribourg/Switzerland (2017)</Description>
     </Compile>
     <Compile Include="VisualizationManager.TcVMO">
       <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="VISUs\Products\VISU_PAPER_POS_DETECT.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
-    <Compile Include="VISUs\Products\VISU_SERVICE.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
-    <Compile Include="VISUs\Products\_VISU_DRIFTCONTROL.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="VISUs\Projects\InkSystem\VISU_ADS_INKSTORAGE_TANK_DVT.TcVIS">
       <SubType>Code</SubType>
@@ -429,6 +443,10 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="VISUs\Projects\System\VISU_RECIPE.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>Visualization Manager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="VISUs\Projects\System\VISU_SERVICE.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="VISUs\Projects\System\VISU_SYSTEM.TcVIS">
       <SubType>Code</SubType>

@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
-  <POU Name="FB_StartPositionDummy" Id="{8c44436b-fdf6-4982-bb45-487571d5b646}" SpecialFunc="None">
+  <POU Name="FB_StartPositionDummy_HOA" Id="{8c44436b-fdf6-4982-bb45-487571d5b646}" SpecialFunc="None">
     <Declaration><![CDATA[(*
   A start position detection function block dummy.
   A dummy implementation to simulate start triggers at desired positions.
 *)
-FUNCTION_BLOCK FB_StartPositionDummy EXTENDS FB_BasePrint IMPLEMENTS I_StartPosDetect, I_PrintStatusClient, I_Simulation
+FUNCTION_BLOCK FB_StartPositionDummy_HOA EXTENDS FB_BasePrint IMPLEMENTS I_StartPosDetect, I_PrintStatusClient, I_Simulation
 VAR_INPUT
   bTrigger              AT%I* : BOOL;       // (INPUT) trigger (rising edge)
   tTrigger_TimeStamp    AT%I* : T_DCTIME64; // (INPUT) rigger timerstamp
@@ -400,7 +400,7 @@ _bSim := FALSE;]]></ST>
         <ST><![CDATA[; // nothing to do]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_StartPositionDummy">
+    <LineIds Name="FB_StartPositionDummy_HOA">
       <LineId Id="1228" Count="0" />
       <LineId Id="1466" Count="4" />
       <LineId Id="1475" Count="0" />
@@ -426,30 +426,30 @@ _bSim := FALSE;]]></ST>
       <LineId Id="1307" Count="18" />
       <LineId Id="39" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.bSimEnable.Get">
+    <LineIds Name="FB_StartPositionDummy_HOA.bSimEnable.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.bSimEnable.Set">
+    <LineIds Name="FB_StartPositionDummy_HOA.bSimEnable.Set">
       <LineId Id="6" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.bStartTrig.Get">
+    <LineIds Name="FB_StartPositionDummy_HOA.bStartTrig.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.bStartTrigDelay.Get">
+    <LineIds Name="FB_StartPositionDummy_HOA.bStartTrigDelay.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.bValid.Get">
+    <LineIds Name="FB_StartPositionDummy_HOA.bValid.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.length_to_time">
+    <LineIds Name="FB_StartPositionDummy_HOA.length_to_time">
       <LineId Id="5" Count="0" />
       <LineId Id="15" Count="0" />
       <LineId Id="14" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.mJobPause">
+    <LineIds Name="FB_StartPositionDummy_HOA.mJobPause">
       <LineId Id="4" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.mJobStart">
+    <LineIds Name="FB_StartPositionDummy_HOA.mJobStart">
       <LineId Id="8" Count="0" />
       <LineId Id="7" Count="0" />
       <LineId Id="9" Count="0" />
@@ -461,33 +461,33 @@ _bSim := FALSE;]]></ST>
       <LineId Id="34" Count="2" />
       <LineId Id="15" Count="1" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.mJobStop">
+    <LineIds Name="FB_StartPositionDummy_HOA.mJobStop">
       <LineId Id="7" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.mProduced">
+    <LineIds Name="FB_StartPositionDummy_HOA.mProduced">
       <LineId Id="8" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.nDelayStartPositionX0.Get">
+    <LineIds Name="FB_StartPositionDummy_HOA.nDelayStartPositionX0.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.nStartPositionX0.Get">
+    <LineIds Name="FB_StartPositionDummy_HOA.nStartPositionX0.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.prodspeed_to_time">
+    <LineIds Name="FB_StartPositionDummy_HOA.prodspeed_to_time">
       <LineId Id="5" Count="0" />
       <LineId Id="13" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.reset">
+    <LineIds Name="FB_StartPositionDummy_HOA.reset">
       <LineId Id="6" Count="0" />
       <LineId Id="5" Count="0" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.SimEnter">
+    <LineIds Name="FB_StartPositionDummy_HOA.SimEnter">
       <LineId Id="4" Count="1" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.SimExit">
+    <LineIds Name="FB_StartPositionDummy_HOA.SimExit">
       <LineId Id="4" Count="1" />
     </LineIds>
-    <LineIds Name="FB_StartPositionDummy.SimUpdate">
+    <LineIds Name="FB_StartPositionDummy_HOA.SimUpdate">
       <LineId Id="4" Count="0" />
     </LineIds>
   </POU>

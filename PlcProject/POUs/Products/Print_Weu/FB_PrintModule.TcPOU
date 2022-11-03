@@ -1,67 +1,163 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="FB_PrintModule" Id="{cb9319db-6969-4a30-812e-4f2d714eb08a}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK FB_PrintModule EXTENDS T_NamedBase
+    <Declaration><![CDATA[(*
+  A DVT PrintModule (DEU, DSU, WEU).
+  
+*)
+FUNCTION_BLOCK FB_PrintModule EXTENDS T_NamedBase IMPLEMENTS I_PrintStatusClient
 VAR_INPUT
-  IbPrinterHood           : BOOL;
-  IbServiceDoors          : BOOL;
-  IbExhaustVacuumWarning  : BOOL;
-  IbExhaustVacuumError    : BOOL;
-  IbExhaustFUError        : BOOL;
-  IbDriftControlError     : BOOL;
-  IbDriftControlMissMarks : BOOL;
-  IbSafetyNOk             : BOOL;
+  // encoder input --> directly mapped into FB_PrintPosition 
+  // machine state by reference in init
 END_VAR
 
 VAR
   //config
   _nIdx                   : UDINT;   // for visu selection only (remove later) 
   _pAdsPm                 : POINTER TO ST_ADS_PM; //ads config/status interface
+  _pAdsSa                 : POINTER TO ST_ADS_DVTSHEETALIGNMENT; // sheet alignemnt ads
+  
   _fResolutionPrint       : LREAL;
   _fResolutionSubPx       : LREAL;
-  _fEncoderResolution     : LREAL;   // encoder resolution for EL5101 (input um/pulse)
+  // - references
+  _pModuleMachineState    : POINTER TO ST_ModuleMachineState;   // reference to machine states
   
   // status
-
+  bInit                   : BOOL;   // initialized
+  bJobActive              : BOOL;   // a job is started
+  bReadyForPrinting       : BOOL;   // Module ready for printing
+  bHardwareHold           : BOOL;   // hw hold 
   
   // instances
   fbPrintPosition         : FB_PrintPositionDmax;
-  
+  fbDropSpeedComp         : FB_DropSpeedComp;           // compensation drop ToF in X direction
+  fbStartPosDetect        : FB_StartPositionWeu;
+  fBCTManager             : FB_CTManagerDefGrid;        // deformation grid container manager
+    
   // helper
-  fSpeed, fSpeedMpMin     : LREAL;
-  lPos_SubPx, lPos_Px     : DINT;
+  fMasterSpeed, fSpeedMpMin : LREAL;
+  fPuElevation            : LREAL;
+  nPos_SubPx, nPos_Px     : DINT;
   fPos_um                 : LREAL;
+  rT_ReadForPrinting      : R_TRIG;
+  rT_JobActive            : R_TRIG;
+  tSyncDelay              : TON;
+  bHwSyncCmd              : BOOL;
   
-  
+  sMarkDefinition         : ST_MarkDefinition_Triangle;
+ 
   // messaging
   fb_MsgQueue             : FB_MSG_QUEUE;                 (*Message queue*)
   fb_MsgHandler           : FB_MSG_HANDLER;               (*Message handler*)
   sL_MsgConfig            : ST_MSG_CONFIG;                (*Message config*)
-  fb_Msg                  : ARRAY [1..iC_NUM_MSG] OF FB_MESSAGE;  (*Messages*)
+  fb_Msg                  : ARRAY [1..nC_NumMsg] OF FB_MESSAGE;  (*Messages*)
   
   // view
   
   // testing
   _bSim : BOOL;
 END_VAR
-
+VAR PERSISTENT
+  _fEncoderCylinderDiameter : LREAL := 100.0;      // Encoder cylinder diameter [mm]
+  _fPrintModuleAdjustY      : LREAL; // Module adjust Y [µm]*)
+END_VAR
 VAR CONSTANT
-  (*Messaging*)
-  iC_NUM_MSG              : INT := 8;
+  fC_EncoderImpU          : LREAL := 10_000 * 4;   // Impulses * 4 times sampling [Imp/U]
+  fC_HeadOffsetPlate      : LREAL := 0.000_2;      // Head offset to base plate [m]
+  nC_NumMsg               : INT := 8;
 END_VAR]]></Declaration>
     <Implementation>
-      <ST><![CDATA[
+      <ST><![CDATA[IF NOT bInit THEN RETURN; END_IF
 
+bReadyForPrinting := _pModuleMachineState^.bEngaged AND _pModuleMachineState^.bPrintEnabled AND _pModuleMachineState^.bUnitInPrintPosition;
+rT_ReadForPrinting(CLK:=bReadyForPrinting);
+rT_JobActive(CLK:=bJobActive);
+
+// sync trigger generation
+IF rT_ReadForPrinting.Q OR rT_JobActive.Q  THEN
+  fbPrintPosition.reset();    // reset internals on sync request
+  fbStartPosDetect.Reset();
+  tSyncDelay(IN:=TRUE, PT:=T#2MS);   // a Sync delay to workaround a sync sent to CB while a Start or Prepare Command
+END_IF
+tSyncDelay(Q=>bHwSyncCmd); 
+IF tSyncDelay.Q THEN
+  tSyncDelay(IN:=FALSE);
+END_IF
+
+// positioning 
+// - calculate encoder resolution (fL_SubstrateThickness with factor is added to the raduis because of the neutral fiber of the substrate)
+//   update encoder position based on machine parameter
+fbPrintPosition.fEnoderResolution := ((_fEncoderCylinderDiameter / 1000 / 2) + (_pModuleMachineState^.fSubstrateThickness * DINT_TO_REAL(_pModuleMachineState^.nNeutralFibreFactor) / 100)) * 2 * PI * 1_000_000 / fC_EncoderImpU;
+{warning 'TODO: hide encoder signals while : NOT bReadForPrinting'} 
 fbPrintPosition();
-fSpeed := fbPrintPosition.getSpeed(fSpeedMpMin=>fSpeedMpMin);
-lPos_SubPx := fbPrintPosition.getPosition(nPosition_px=>lPos_Px, fPosition_um=>fPos_um);
+fMasterSpeed := fbPrintPosition.getSpeed(fSpeedMpMin=>fSpeedMpMin);
+nPos_SubPx := fbPrintPosition.getPosition(nPosition_px=>nPos_Px, fPosition_um=>fPos_um);
+
+// Drop speed compensation
+fPuElevation := (_pAdsSa^.sI_HeadGap.fI_Val / 1000) + fC_HeadOffsetPlate - _pModuleMachineState^.fSubstrateThickness;
+fbDropSpeedComp(fMasterSpeed:=fMasterSpeed, fDropTravelDistance:=fPuElevation);
 
 
+// StartPosition detection
+updateMarkDefinition();
+// --> Lateral (y) Offset 
+fbStartPosDetect(
+  bEnable:=_pModuleMachineState^.bTargetSpeedReached AND bProductionSpeedReached,
+  nCurrentPos:=nPos_SubPx,
+  fCurrentSpeed:=fMasterSpeed,
+  fSubstrateLength:=_pModuleMachineState^.fSubstrateLen ODER vom Job je nach missmatch
+);
 
-Messaging();]]></ST>
+// Container handling
+fBCTManager.nPositions[E_PosDomain.master_pos] := nPos_SubPx;
+fBCTManager.nPositions[E_PosDomain.pos_px]     := nPos_Px;
+fBCTManager();
+
+//fBCTManager.CreateCT();
+//fBCTManager.DestroyCT();
+//fBCTManager.getCT(nIdx := 1)
+
+// messaging
+Messaging();
+]]></ST>
     </Implementation>
+    <Folder Name="I_PrintStatusClient" Id="{69116f41-841a-4b41-b4b9-7c93f5f8b542}" />
     <Folder Name="Position" Id="{12a320fc-93c2-445f-a96d-a4cd86407a32}" />
     <Folder Name="Sim" Id="{6de8d664-1ecd-4e7c-9e04-bad56ccd972b}" />
+    <Folder Name="Status" Id="{0e451606-8ae6-4dab-a358-fd42b219dee8}" />
+    <Property Name="bEngaged" Id="{a171e1bc-3b76-4b6d-9e1d-d5d08b596c61}" FolderPath="Status\">
+      <Declaration><![CDATA[PROPERTY bEngaged : BOOL]]></Declaration>
+      <Get Name="Get" Id="{96eabca3-d7cb-45a6-a85f-fa83e749869b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bEngaged := _pModuleMachineState^.bEngaged;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="bMoving" Id="{eda3f871-87e3-46aa-b28f-2fbe8d09d6f1}" FolderPath="Position\">
+      <Declaration><![CDATA[PROPERTY bMoving : BOOL]]></Declaration>
+      <Get Name="Get" Id="{76f0abe9-c1ec-4dc9-918f-26ce0a4812d5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bMoving := fbPrintPosition.bMoving;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="bProductionSpeedReached" Id="{9ff20b5c-5f63-447e-9c18-e9105a23b352}" FolderPath="Position\">
+      <Declaration><![CDATA[PROPERTY bProductionSpeedReached : BOOL]]></Declaration>
+      <Get Name="Get" Id="{6c9aeca4-3cc5-4809-a817-3f50d14b5f9d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bProductionSpeedReached := fbPrintPosition.bSpeedProduction;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
     <Property Name="bSim" Id="{0f604c0e-9e5d-44dd-b620-672fedba6798}" FolderPath="Sim\">
       <Declaration><![CDATA[PROPERTY bSim : BOOL]]></Declaration>
       <Get Name="Get" Id="{eed6e031-ccb0-4834-afd4-be86a2055e6a}">
@@ -81,46 +177,39 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="fEncoderResolution" Id="{7b76ff9d-3552-4e96-b7c1-eeed2dc4e44b}" FolderPath="Position\">
-      <Declaration><![CDATA[(*
-  Encoder resolution.
+    <Property Name="bSyncCmd" Id="{8c9b7208-05bb-4de2-9fc3-012291795493}" FolderPath="Position\">
+      <Declaration><![CDATA[(* 
+  Hardware sync request.
 *)
-PROPERTY fEncoderResolution : LREAL]]></Declaration>
-      <Get Name="Get" Id="{b14c77fd-b6aa-4ec1-9da0-882cd005b6f0}">
+PROPERTY bSyncCmd : BOOL]]></Declaration>
+      <Get Name="Get" Id="{1d5bc1c8-adae-45fe-ab06-7bb1731fc239}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[fEncoderResolution := _fEncoderResolution;]]></ST>
+          <ST><![CDATA[bSyncCmd := bHwSyncCmd;]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{0ff2555c-4a0e-4ef4-be5a-22cbb71c7c0d}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[_fEncoderResolution := fEncoderResolution;]]></ST>
-        </Implementation>
-      </Set>
     </Property>
-    <Method Name="init" Id="{4338a7a6-6293-49ad-a96d-3660b8a91900}">
-      <Declaration><![CDATA[METHOD init : BOOL
+    <Method Name="Init" Id="{4338a7a6-6293-49ad-a96d-3660b8a91900}">
+      <Declaration><![CDATA[METHOD Init : BOOL
 VAR_INPUT
-  nIdx                : UDINT;                // module id
-  pAdsPm              : POINTER TO ST_ADS_PM; // module ads interface
-
+  nIdx                  : UDINT;                // module id
+  pAdsPm                : POINTER TO ST_ADS_PM; // module ads interface
+  pAdsSa                : POINTER TO ST_ADS_DVTSHEETALIGNMENT; // sheet alignemnt ads
   // config print
-  fPrintResolution    : LREAL := 600;         // print(head) resolution in [dpi]
-  fSubPxResolution    : LREAL := 32;          // SubPixel resolution [SubPx], resolution factor (fI_PrintResolution*fI_SubPxResolution=>Output resolution)
-  fTaskCycleTime      : LREAL;                // Task cycle time in [s]
+  fPrintResolution      : LREAL := 600;         // print(head) resolution in [dpi]
+  fSubPxResolution      : LREAL := 32;          // SubPixel resolution [SubPx], resolution factor (fI_PrintResolution*fI_SubPxResolution=>Output resolution)
+  fTaskCycleTime        : LREAL;                // Task cycle time in [s]
+  // references
+  pModuleMachineState   : POINTER TO ST_ModuleMachineState;
 
-  nBlockId            : INT;                  // block id for message
 END_VAR
 VAR CONSTANT
   fC_PROD_MASTER_SPEED                      : LREAL := 5.0;    (*[m/min]*)
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF pAdsPm = 0 THEN
+        <ST><![CDATA[IF pAdsPm = 0 OR pAdsSa = 0 OR pModuleMachineState = 0 THEN
   LogError('Invalid parameter');
   RETURN;
 END_IF
@@ -128,6 +217,7 @@ END_IF
 // save config
 _nIdx := nIdx;
 _pAdsPm := pAdsPm;
+_pAdsSa := pAdsSa;
 _fResolutionPrint := fPrintResolution;
 _fResolutionSubPx := fSubPxResolution;
 
@@ -139,6 +229,11 @@ fbPrintPosition.Init(
   fProdSpeedMpMin:=fC_PROD_MASTER_SPEED
 );
 
+// start position
+fbStartPosDetect.Init( fPrintResolution:=nC_PrintResolution,
+                       fSubPxResolution:=nC_SubPixelResolution,
+                       pMarkDefinition:=ADR(sMarkDefinition)
+);
 
 (*Messaging*)
 sL_MsgConfig.bI_Enable       := TRUE;
@@ -149,36 +244,38 @@ fb_MsgQueue.cI_MaxElement    := 6;
 
 (*Messages*)
 fb_Msg[1].pI_MsgConfig       := ADR(sL_MsgConfig);
-fb_Msg[1].iI_MsgLocation     := nBlockId;
+fb_Msg[1].iI_MsgLocation     := ePr_BLK_PM;
 fb_Msg[1].iI_MsgNumber       := eCMa_COVER_INLET;
 
 fb_Msg[2].pI_MsgConfig       := ADR(sL_MsgConfig);
-fb_Msg[2].iI_MsgLocation     := nBlockId;
+fb_Msg[2].iI_MsgLocation     := ePr_BLK_PM;
 fb_Msg[2].iI_MsgNumber       := eCMa_SECURITY_DOOR_MONITORING;
 
 fb_Msg[3].pI_MsgConfig       := ADR(sL_MsgConfig);
-fb_Msg[3].iI_MsgLocation     := nBlockId;
+fb_Msg[3].iI_MsgLocation     := ePr_BLK_PM;
 fb_Msg[3].iI_MsgNumber       := eCMa_EXHAUST_SYSTEM_WARNING;
 
 fb_Msg[4].pI_MsgConfig       := ADR(sL_MsgConfig);
-fb_Msg[4].iI_MsgLocation     := nBlockId;
+fb_Msg[4].iI_MsgLocation     := ePr_BLK_PM;
 fb_Msg[4].iI_MsgNumber       := eCMa_EXHAUST_SYSTEM_ERROR;
 
 fb_Msg[5].pI_MsgConfig       := ADR(sL_MsgConfig);
-fb_Msg[5].iI_MsgLocation     := nBlockId;
+fb_Msg[5].iI_MsgLocation     := ePr_BLK_PM;
 fb_Msg[5].iI_MsgNumber       := eCMa_EXHAUST_SYSTEM_MALFUNCTION;
 
 fb_Msg[6].pI_MsgConfig       := ADR(sL_MsgConfig);
-fb_Msg[6].iI_MsgLocation     := nBlockId;
+fb_Msg[6].iI_MsgLocation     := ePr_BLK_PM;
 fb_Msg[6].iI_MsgNumber       := eCMa_DRIFT_CONTR_ERROR;
 
 fb_Msg[7].pI_MsgConfig       := ADR(sL_MsgConfig);
-fb_Msg[7].iI_MsgLocation     := nBlockId;
+fb_Msg[7].iI_MsgLocation     := ePr_BLK_PM;
 fb_Msg[7].iI_MsgNumber       := eCMa_AXIS_SAFETY_ACCEPTANCE;
 
 fb_Msg[8].pI_MsgConfig       := ADR(sL_MsgConfig);
-fb_Msg[8].iI_MsgLocation     := nBlockId;
+fb_Msg[8].iI_MsgLocation     := ePr_BLK_PM;
 fb_Msg[8].iI_MsgNumber       := eCPr_SHEET_MARK_DETECTION;
+
+bInit := TRUE;
 ]]></ST>
       </Implementation>
     </Method>
@@ -191,26 +288,81 @@ END_VAR
         <ST><![CDATA[(*Messaging*)
 fb_MsgHandler();
 
-fB_Msg[1](bI_Status := IbPrinterHood);
-fB_Msg[2](bI_Status := IbServiceDoors);
-fB_Msg[3](bI_Status := IbExhaustVacuumWarning);
-fB_Msg[4](bI_Status := IbExhaustVacuumError);
-fB_Msg[5](bI_Status := IbExhaustFUError);
-fB_Msg[6](bI_Status := IbDriftControlError);
-fB_Msg[7](bI_Status := IbSafetyNOk);
-fB_Msg[8](bI_Status := IbDriftControlMissMarks);
+fB_Msg[1](bI_Status := _pModuleMachineState^.bPrinterHood);
+fB_Msg[2](bI_Status := _pModuleMachineState^.bServiceDoors);
+fB_Msg[3](bI_Status := _pModuleMachineState^.bExhaustVacuumWarning);
+fB_Msg[4](bI_Status := _pModuleMachineState^.bExhaustVacuumError);
+fB_Msg[5](bI_Status := _pModuleMachineState^.bExhaustFUError);
+fB_Msg[6](bI_Status := _pModuleMachineState^.bDriftControlError);
+fB_Msg[7](bI_Status := _pModuleMachineState^.bSafetyNOk);
+fB_Msg[8](bI_Status := _pModuleMachineState^.bDriftControlMissMarks);
 
 fb_MsgQueue();
 ]]></ST>
       </Implementation>
     </Method>
+    <Method Name="mJobPause" Id="{887afe17-63bc-4ae9-bb47-91b262d82129}" FolderPath="I_PrintStatusClient\">
+      <Declaration><![CDATA[METHOD mJobPause
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mJobStart" Id="{113944aa-4f4e-400e-92a4-4d59053804f5}" FolderPath="I_PrintStatusClient\">
+      <Declaration><![CDATA[METHOD mJobStart
+VAR_INPUT
+	sJobDef	: CalmarCompPrint.I_JobDefinition;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bJobActive := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mJobStop" Id="{25cf927b-a2bf-4366-ac82-13a7b4acfdb6}" FolderPath="I_PrintStatusClient\">
+      <Declaration><![CDATA[METHOD mJobStop
+VAR_INPUT
+	sStatus	: CalmarCompPrint.I_JobStatus;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bJobActive := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mProduced" Id="{430beb9d-42f5-4cab-972b-9b0f17e309c5}" FolderPath="I_PrintStatusClient\">
+      <Declaration><![CDATA[METHOD mProduced
+VAR_INPUT
+	(* current progress*)
+	sProgress	: CalmarCompPrint.I_JobProgress;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="updateMarkDefinition" Id="{25e8112b-212f-4a0f-a97d-36d6a347daeb}">
+      <Declaration><![CDATA[METHOD PRIVATE updateMarkDefinition]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF _pAdsSa = 0 OR _pModuleMachineState = 0 THEN RETURN; END_IF
+
+sMarkDefinition.bEnabled := _pModuleMachineState^.bMarksExist; // _pAdsSa^.bI_UsePrintMark;
+sMarkDefinition.fHeight := _pAdsSa^.sI_PrintMarkSizeY.fI_Val / 1_000;
+sMarkDefinition.fLength := _pAdsSa^.sI_PrintMarkSizeX.fI_Val / 1_000;
+sMarkDefinition.bInvertedX := _pModuleMachineState^.bMarksInverted;]]></ST>
+      </Implementation>
+    </Method>
     <LineIds Name="FB_PrintModule">
-      <LineId Id="134" Count="1" />
-      <LineId Id="133" Count="0" />
-      <LineId Id="156" Count="1" />
-      <LineId Id="159" Count="1" />
-      <LineId Id="158" Count="0" />
-      <LineId Id="9" Count="0" />
+      <LineId Id="1000" Count="51" />
+      <LineId Id="770" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.bEngaged.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.bMoving.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.bProductionSpeedReached.Get">
+      <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule.bSim.Get">
       <LineId Id="2" Count="0" />
@@ -218,16 +370,14 @@ fb_MsgQueue();
     <LineIds Name="FB_PrintModule.bSim.Set">
       <LineId Id="2" Count="0" />
     </LineIds>
-    <LineIds Name="FB_PrintModule.fEncoderResolution.Get">
-      <LineId Id="2" Count="0" />
+    <LineIds Name="FB_PrintModule.bSyncCmd.Get">
+      <LineId Id="18" Count="0" />
     </LineIds>
-    <LineIds Name="FB_PrintModule.fEncoderResolution.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PrintModule.init">
+    <LineIds Name="FB_PrintModule.Init">
       <LineId Id="104" Count="5" />
       <LineId Id="178" Count="0" />
       <LineId Id="110" Count="0" />
+      <LineId Id="229" Count="0" />
       <LineId Id="176" Count="1" />
       <LineId Id="180" Count="0" />
       <LineId Id="163" Count="0" />
@@ -235,13 +385,35 @@ fb_MsgQueue();
       <LineId Id="164" Count="0" />
       <LineId Id="166" Count="2" />
       <LineId Id="165" Count="0" />
-      <LineId Id="161" Count="0" />
+      <LineId Id="247" Count="0" />
+      <LineId Id="246" Count="0" />
+      <LineId Id="249" Count="2" />
+      <LineId Id="248" Count="0" />
       <LineId Id="111" Count="39" />
+      <LineId Id="198" Count="0" />
+      <LineId Id="197" Count="0" />
       <LineId Id="14" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule.Messaging">
       <LineId Id="6" Count="12" />
       <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.mJobPause">
+      <LineId Id="4" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.mJobStart">
+      <LineId Id="7" Count="0" />
+      <LineId Id="14" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.mJobStop">
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.mProduced">
+      <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.updateMarkDefinition">
+      <LineId Id="9" Count="1" />
+      <LineId Id="5" Count="3" />
     </LineIds>
   </POU>
 </TcPlcObject>

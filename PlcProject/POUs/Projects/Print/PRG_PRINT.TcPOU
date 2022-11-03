@@ -19,15 +19,10 @@
 VAR_INPUT
   (*EL5101*)
   lIKp_EncPulse                       AT%I* : ARRAY [1..iCPr_NB_PM] OF UDINT;       (*current encoder position*)
-  lIKp_EncLatch                       AT%I* : ARRAY [1..iCPr_NB_PM] OF UDINT;       (*last latched postion*)
-  bIKp_LatCVal                        AT%I* : ARRAY [1..iCPr_NB_PM] OF BOOL;        (*C-Latch valid @EL5101*)
   bI_EncoderWcState                   AT%I* : ARRAY [1..iCPr_NB_PM] OF BOOL;        (*EL5101 encoder WcState*)
 END_VAR
 
 VAR_OUTPUT
-  bO_ActivateLatch                    AT%Q* : ARRAY [1..iCPr_NB_PM] OF BOOL;
-  bOKp_EnLatC                         AT%Q* : ARRAY [1..iCPr_NB_PM] OF BOOL;        (*C-Latch enable/reset @EL5101*)
-
   ObPrinterJobLoaded                  AT%Q* : BOOL;  (*Printer job loaded*)
   ObPrinterPrinting                   AT%Q* : BOOL;  (*Printer printing*)
 
@@ -39,6 +34,8 @@ VAR_OUTPUT
 END_VAR
 
 VAR
+  nCtr, nCtr2 : UDINT;
+  
   // ADS interface instances & mapping and responsible FBs
   // -------------------------------------------------------------
   FB_PU                                     : ARRAY [1..iCPr_NB_PU] OF FB_PU;               (*PU - Print Unit*)
@@ -72,6 +69,22 @@ VAR
   pModuleDef                                : POINTER TO FB_ModuleDef;    // Module definition in system
   sC_Config_P                               : ST_CONFIG_P;      // PRG configuration  
 
+  // Module
+  sModuleMachineState : ARRAY[1..iCPr_NB_PM] OF ST_ModuleMachineState;
+  bMasterTrigger : BOOL;
+  fMasterSpeed : LREAL;
+  nMasterPosition : DINT;
+  
+  // PrintManagement
+  //Fb_PaperPosDetect                         : ARRAY [1..iCPr_NB_PM] OF FB_MarkDetection_Triangle;
+  
+  fBCTManagerMain                           : FB_CTManagerDefGrid;
+  fbPm                                      : FB_Pm_WEU;
+  
+  // PU
+  fb_RTrigStopRequestVarnishChange          : R_TRIG;
+  
+  
   (* --- Maintainance variables ---*)
   fbOd                                      : FB_OD;        // CoE object dictionary
   (* - file download - *)
@@ -90,118 +103,76 @@ VAR
   lL_PhActStoragetankAssignmentIndex        : ARRAY[1..iCPr_NB_PH] OF DINT;
   lL_MemPhActStoragetankAssignmentIndex     : ARRAY[1..iCPr_NB_PH] OF DINT;
   
+ (*----- Inspection System -----*)
+  bInspectionTrigger : BOOL;
+  fbInspectionSystemTrigger                 : FB_InspectionSystemTrigger;   // Inspection system trigger 
+  nInspectionSystemMarkIdx                  : INT := 3;
+
+  // Neutral fibre calculation with additional mark sensors
+  fbNeutralFibreDetermine                   : FB_NeutralFibreDetermine;    // Neutral fibre determine 
+  
   (*----- Logging -----*)
   LogPrSetup                                : T_NamedBase;  // just a I_LogSourceMacro implementation (logging PRINT module setup things)
   
-
+  (*----- Messages -----*)
+  fb_Msg                                    : ARRAY [1..iC_NUM_MSG] OF FB_MESSAGE; (*global Module messages*)
+    
+  (* -- Recipe read/write auto-management*)
+  pFbRecipeMngr                             : POINTER TO FB_RECIPE_READ_WRITE;
+  
+  
   
  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  // TO CLEANUP
  // || || || || || || ||
  // V  V  V  V  V  V  V 
-  lCtr, lCtr2                               : DINT;           (*local iteration counter - default*)
-  iL_I, iL_I2                               : INT;            (*instance counter*)
+  //lCtr, lCtr2                               : DINT;           (*local iteration counter - default*)
+  //iL_I, iL_I2                               : INT;            (*instance counter*)
   iCT                                       : I_CT;
-  nTemp                                     : UDINT;
-  nConvError, nConvErr_mem                  : UDINT;
 
   (*Infos from other tasks*)
-  bL_PrintUnitInPrintPosition               : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
-  bL_Engaged                                : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
-  bL_PmPrintEnabled                         : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
-  bL_PrintMarksExist                        : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
-  nL_WebStretchFactor                       : DINT;             (*PRG_MACHINE: web stretch factor*)
-  nL_LateralRegister                        : DINT;             (*PRG_MACHINE: lateral register [µm]*)
-  fL_WebStretchCalculated                   : LREAL;            (*Calculated web stretch factor, removed interface scaling*)
-  nL_Module2ToModule3                       : DINT;             (*PRG_MACHINE: distance between Module 2 and 3 [µm]*)
-  bL_TargetSpeedReached                     : BOOL;             (*PRG_MACHINE: Target speed reached*)
-  nL_NeutralFibreFactor                     : DINT;             (*PRG_MACHINE: neutral fibre factor [%]*)
-  bL_ReceiptMessage                         : BOOL;             (*PRG_MACHINE: fb_MsgQueueMachine[1].bO_ReceiptMessage*)
- 
- 
+  //bL_PrintMarksExist                        : ARRAY [1..iCPr_NB_PM] OF BOOL;             (*PRG_MACHINE*)
 
- (*internal (generic) print variables*)
-  bL_HardwareSync                           : ARRAY [1..iCPr_NB_PM] OF BOOL;
-  bL_ResetPosition                          : ARRAY [1..iCPr_NB_PM] OF BOOL;
-  tL_SyncTriggerDelay                       : ARRAY [1..iCPr_NB_PM] OF TON;
-  fb_RTrigPrintEnabled                      : ARRAY [1..iCPr_NB_PM] OF R_TRIG;
-  bL_PmPrinting                             : ARRAY [1..iCPr_NB_PM] OF BOOL;
 
+  
   (*----- print, offfset and motion variables ------*)
   nYShift_center                            : UDINT;                    // Y-Shift for centering ph in RAM
-  bAxisMovement                             : BOOL;   (*Machine axis ios moving*)
-
-  // Speed Compensation
-  bL_UseSpeedCompensation                   : BOOL := FALSE;
-  fL_DropSpeed                              : REAL := 6;        (*DropSpeed for start compensation*)
-  fL_DropSpeedAddTime                       : REAL := 2.15;  //0.388889; (*DropSpeed compensation, additional dead time [ms]*)
-  fL_SpeedComp                              : ARRAY [1..iCPr_NB_PM] OF REAL;
   // Trigger & Offsets
-  bL_StartTrigger                           : ARRAY [1..iCPr_NB_PM] OF BOOL;       (*Start Trigger for X0*)
-  rT_StartTrigger                           : ARRAY [1..iCPr_NB_PM] OF R_TRIG;
+  //bL_StartTrigger                           : ARRAY [1..iCPr_NB_PM] OF BOOL;       (*Start Trigger for X0*)
+  //rT_StartTrigger                           : ARRAY [1..iCPr_NB_PM] OF R_TRIG;
   nL_X0                                     : ARRAY [1..iCPr_NB_PM] OF DINT;       (*detected X0 position*)
   nL_X0_Comp                                : ARRAY [1..iCPr_NB_PM] OF DINT;       (*detected & adapted X0 start position*)
   nL_XS                                     : ARRAY [1..iCPr_NB_PG] OF DINT;       (*Shifted position of start print in pulse*)
   // Some print parameter
-  fL_PrintUnitElevation                     : ARRAY [1..iCPr_NB_PM] OF REAL;       (*print unit elevation [m]*)
-  fL_HeadGap                                : ARRAY [1..iCPr_NB_PM] OF REAL := [0.001_5, 0.001_5];   (*Head base plate gap to table [m]*)
-  fL_HeadOffsetPlate                        : REAL := 0.000_2;   (*Head offset to base plate [m]*)
-  fL_SubstrateThickness                     : REAL := 0.000_1;   (*Substrate thickness [m]*)
 
-
-
-  //Fb_Ph_Master                              : ARRAY [1..iCPr_NB_PM] OF FB_POSITION_MASTER;
-  //Fb_Ref_Master                             : ARRAY [1..iCPr_NB_PM] OF FB_POSITION_MASTER;
-  //fb_StartHwLatch                           : ARRAY [1..iCPr_NB_PM] OF FB_HWLATCH;
-  Fb_PaperPosDetect                         : ARRAY [1..iCPr_NB_PM] OF FB_START_POS_DETECT_WEU;
-  fB_DriftControl                           : ARRAY [1..iCPr_NB_PM] OF FB_DRIFTCONTROL;
-  bL_DisableDriftControl                    : BOOL;   (*Visu: disable DriftControl*)
   bL_HardwareHold                           : ARRAY [1..iCPr_NB_PM] OF BOOL;   (*suspend/stop worker*)
-  fL_SpeedInMpMin                           : ARRAY [1..iCPr_NB_PM] OF LREAL;  (*current speed in [m/min]*)
-  bL_MachineStopped                         : ARRAY [1..iCPr_NB_PM] OF BOOL;   (*is machine stopped*)
-  bL_MachineUpper5MpMin                     : ARRAY [1..iCPr_NB_PM] OF BOOL;   (*machine reached production speed*)
-  //bL_StartTrig                              : BOOL;
-	//nL_OffsetX0                               : DINT;
-  //fb_RTrigJobStart                          : R_TRIG;
-  //bL_JobStarted                             : BOOL;
 
   (*VISU show control*)
   bL_Manu_StartTrigger                      : ARRAY [1..iCPr_NB_PM] OF BOOL;   (*Manual StartTrigger*)
-  bL_EnableEncTrig                          : BOOL;                            (*Enable encoder C channel trigger signal [bool]*)
-  lL_EncPulse                               : ARRAY [1..iCPr_NB_PM] OF UDINT;  (*Position reference pulse count in [count]*)
-
+  
   (*-- configs*)
   bL_InitRemVar                             : BOOL := TRUE;
 
-  fL_ResolutionEncoder                      : ARRAY [1..iCPr_NB_PM] OF LREAL;  (*resolution of encoder [um/increment]*)
-  fL_ResolutionEncoderDriftContr            : ARRAY [1..iCPr_NB_PM] OF LREAL;  (*resolution of encoder with drift contr correction [um/increment]*)
-  fL_ResolutionPhPxDriftContr               : ARRAY [1..iCPr_NB_PM] OF LREAL;  (*resolution of encoder with drift contr correction [um/increment]*)
-  iL_ResolutionPhPx                         : ARRAY [1..iCPr_NB_PU] OF INT;    (*printhead pixel resolution [dpi]*)
-  iL_ResolutionSubPx                        : ARRAY [1..iCPr_NB_PU] OF INT;    (*subpixel pulse resolution [pulse/px]*)
+  //fL_ResolutionEncoder                      : ARRAY [1..iCPr_NB_PM] OF LREAL;  (*resolution of encoder [um/increment]*)
+  //fL_ResolutionPhPxDriftContr               : ARRAY [1..iCPr_NB_PM] OF LREAL;  (*resolution of encoder with drift contr correction [um/increment]*)
+  //iL_ResolutionPhPx                         : ARRAY [1..iCPr_NB_PU] OF INT;    (*printhead pixel resolution [dpi]*)
+  //iL_ResolutionSubPx                        : ARRAY [1..iCPr_NB_PU] OF INT;    (*subpixel pulse resolution [pulse/px]*)
 //  fL_Pg_xOffset                             : ARRAY [1..iCPr_NB_PG] OF LREAL;  (*static offset of print group from start detection [m]*)
 //  fL_Calc_Pg_xOffset                        : ARRAY [1..iCPr_NB_PG] OF LREAL;  (*helper variable, calculated offset of PG [m]*)
   //fL_Pg_vStartShiftFactor                   : ARRAY [1..iCPr_NB_PU] OF LREAL;  (*shift of virtual start signal factor from detection towards print group [s]*)
   //fL_Pg_vStartShiftOffset                   : ARRAY [1..iCPr_NB_PU] OF LREAL;  (*shift of virtual start signal value from detection towards print group [m]*)
   //fL_Pg_vStartShift                         : ARRAY [1..iCPr_NB_PG] OF LREAL;  (*delta distance of virtual start signal shift [m]*)
   //fL_Pg_ShiftPosXScaled                     : ARRAY [1..iCPr_NB_PG] OF LREAL;  (*Shift(offset) X print position scaled with stretch factor [um]*)
-  fL_SubstrateLen                           : ARRAY [1..iCPr_NB_PU] OF REAL;   (*length of substrate [m]*)
+  //fL_SubstrateLen                           : ARRAY [1..iCPr_NB_PU] OF REAL;   (*length of substrate [m]*)
   iL_PuFirstEnabledPc                       : ARRAY [1..iCPr_NB_PU] OF INT;
-  fb_PuCount                                : ARRAY [1..iCPr_NB_PU] OF FB_CountWeu;
 
+
+  
   
 
 
-  fb_RTrigStopRequestVarnishChange          : R_TRIG;
   
-  (* Messaging*)
-  fb_Msg                                    : ARRAY [1..iC_NUM_MSG] OF FB_MESSAGE; (*global Module messages*)
-    
-  (* -- Recipe read/write auto-management*)
-  pFbRecipeMngr                             : POINTER TO FB_RECIPE_READ_WRITE;
-  
-  // PrintManagement
-  fBCTManager                               : ARRAY[1..iCPr_NB_PM] OF FB_CTManagerWeu;
-  fbPm                                      : FB_Pm_WEU;
+
 
   iWorker                                   : I_Worker;
   fbWorkerWeu                               : ARRAY[1..iCPr_NB_PG] OF FB_WorkerWeu_Print;
@@ -218,7 +189,7 @@ VAR
   fSimSpeed                                 : LREAL := 1;   // simulation speed
   bSimPosition                              : BOOL;         // simulate encoder 
 
-  fbStartPositionSimulation                 : FB_StartPositionDummy;
+  fbStartPositionSimulationHOA                 : FB_StartPositionDummy_HOA;
   fbRTrigStartPositionSimulation            : R_TRIG;
   bL_SimMarkStartActive                     : ARRAY [1..iCPr_NB_PM] OF BOOL;   (*start trigger simulation active*)
   bL_SimMarkStartTrigger                    : ARRAY [1..iCPr_NB_PM] OF BOOL;   (*start trigger simulation*)
@@ -227,7 +198,6 @@ VAR
   bL_DisableDelayTriggerDistanceM3          : BOOL;                            (*disable delay for start trigger simulation for module 3*)
   fbRTrigMarkSelectNormal                   : R_TRIG;                          (*inverted marks in case of wrong mirrored prints*)
   fbRTrigMarkSelectInverted                 : R_TRIG;                          (*inverted marks in case of wrong mirrored prints*)
-  _nPrintModuleAdjustY                      : ARRAY [1..iCPr_NB_PM] OF DINT;   (*Module adjust Y [SubPx]*)
   
   (*Visualisations*)
   fb_visu_pu                                : FB_PU_Visu;
@@ -242,13 +212,6 @@ VAR
   nServiceVisuFrameIndex                    : UINT := 0;   // VISU_SERVICE frame selection
   nSelectPmView                             : UDINT := 1;  // visu pm selection
 
-  // Inspection system
-  fbInspectionSystemTrigger                 : FB_InspectionSystemTrigger;   // Inspection system trigger 
-  nInspectionSystemMarkIdx                  : INT := 3;
-
-  // Neutral fibre calculation with additional mark sensors
-  fbNeutralFibreDetermine                   : FB_NeutralFibreDetermine;    // Neutral fibre determine 
-
   (*Debug & Insight*)
   fbPrgPrintTest                            : FB_PrgPrint_test;
   ePrint_LogLevel                           : E_LogSeverity  := E_LogSeverity.Debug;
@@ -257,10 +220,6 @@ END_VAR
 
 VAR PERSISTENT
   lPrintOffsetXs                            : DINT;  (*[SubPx]*)
-
-  lEncoderCylinderDiameter                  : ARRAY [1..iCPr_NB_PM] OF LREAL := [100.0, 100.0];  (*Encoder cylinder diameter [mm]*)
-  nPrintModuleAdjustY                       : ARRAY [1..iCPr_NB_PM] OF DINT  := [0, 0];          (*Module adjust Y [µm]*)
-
   bMarksInverted                            : BOOL;                            (*inverted marks in case of wrong mirrored prints*)
 END_VAR
 
@@ -269,7 +228,7 @@ VAR CONSTANT
 (*************************************************************************************************)
   
 
-  cEncoderImpU                              : LREAL := 10_000 * 4;    (*Impulses * 4 times sampling [Imp/U]*)
+  
     
   iC_yShiftOffset                           : INT := (2048-1280)/2;  (*[px]*)
   iC_yShiftMin                              : INT := 0;              (*[px]*)
@@ -310,141 +269,72 @@ RemVar();           (*Call update remanent data action*)
 Testing();          (*Call test code*)
 Visu();             (*Call visualisation control*)
 
-
-
-FOR iL_I := 1 TO iCPr_NB_PM DO
-  fbPrintModule[i]();
-END_FOR
-
-
-(* <- Infos from other tasks*)
-FOR iL_I := 1 TO iCPr_NB_PM DO
-  bL_PrintUnitInPrintPosition[iL_I] := PRG_MACHINE.fb_CleaningPU[iL_I].pInPosPrint;
-  bL_Engaged[iL_I]                  := PRG_MACHINE.bL_IO_Engaged[iL_I] OR PRG_MACHINE.bL_SimMachineReady;
-  bL_PmPrintEnabled[iL_I]           := (PRG_MACHINE.IbEAP_PrintEnabled[iL_I] AND bL_PrintUnitInPrintPosition[iL_I]) OR PRG_MACHINE.bL_SimMachineReady;
-  bL_PrintMarksExist[iL_I]          := PRG_MACHINE.IbEAP_PrintMarksExist[iL_I];
-  fL_HeadGap[iL_I]                  := sAdsSheetAlignment[ePr_PU_UNIT_1].sI_HeadGap.fI_Val / 1000;
-END_FOR
-fL_SubstrateThickness               := DINT_TO_REAL(PRG_MACHINE.InEAP_SubstrateThickness) / 1_000_000;    (*[µm] => [m]*)
-fL_SubstrateLen[ePr_PU_UNIT_1]      := DINT_TO_REAL(PRG_MACHINE.InEAP_FormatLength) / 1_000_000;    (*[µm] => [m]*) 
-nL_WebStretchFactor                 := PRG_MACHINE.InEAP_WebStretchFactor;
-fL_WebStretchCalculated             := (1.0 - (DINT_TO_LREAL(nL_WebStretchFactor) / 1_000_000));
-nL_LateralRegister                  := PRG_MACHINE.InEAP_LateralRegister;
-nL_Module2ToModule3                 := PRG_MACHINE.InEAP_Module2ToModule3;
-bL_TargetSpeedReached               := PRG_MACHINE.IbEAP_TargetSpeedReached;
-nL_NeutralFibreFactor               := PRG_MACHINE.InEAP_NeutralFibreFactor;
-bL_ReceiptMessage                   := PRG_MACHINE.fb_MsgQueueMachine[1].bO_ReceiptMessage;
-(* -> Infos to other tasks *)
-bAxisMovement := NOT bL_MachineStopped[1];           //fbPrintPosition.bMoving;
-
-
-// HW Sync
-FOR iL_I := 1 TO iCPr_NB_PM DO
-  (*Reset position*)
-  //bL_ResetPosition[iL_I] := fB_PU[ePr_PU_UNIT_1].sO_UnitStatus.bStartStrb;
-  IF bL_ResetPosition[iL_I] THEN tL_SyncTriggerDelay[iL_I].IN := TRUE; END_IF
-  tL_SyncTriggerDelay[iL_I](PT := T#2MS);   // sync must be sent a little later after reset position (not working otherwise)
+// Setup MACHINE information - TODO: handle this in PRG_MACHINE 
+FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PM) DO
+  sModuleMachineState[nCtr].bPrinterHood           := PRG_MACHINE.bIKp_SafetyCoverOK[nCtr];
+  sModuleMachineState[nCtr].bServiceDoors          := PRG_MACHINE.bIKp_SafetyDoorsOK[nCtr];
+  sModuleMachineState[nCtr].bExhaustVacuumWarning  := PRG_MACHINE.fb_ExhaustSystem[nCtr].bO_VacuumWarningLevel;
+  sModuleMachineState[nCtr].bExhaustVacuumError    := PRG_MACHINE.fb_ExhaustSystem[nCtr].bO_VacuumErrorLevel;
+  sModuleMachineState[nCtr].bExhaustFUError        := FALSE; // NOT fb_ExhaustSystem[1].bO_FUReady
+  sModuleMachineState[nCtr].bDriftControlError     := FALSE; // fB_DriftControl[nCtr].bO_SupervisionContrErr OR fB_DriftControl[nCtr].bO_ContrErr;
+  sModuleMachineState[nCtr].bDriftControlMissMarks := FALSE; // fB_DriftControl[nCtr].bO_SupervisionMissMarks;
+  sModuleMachineState[nCtr].bSafetyNOk             := NOT PRG_MACHINE.bL_SafetyOk[nCtr];
   
-  (*Sync*)
-  (*- Sync after freeze Encode position to prevent jetting*)
-  (*- Sync on PU start*)
-  fb_RTrigPrintEnabled[iL_I](CLK := bL_PmPrintEnabled[iL_I]);
-  IF fb_RTrigPrintEnabled[iL_I].Q OR tL_SyncTriggerDelay[iL_I].Q OR sAdsPrintUnit[ePr_PU_UNIT_1].sI_Start.bO_CommandCanEx  (*Reset if job is stopped*)
-  THEN
-    bL_HardwareSync[iL_I] := TRUE;   (*exec sync*)
-  ELSE
-    bL_HardwareSync[iL_I] := FALSE;  (*reset sync*)
-  END_IF;
+  // new
+  sModuleMachineState[nCtr].bUnitInPrintPosition   := PRG_MACHINE.fb_CleaningPU[nCtr].pInPosPrint;
+  sModuleMachineState[nCtr].bEngaged               := PRG_MACHINE.bL_IO_Engaged[nCtr] OR PRG_MACHINE.bL_SimMachineReady;
+  sModuleMachineState[nCtr].bPrintEnabled          := (PRG_MACHINE.IbEAP_PrintEnabled[nCtr] AND PRG_MACHINE.fb_CleaningPU[nCtr].pInPosPrint) OR PRG_MACHINE.bL_SimMachineReady;
+  
+  // other
+  sModuleMachineState[nCtr].fSubstrateThickness       := DINT_TO_REAL(PRG_MACHINE.InEAP_SubstrateThickness) / 1_000_000;    (*[µm] => [m]*) 
+  sModuleMachineState[nCtr].fSubstrateLen             := DINT_TO_REAL(PRG_MACHINE.InEAP_FormatLength) / 1_000_000;    (*[µm] => [m]*) 
+  sModuleMachineState[nCtr].fWebStretchCalculated     := (1.0 - (DINT_TO_LREAL(PRG_MACHINE.InEAP_WebStretchFactor) / 1_000_000));
+  sModuleMachineState[nCtr].nLateralRegister          := PRG_MACHINE.InEAP_LateralRegister;
+  sModuleMachineState[nCtr].nModule2ToModule3         := PRG_MACHINE.InEAP_Module2ToModule3;
+  sModuleMachineState[nCtr].bTargetSpeedReached       := PRG_MACHINE.IbEAP_TargetSpeedReached;
+  sModuleMachineState[nCtr].nNeutralFibreFactor       := PRG_MACHINE.InEAP_NeutralFibreFactor;
+  sModuleMachineState[nCtr].bMarksExist               := PRG_MACHINE.IbEAP_PrintMarksExist[nCtr];
+  sModuleMachineState[nCtr].bMarksInverted            := bMarksInverted;
 
-  IF tL_SyncTriggerDelay[iL_I].Q THEN tL_SyncTriggerDelay[iL_I](IN := FALSE); END_IF
+  fbPrintModule[nCtr]();
 END_FOR
+
+
+bMasterTrigger  := SEL(fbPrintModule[1].bEngaged, fbPrintModule[2].bStart, fbPrintModule[1].bStart);
+fMasterSpeed    := SEL(fbPrintModule[1].bEngaged, fbPrintModule[2].fMasterSpeed, fbPrintModule[1].fMasterSpeed);
+nMasterPosition := SEL(fbPrintModule[1].bEngaged, fbPrintModule[2].nPos_SubPx, fbPrintModule[1].nPos_SubPx);
+
 
 
 // Position(s) -------------------------------
 
-(* -- PM PrintModule*)
-FOR iL_I := 1 TO iCPr_NB_PM DO
-  // Encoder resolution calculation: fL_SubstrateThickness with factor is added to the raduis because of the neutral fiber of the substrate
-  fL_ResolutionEncoder[iL_I] := ((lEncoderCylinderDiameter[iL_I] / 1000 / 2) + (fL_SubstrateThickness * DINT_TO_REAL(nL_NeutralFibreFactor) / 100)) * 2 * PI * 1_000_000 / cEncoderImpU;
-
-  // Encoder source
-  fbVencoder[iL_I].bI_Simulate   := bSimPosition;
-  fbVencoder[iL_I].fI_SetSpeed   := LREAL_TO_REAL(fSimSpeed);
-  fbVencoder[iL_I].bI_Reset      := bL_ResetPosition[iL_I];
-  fbVencoder[iL_I].fI_Resolution := 1 / fL_ResolutionEncoder[iL_I];
-  fbVencoder[iL_I]();     // simulation encoder (position only, not hw latch)
-  IF bL_PmPrintEnabled[iL_I] (*AND bL_PrintEnabledSync[iL_I]*) THEN 
-    lL_EncPulse[iL_I] := SEL(bSimPosition, lIKp_EncPulse[iL_I], fbVencoder[iL_I].lO_VEncoderPulse); // avoid spurious encoder pulses if module is not active (security)
-  END_IF 
-  // - positions, speed ---------------------------------------------
-  (*Reference Master (Used in Endless Mode with drift compensation)*)
-  (*---input---*)
-  Fb_Ref_Master[iL_I].bI_Reset               := bL_ResetPosition[iL_I] OR bL_HardwareSync[iL_I];  (*AutoReset*)
-  Fb_Ref_Master[iL_I].bI_Simulate            := bSimPosMaster;
-  Fb_Ref_Master[iL_I].fI_SimSpeed            := fSimSpeed;
-  Fb_Ref_Master[iL_I].lI_Reference           := lL_EncPulse[iL_I];
-  Fb_Ref_Master[iL_I].fI_ResolutionInput     := fL_ResolutionEncoder[iL_I];
-  Fb_Ref_Master[iL_I].fI_ResolutionOutPh     := iL_ResolutionPhPx   [ePr_PU_UNIT_1];
-  Fb_Ref_Master[iL_I].fI_ResolutionOutSubPx  := iL_ResolutionSubPx  [ePr_PU_UNIT_1];
-  Fb_Ref_Master[iL_I]();
-  
-  
-  (*Printhead Master / Scaling from encoder pulses to subpixels*)
-  (*---input---*)
-  fL_ResolutionEncoderDriftContr[iL_I] := fL_ResolutionEncoder[iL_I] * fB_DriftControl[iL_I].fO_SpeedCorrectionFactor;
-  fL_ResolutionPhPxDriftContr   [iL_I] := INT_TO_LREAL(iL_ResolutionPhPx[ePr_PU_UNIT_1]) * fB_DriftControl[iL_I].fO_SpeedCorrectionFactor;
-  Fb_Ph_Master[iL_I].bI_Reset               := bL_ResetPosition[iL_I] OR bL_HardwareSync[iL_I];  (*AutoReset*)
-  Fb_Ph_Master[iL_I].bI_Simulate            := bSimPosMaster;
-  Fb_Ph_Master[iL_I].fI_SimSpeed            := fSimSpeed;
-  Fb_Ph_Master[iL_I].lI_Reference           := lL_EncPulse[iL_I];
-  Fb_Ph_Master[iL_I].fI_ResolutionInput     := fL_ResolutionEncoderDriftContr[iL_I];
-  Fb_Ph_Master[iL_I].fI_ResolutionOutPh     := iL_ResolutionPhPx   [ePr_PU_UNIT_1];
-  Fb_Ph_Master[iL_I].fI_ResolutionOutSubPx  := iL_ResolutionSubPx  [ePr_PU_UNIT_1];
-  Fb_Ph_Master[iL_I]();
-
-  (*Speed*)
-  fL_SpeedInMpMin[iL_I]       := Fb_Ph_Master[iL_I].fO_Master_Speed * 60;
-  (*Machine stopped*)
-  bL_MachineStopped[iL_I]     := (Fb_Ph_Master[iL_I].fO_Master_Speed < fC_MIN_MASTER_SPEED);  (*[m/s]*)
-  (*Machine reached production speed*)
-  bL_MachineUpper5MpMin[iL_I] := (fL_SpeedInMpMin[iL_I] > fC_PROD_MASTER_SPEED);  (*[m/min]*)
-
-  (*Debug*)
-  _nPrintModuleAdjustY[iL_I] := F_MeterToSubPixel(DINT_TO_LREAL(nPrintModuleAdjustY[iL_I]) / 1_000_000, nC_PrintResolution);
-END_FOR
-
-
-// ------------------
-// PM enable detection
-IF    bL_Engaged[1] THEN ; (*Module2 angaged*)
-ELSIF bL_Engaged[2] THEN ; (*Module3 angaged*)
-ELSE                     ; (*none active*) END_IF
-
 // Use of start simulation depends on the print marks
-fbStartPositionSimulation.bSimEnable := bL_SimMarkStartActive[1] := NOT bL_PrintMarksExist[1];
+fbStartPositionSimulationHOA.bSimEnable := bL_SimMarkStartActive[1] := NOT bL_PrintMarksExist[1];
 bL_DisableSimMarkStartTriggerM3      := bL_SimMarkStartActive[2] := NOT bL_PrintMarksExist[1] AND bL_PrintMarksExist[2];
-fbRTrigStartPositionSimulation(CLK := fbStartPositionSimulation._bSim);
+fbRTrigStartPositionSimulation(CLK := fbStartPositionSimulationHOA._bSim);
 IF    (bL_HardwareSync[1] AND bL_Engaged[1])
    OR (bL_HardwareSync[2] AND NOT bL_Engaged[1])
 THEN
-  fbStartPositionSimulation.reset(); 
+  fbStartPositionSimulationHOA.reset(); 
 END_IF
+
+
 IF bL_DisableDelayTriggerDistanceM3 THEN nL_Module2ToModule3 := 0; END_IF  (*Test use*)
-fbStartPositionSimulation( lPositionM2           := Fb_Ref_Master[1].lO_Master_Position
+fbStartPositionSimulationHOA( lPositionM2           := Fb_Ref_Master[1].lO_Master_Position
                          , fSpeedM2              := Fb_Ref_Master[1].fO_Master_Speed
                          , lPositionM3           := Fb_Ref_Master[2].lO_Master_Position
                          , fSpeedM3              := Fb_Ref_Master[2].fO_Master_Speed
                          , nDelayTriggerDistance := F_MeterToSubPixel(fPosMeter := DINT_TO_LREAL(nL_Module2ToModule3) / 1_000_000, fResoSubPx := nC_PrintResolution * nC_SubPixelResolution)
                          , bMachineProdSpeed     := bL_TargetSpeedReached AND (bL_MachineUpper5MpMin[1] OR bL_MachineUpper5MpMin[2]));
 IF bL_Engaged[1] AND NOT bL_PrintMarksExist[1] AND bL_PrintUnitInPrintPosition[1] AND bL_TargetSpeedReached AND bL_MachineUpper5MpMin[1] THEN
-  bL_SimMarkStartTrigger   [1] := fbStartPositionSimulation.bStartTrig;
-  nL_SimMarkStartTriggerPos[1] := fbStartPositionSimulation.nStartPositionX0;
+  bL_SimMarkStartTrigger   [1] := fbStartPositionSimulationHOA.bStartTrig;
+  nL_SimMarkStartTriggerPos[1] := fbStartPositionSimulationHOA.nStartPositionX0;
 ELSE
   bL_SimMarkStartTrigger   [1] := FALSE;
 END_IF
 IF bL_Engaged[2] AND NOT bL_PrintMarksExist[2] AND bL_PrintUnitInPrintPosition[2] AND bL_TargetSpeedReached AND bL_MachineUpper5MpMin[2] THEN
-  bL_SimMarkStartTrigger   [2] := fbStartPositionSimulation.bStartTrigDelay AND NOT bL_DisableSimMarkStartTriggerM3;
-  nL_SimMarkStartTriggerPos[2] := fbStartPositionSimulation.nDelayStartPositionX0;
+  bL_SimMarkStartTrigger   [2] := fbStartPositionSimulationHOA.bStartTrigDelay AND NOT bL_DisableSimMarkStartTriggerM3;
+  nL_SimMarkStartTriggerPos[2] := fbStartPositionSimulationHOA.nDelayStartPositionX0;
 ELSE
   bL_SimMarkStartTrigger   [2] := FALSE;
 END_IF
@@ -463,104 +353,51 @@ fbModuleSynchronisation( IbEnable           := NOT bL_DisableModuleSynchronisati
 
 (* -- PM PrintModule*)
 FOR iL_I := 1 TO iCPr_NB_PM DO
-  // Trigger ------------------------------------
-  (*---input---*)
-  fb_StartHwLatch[iL_I].fI_ResolutionInput  := fL_ResolutionEncoder[iL_I];
-  fb_StartHwLatch[iL_I].fI_ResolutionOutput := INT_TO_REAL(iL_ResolutionSubPx[ePr_PU_UNIT_1] * iL_ResolutionPhPx[ePr_PU_UNIT_1]);
-  fb_StartHwLatch[iL_I].bI_LatCVal          := bIKp_LatCVal[iL_I];
-  fb_StartHwLatch[iL_I].lI_Latch            := lIKp_EncLatch[iL_I];
-  fb_StartHwLatch[iL_I].lI_Reference        := lL_EncPulse[iL_I];
-  fb_StartHwLatch[iL_I].lI_Master_Position  := Fb_Ref_Master[iL_I].lO_Master_Position;
-  fb_StartHwLatch[iL_I].bI_Reset            := bL_ResetPosition[iL_I];  (*AutoReset*)
-  (*---call---*)
-  fb_StartHwLatch[iL_I]();
-  (*---output---*)
-  bOKp_EnLatC[iL_I]                         := fb_StartHwLatch[iL_I].bO_EnLatC;
-  bO_ActivateLatch[iL_I]                    := FALSE;  (*Dummy, not used here*)
-
 
   (*Paper position & start detection*)
-  Fb_PaperPosDetect[iL_I].bI_Reset                 := bL_ResetPosition[iL_I] OR bL_HardwareSync[iL_I];  (*AutoReset*)
-  Fb_PaperPosDetect[iL_I].bI_WithMark              := NOT bL_EnableEncTrig;
-  Fb_PaperPosDetect[iL_I].bI_MarksInverted         := bMarksInverted;
-  Fb_PaperPosDetect[iL_I].fI_ConveyorSpeed         := LREAL_TO_REAL(Fb_Ref_Master[iL_I].fO_Master_Speed);
-  Fb_PaperPosDetect[iL_I].iI_CurrentPos            := Fb_Ref_Master[iL_I].lO_Master_Position;
-//  Fb_PaperPosDetect[iL_I].iI_Resolution            := iL_ResolutionSubPx[ePr_PU_UNIT_1] * iL_ResolutionPhPx[ePr_PU_UNIT_1];
-  Fb_PaperPosDetect[iL_I].fI_Resolution            := iL_ResolutionSubPx[ePr_PU_UNIT_1] * fL_ResolutionPhPxDriftContr[iL_I];
-  Fb_PaperPosDetect[iL_I].fI_MarkLength            := sAdsSheetAlignment[ePr_PU_UNIT_1].sI_PrintMarkSizeX.fI_Val / 1_000;
-  Fb_PaperPosDetect[iL_I].fI_MarkHeight            := sAdsSheetAlignment[ePr_PU_UNIT_1].sI_PrintMarkSizeY.fI_Val / 1_000;
-  Fb_PaperPosDetect[iL_I].fI_SubstrateLength       := fL_SubstrateLen[ePr_PU_UNIT_1];
-  Fb_PaperPosDetect[iL_I].bI_SimTriggerActive      := bL_SimMarkStartActive[iL_I];      // StartTrigger Simulation VISU&FB
-  Fb_PaperPosDetect[iL_I].bI_ManualTrigger         := bL_SimMarkStartTrigger[iL_I];     // StartTrigger Simulation VISU&FB
-  Fb_PaperPosDetect[iL_I].iI_ManualTriggerPosition := nL_SimMarkStartTriggerPos[iL_I];  // StartTrigger Simulation VISU&FB
-  Fb_PaperPosDetect[iL_I].bI_SpeedValid            := bL_TargetSpeedReached AND (bL_MachineUpper5MpMin[1] OR bL_MachineUpper5MpMin[2]);
-  Fb_PaperPosDetect[iL_I]();
+//  Fb_PaperPosDetect[iL_I].bReset                 := bL_ResetPosition[iL_I] OR bL_HardwareSync[iL_I];  (*AutoReset*)
+//  Fb_PaperPosDetect[iL_I].bI_WithMark              := TRUE;
+//  Fb_PaperPosDetect[iL_I].bI_MarksInverted         := bMarksInverted;
+//  Fb_PaperPosDetect[iL_I].fCurrentSpeed         := LREAL_TO_REAL(Fb_Ref_Master[iL_I].fO_Master_Speed);
+//  Fb_PaperPosDetect[iL_I].nCurrentPos            := Fb_Ref_Master[iL_I].lO_Master_Position;
+////  Fb_PaperPosDetect[iL_I].iI_Resolution            := iL_ResolutionSubPx[ePr_PU_UNIT_1] * iL_ResolutionPhPx[ePr_PU_UNIT_1];
+//  Fb_PaperPosDetect[iL_I].fResolution            := iL_ResolutionSubPx[ePr_PU_UNIT_1] * fL_ResolutionPhPxDriftContr[iL_I];
+//  Fb_PaperPosDetect[iL_I].fI_MarkLength            := sAdsSheetAlignment[ePr_PU_UNIT_1].sI_PrintMarkSizeX.fI_Val / 1_000;
+//  Fb_PaperPosDetect[iL_I].fI_MarkHeight            := sAdsSheetAlignment[ePr_PU_UNIT_1].sI_PrintMarkSizeY.fI_Val / 1_000;
+//  Fb_PaperPosDetect[iL_I].fSubstrateLength       := fL_SubstrateLen[ePr_PU_UNIT_1];
+//  Fb_PaperPosDetect[iL_I].bI_SimTriggerActive      := bL_SimMarkStartActive[iL_I];      // StartTrigger Simulation VISU&FB
+//  Fb_PaperPosDetect[iL_I].bI_ManualTrigger         := bL_SimMarkStartTrigger[iL_I];     // StartTrigger Simulation VISU&FB
+//  Fb_PaperPosDetect[iL_I].iI_ManualTriggerPosition := nL_SimMarkStartTriggerPos[iL_I];  // StartTrigger Simulation VISU&FB
+//  Fb_PaperPosDetect[iL_I].bEnable                  := bL_TargetSpeedReached AND (bL_MachineUpper5MpMin[1] OR bL_MachineUpper5MpMin[2]);
+//  Fb_PaperPosDetect[iL_I]();
 
   
-  // Speed Compensation -------------------------
-  (*  based on print position*)
-  fL_PrintUnitElevation[iL_I] := fL_HeadGap[iL_I] + fL_HeadOffsetPlate - fL_SubstrateThickness;
-  IF bL_UseSpeedCompensation AND (fL_DropSpeed > 0) THEN
-    fL_SpeedComp[iL_I] := ( (fL_PrintUnitElevation[iL_I] / fL_DropSpeed) + (fL_DropSpeedAddTime / 1000)) * LREAL_TO_REAL(Fb_Ph_Master[iL_I].fO_Master_Speed);
-  ELSE
-    fL_SpeedComp[iL_I] := 0;
-  END_IF;
-  
+
   (*Start Trigger & X0 selection*)
-  bL_StartTrigger[iL_I] := SEL(bL_EnableEncTrig, Fb_PaperPosDetect[iL_I].bO_StartTrig, fb_StartHwLatch[iL_I].bO_StartTrig) 
-                            OR bL_Manu_StartTrigger[iL_I];
+  bL_StartTrigger[iL_I] := Fb_PaperPosDetect[iL_I].bStartTrig OR bL_Manu_StartTrigger[iL_I];
   rT_StartTrigger[iL_I](CLK:=bL_StartTrigger[iL_I]);
-  
-  nL_X0[iL_I]           := SEL(bL_EnableEncTrig, Fb_PaperPosDetect[iL_I].iO_Offset_X0, fb_StartHwLatch[iL_I].iO_Offset_X0);
   IF bL_Manu_StartTrigger[iL_I] THEN
     nL_X0[iL_I]           := Fb_Ph_Master[iL_I].lO_Master_Position;
+  ELSE 
+    nL_X0[iL_I]           := Fb_PaperPosDetect[iL_I].nOffset_X0;
 	END_IF
   
-  (*apply SpeedCompensation and GeneralShift*)
-  IF iL_ResolutionSubPx[1] <> 0 AND fL_ResolutionPhPxDriftContr[iL_I] <> 0 THEN 
-    nL_X0_Comp[iL_I] := nL_X0[iL_I]
-                      //- FC_REAL_TO_DINT(fL_SpeedComp[iL_I] * (1 / (0.0254 / (iL_ResolutionSubPx[ePr_PU_UNIT_1] * iL_ResolutionPhPx[ePr_PU_UNIT_1]))))
-                        - FC_LREAL_TO_DINT(fL_SpeedComp[iL_I] * (1 / (0.0254 / (iL_ResolutionSubPx[ePr_PU_UNIT_1] * fL_ResolutionPhPxDriftContr[iL_I]))))
-                        - FC_CONV_M_TO_SUBPX( DINT_TO_LREAL(sAdsPrintModule[iL_I].sI_GeneralShiftX.lI_Val) / 1_000_000
-                                             //, iL_ResolutionPhPx [ePr_PU_UNIT_1]
-                                               , TO_LREAL(fL_ResolutionPhPxDriftContr[iL_I])
-                                               , iL_ResolutionSubPx[ePr_PU_UNIT_1]);
-  ELSE
-   nL_X0_Comp[iL_I] := nL_X0[iL_I];
-	END_IF
-  // Compensations (Dift) -----------------------
-  (*Register Control*)
-  fB_DriftControl[iL_I].bI_Reset                :=    bL_ResetPosition[iL_I]
-                                                   OR bL_HardwareSync [iL_I]
-                                                   OR fbRTrigStartPositionSimulation.Q;  (*AutoReset*)
-  fB_DriftControl[iL_I].bI_ReceiptMessage       := bL_ReceiptMessage;
-  fB_DriftControl[iL_I].iI_Res_Ph               := iL_ResolutionPhPx [ePr_PU_UNIT_1];
-  fB_DriftControl[iL_I].iI_Res_SubPix           := iL_ResolutionSubPx[ePr_PU_UNIT_1];
-  fB_DriftControl[iL_I].bI_RegisterMark         := bL_StartTrigger[iL_I];
-  fB_DriftControl[iL_I].lI_RegisterMarkPosition := nL_X0_Comp[iL_I];
-  fB_DriftControl[iL_I].lI_RefPosition          := Fb_Ref_Master[iL_I].lO_Master_Position;
-  fB_DriftControl[iL_I].fI_RefPosition          := Fb_Ref_Master[iL_I].fO_Master_Position;
-  fB_DriftControl[iL_I].lI_ImgPosition          := Fb_Ph_Master [iL_I].lO_Master_Position;
-  fB_DriftControl[iL_I].fI_ImgPosition          := Fb_Ph_Master [iL_I].fO_Master_Position;
-  fB_DriftControl[iL_I].bI_OutputEnable         := NOT bL_MachineStopped[iL_I] AND NOT bL_DisableDriftControl;
+  (*XO apply SpeedCompensation and GeneralShift*)
+   nL_X0_Comp[iL_I] := nL_X0[iL_I]
+                       - FC_REAL_TO_DINT(fL_SpeedComp[iL_I] * (1 / (0.0254 / (nC_PrintResolution * nC_SubPixelResolution))))
+                       - FC_CONV_M_TO_SUBPX( DINT_TO_LREAL(sAdsPrintModule[iL_I].sI_GeneralShiftX.lI_Val) / 1_000_000, nC_PrintResolution, nC_SubPixelResolution);
 
-  fB_DriftControl[iL_I]();  
-
-  (*Print module (Messaging)*)
-  fbPrintModule[iL_I]( IbPrinterHood           := PRG_MACHINE.bIKp_SafetyCoverOK[iL_I]
-                     , IbServiceDoors          := PRG_MACHINE.bIKp_SafetyDoorsOK[iL_I]
-                     , IbExhaustVacuumWarning  := PRG_MACHINE.fb_ExhaustSystem[iL_I].bO_VacuumWarningLevel
-                     , IbExhaustVacuumError    := PRG_MACHINE.fb_ExhaustSystem[iL_I].bO_VacuumErrorLevel
-                     , IbExhaustFUError        := FALSE // NOT fb_ExhaustSystem[1].bO_FUReady
-                     , IbDriftControlError     := fB_DriftControl[iL_I].bO_SupervisionContrErr OR fB_DriftControl[iL_I].bO_ContrErr
-                     , IbDriftControlMissMarks := fB_DriftControl[iL_I].bO_SupervisionMissMarks
-                     , IbSafetyNOk             := NOT PRG_MACHINE.bL_SafetyOk[iL_I]);
 END_FOR
 
 
 
 // ----------------------------------------------------
 // -- CT and PM (Production Management)
+fBCTManagerMain.nPositions[E_PosDomain.master_pos] := nMasterPosition;
+fBCTManagerMain.nPositions[E_PosDomain.pos_px]     := nMasterPosition/TO_DINT(nC_SubPixelResolution);
+
+
+
 FOR iL_I := 1 TO iCPr_NB_PM DO
   
   //fbPrintPosition[iL_I]();
@@ -629,27 +466,25 @@ fbOd();
 fbPm();
 
 (* -- PU PrintUnit*)
-FOR iL_I := 1 TO iCPr_NB_PU DO
-  // PG->PU status/flags 
-  FOR iL_I2 := 1 TO iCPr_NB_PG DO
-    IF iL_I = iCPr_MAP_PG_PU[iL_I2] THEN
-      FB_PU[iL_I].sI_GroupStatus[iL_I2] := fbWorkerWeu[iL_I2].sPcState;
-      FB_PU[iL_I].sI_PcFlags    [iL_I2] := fbWorkerWeu[iL_I2].sPcFlags;
-		END_IF
-	END_FOR
-
+// PG->PU status/flags 
+FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PU) DO
+  FOR nCtr2 := 1 TO TO_UDINT(iCPr_NB_PM) DO
+    FB_PU[nCtr].sI_GroupStatus[nCtr2] := fbWorkerWeu[nCtr2].sPcState;
+    FB_PU[nCtr].sI_PcFlags    [nCtr2] := fbWorkerWeu[nCtr2].sPcFlags;
+  END_FOR
+  
   // specific handling
   fb_RTrigStopRequestVarnishChange(CLK := (PRG_INK.bO_CommandPrintlineExec[1] AND bL_Engaged[1]) OR (PRG_INK.bO_CommandPrintlineExec[2] AND bL_Engaged[2]));       (*If varnish change is activated the job should be stopped.*)
   IF fb_RTrigStopRequestVarnishChange.Q THEN FB_PU[iL_I].reqPuStop('Stop VarnishChange'); END_IF
-
-  FB_PU[iL_I]();
-
+  
+  FB_PU[nCtr]();
+  
   // WEU Start CanEx override
   sAdsPrintUnit[iL_I].sI_Start.bO_CommandCanEx := sAdsPrintUnit[iL_I].sI_Start.bO_CommandCanEx 
                                                 AND NOT PRG_MACHINE.sO_SystemCmd.bSleep     // sleep active
                                                 AND (NOT PRG_INK.bO_CommandPrintlineExec[1] OR NOT bL_Engaged[1])    //? varnish exchange M2
                                                 AND (NOT PRG_INK.bO_CommandPrintlineExec[2] OR NOT bL_Engaged[2]);   //? varnish exchange M3
-
+  
   // Copy counter ------------------
   // search enabled PC 
   iL_PuFirstEnabledPc[iL_I] := 0;  (*Init first enabled PC*)
@@ -659,8 +494,8 @@ FOR iL_I := 1 TO iCPr_NB_PU DO
        AND sAdsPrintGroup[iCPr_MAP_PC_PG[iL_I2]].bI_Enable
     THEN
       iL_PuFirstEnabledPc[iL_I] := iL_I2;
-		END_IF
-	END_FOR
+    END_IF
+  END_FOR
   
   IF sAdsPrintUnit[iL_I].sI_JobSettings.lI_PrintMode.ePr_PRINT_MODE_ENDLESS THEN
     (***Count for EndlessMode***)
@@ -669,7 +504,7 @@ FOR iL_I := 1 TO iCPr_NB_PU DO
       fb_PuCount[iL_I].bI_SuccessFeedback := FB_PC[iL_PuFirstEnabledPc[iL_I]]._sPcFlags.bImageEnd;
     ELSE
       fb_PuCount[iL_I].bI_SuccessFeedback := FALSE;
-    END_IF;
+    END_IF;0
     sAdsPrintUnit[iL_I].lO_PrintedCopies             := fb_PuCount[iL_I].lO_ProductCountSuccess;
     sAdsPrintUnit[iL_I].bO_StopRequest               := fb_PuCount[iL_I].bO_JobFinished;
     sAdsPrintUnit[iL_I].sO_StopRequestEvent.bO_State := fb_PuCount[iL_I].bO_JobFinished;  (*alternative request as event*)
@@ -678,11 +513,7 @@ FOR iL_I := 1 TO iCPr_NB_PU DO
     sAdsPrintUnit[iL_I].bO_StopRequest               := FALSE;
     sAdsPrintUnit[iL_I].sO_StopRequestEvent.bO_State := FALSE;  (*alternative request as event*)
   END_IF;
-  
-  (*---call---*)
-  fb_PuCount[iL_I]();
 
-END_FOR
 
 
 (* -- Pg PrintGroup*)
@@ -698,7 +529,7 @@ FOR iL_I := 1 TO iCPr_NB_PG DO
                                            OR NOT fB_DriftControl      [iCPr_MAP_PG_PM[iL_I]].bO_ControllerAdjusted;
                                         
   fbWorkerWeu[iL_I].bEnable           := sAdsPrintGroup[iL_I].bI_Enable;
-  fbWorkerWeu[iL_I].bHardwareSync     := bL_HardwareSync[iCPr_MAP_PG_PM[iL_I]];
+  fbWorkerWeu[iL_I].bHardwareSync     := fbPrintModule[iCPr_MAP_PG_PM[iL_I]].bSyncCmd;
   fbWorkerWeu[iL_I].bHardwareHold     := bL_HardwareHold[iCPr_MAP_PG_PM[iL_I]];
   fbWorkerWeu[iL_I].nEncoderPos       := Fb_Ph_Master[iCPr_MAP_PG_PM[iL_I]].lO_Master_Position;   //lPos_SubPx; 
   fbWorkerWeu[iL_I].fEncoderSpeed     := Fb_Ph_Master[iCPr_MAP_PG_PM[iL_I]].fO_Master_Speed;      //fbPrintPosition.getSpeed();
@@ -712,7 +543,7 @@ FOR iL_I := 1 TO iCPr_NB_PG DO
                                                   + DINT_TO_LREAL(F_MeterToSubPixel(DINT_TO_LREAL(sAdsPrintUnit  [iCPr_MAP_PG_PU[iL_I]].sI_ShiftJobY.lI_Val     ) / 1_000_000, nC_PrintResolution))   (*[um] to [px] job yOffset from upper level (GUI)*)
                                                   - DINT_TO_LREAL(F_MeterToSubPixel(DINT_TO_LREAL(sAdsPrintModule[iCPr_MAP_PG_PM[iL_I]].sI_GeneralShiftY.lI_Val ) / 1_000_000, nC_PrintResolution))   (*[um] to [px] job yOffset from upper level (GUI)*)
                                                   + DINT_TO_LREAL(F_MeterToSubPixel(DINT_TO_LREAL(sAdsPrintGroup[iL_I]                 .sI_ShiftPositionY.lI_Val) / 1_000_000, nC_PrintResolution))   (*[um] to [px] job yOffset from upper level (GUI)*)
-                                                  - DINT_TO_LREAL(F_MeterToSubPixel(             (Fb_PaperPosDetect[iCPr_MAP_PG_PM[iL_I]].fO_LateralOffset      )            , nC_PrintResolution))   (*[ m] to [px] mark detection*)
+                                                  - DINT_TO_LREAL(F_MeterToSubPixel(             (Fb_PaperPosDetect[iCPr_MAP_PG_PM[iL_I]].fLateralOffset      )            , nC_PrintResolution))   (*[ m] to [px] mark detection*)
                                                   - DINT_TO_LREAL(F_MeterToSubPixel(DINT_TO_LREAL(nL_LateralRegister                                            ) / 1_000_000, nC_PrintResolution))   (*[um] to [px] lateral register from machine*)
                                                   - DINT_TO_LREAL(F_MeterToSubPixel(DINT_TO_LREAL(nPrintModuleAdjustY[iCPr_MAP_PG_PM[iL_I]]                     ) / 1_000_000, nC_PrintResolution))   (*[um] to [px] lateral register from machine*)
                                                // upper limit 
@@ -745,17 +576,18 @@ END_FOR
 
 
 // Inspection system
+{warning '???was soll diese Zeile'}
 IF (nInspectionSystemMarkIdx > 3) OR (nInspectionSystemMarkIdx < 2) THEN nInspectionSystemMarkIdx := 3; END_IF  (*Index check*)
-fbInspectionSystemTrigger.UsePositionTrigger := fbStartPositionSimulation._bSim AND NOT bL_DisableSimMarkStartTriggerM3;
+fbInspectionSystemTrigger.UsePositionTrigger := fbStartPositionSimulationHOA._bSim AND NOT bL_DisableSimMarkStartTriggerM3;
 (*input bI_SensorState depends on _bUsePositionTrigger*)
 IF fbInspectionSystemTrigger.UsePositionTrigger THEN
-  fbInspectionSystemTrigger.bI_SensorState := SEL(bL_Engaged[1], rT_StartTrigger[2].Q, rT_StartTrigger[1].Q);
+  fbInspectionSystemTrigger.bI_SensorState := bMasterTrigger);
 ELSE
-  fbInspectionSystemTrigger.bI_SensorState := Fb_PaperPosDetect[nInspectionSystemMarkIdx - 1].bIKp_CmdStartPrintSta;
+  fbInspectionSystemTrigger.bI_SensorState := Fb_PaperPosDetect[nInspectionSystemMarkIdx - 1].bIKp_StartSensor;
 END_IF
 
-fbInspectionSystemTrigger( iI_CurrentPos         := SEL(bL_Engaged[1], Fb_Ref_Master[2].lO_Master_Position, Fb_Ref_Master[1].lO_Master_Position)
-                         , fI_ConveyorSpeed      := SEL(bL_Engaged[1], Fb_Ref_Master[2].fO_Master_Speed   , Fb_Ref_Master[1].fO_Master_Speed)
+fbInspectionSystemTrigger( iI_CurrentPos         := nMasterPosition
+                         , fI_ConveyorSpeed      := fMasterSpeed
                          , iI_SensorX0           := SEL(bL_Engaged[1], nL_X0[2]                           , nL_X0[1])
                          , tI_SensorTimeStampPos := Fb_PaperPosDetect[nInspectionSystemMarkIdx - 1].tIKp_TimeStampPos
                          (*StartTrigger Simulation VISU&FB*)
@@ -763,14 +595,7 @@ fbInspectionSystemTrigger( iI_CurrentPos         := SEL(bL_Engaged[1], Fb_Ref_Ma
                          );
 
 // Neutral fibre calculation with additional mark sensors
-fbNeutralFibreDetermine(fI_ConveyorSpeed := SEL(bL_Engaged[1], Fb_Ref_Master[2].fO_Master_Speed   , Fb_Ref_Master[1].fO_Master_Speed));
-
-// Report errors
-nTemp := nConvError - nConvErr_mem;
-FOR lCtr:=1 TO TO_DINT(nTemp) DO
-  F_Report_Error(ErrType:=EN_REPORT_ERROR_TYPE.Report_Error_Conversion);
-END_FOR
-nConvErr_mem := nConvError;
+fbNeutralFibreDetermine(fCurrentSpeed := SEL(bL_Engaged[1], Fb_Ref_Master[2].fO_Master_Speed   , Fb_Ref_Master[1].fO_Master_Speed));
 
  
 (****************************************************************************)
@@ -817,7 +642,7 @@ END_FOR
     <Method Name="DownloadFiles" Id="{01e70b04-413b-4361-8a70-6ae64ebdd1be}">
       <Declaration><![CDATA[METHOD DownloadFiles
 VAR
-  sPcFlags : ST_PC_FLAGS;  
+  sPcFlags : ST_PC_FLAGS;
 END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[(* PC firmware updater*)
@@ -904,9 +729,7 @@ END_FOR
       </Implementation>
     </Method>
     <Method Name="init" Id="{8ed4b07f-793b-45e7-ba14-620fabec907a}">
-      <Declaration><![CDATA[METHOD init : BOOL
-VAR_INPUT
-END_VAR
+      <Declaration><![CDATA[METHOD Init : BOOL
 VAR
   aL_Name : T_MaxString;
 END_VAR
@@ -945,15 +768,11 @@ IF bL_InitRemVar THEN RemVar();	END_IF	(*force read of persistence before init*)
 (* Init FB and ADS instances*)
 nYShift_center := (nC_MemorySectionWidth - TO_UDINT(GVL_PrintDef.RIGEN5.iC_Ph_Width)) / 2;     // [px] 384px for RICOH_GEN5
 
-(*fbPrintPosition.Init( fPrintResolution := nC_PrintResolution
-                    , fSubPxResolution := nC_SubPixelResolution
-                    , fTaskCycleTime   := pModuleDef^.fCycleTime_s);
-*)
 
 (*Configure logging*)
 LogPrSetup.LogLevel                  := ePrint_LogLevel;
 FB_PU[ePr_PU_UNIT_1].LogLevel        := ePrint_LogLevel;
-FOR lCtr :=1 TO iCPr_NB_PM DO fBCTManager[lCtr].LogLevel := E_LogSeverity.Info; END_FOR
+fBCTManagerMain.LogLevel := E_LogSeverity.Info;
 fbWorkerWeu[ePr_PG_GROUP_1].LogLevel := E_LogSeverity.Debug;
 fbWorkerWeu[ePr_PG_GROUP_2].LogLevel := E_LogSeverity.Debug;
 fbWorkerWeu[ePr_PG_GROUP_3].LogLevel := E_LogSeverity.Debug;
@@ -979,10 +798,6 @@ FOR lCtr := 1 TO iCPr_NB_PU DO
   FOR lCtr2 := 1 TO iCPr_NB_PG DO
     FB_PU[lCtr].registerStatusClient(sClient := fbWorkerWeu[lCtr2]);
 	END_FOR
-
-  (*Config FB_COUNT*)
-  fb_PuCount[lCtr].pI_sAdsPrintUnit               := ADR(sAdsPrintUnit[lCtr]);
-  fb_PuCount[lCtr].pI_ZeroPointerErr              := ADR(nConvError);
 
 	(*-- ADS --*)
   aL_Name := sC_Config_P.aC_PU_NAME[lCtr];
@@ -1026,9 +841,9 @@ END_FOR;
 
 
 (*--StartSimulation ------------------------------------------------*)
-fbStartPositionSimulation.fResolution    := nC_PrintResolution * nC_SubPixelResolution;
-fbStartPositionSimulation.IpFormatLength := ADR(PRG_MACHINE.InEAP_FormatLength);  (*Format lemgth from EAP used*)
-fB_PU[ePr_PU_UNIT_1].registerStatusClient(sClient := fbStartPositionSimulation);
+fbStartPositionSimulationHOA.fResolution    := nC_PrintResolution * nC_SubPixelResolution;
+fbStartPositionSimulationHOA.IpFormatLength := ADR(PRG_MACHINE.InEAP_FormatLength);  (*Format lemgth from EAP used*)
+fB_PU[ePr_PU_UNIT_1].registerStatusClient(sClient := fbStartPositionSimulationHOA);
 
 
 
@@ -1049,9 +864,14 @@ FOR lCtr := 1 TO iCPr_NB_PM DO
   sAdsPrintModule[lCtr].sI_GeneralShiftY.lC_Min     := sC_Config_P.lL_PU_GENERALSHIFT_Y_SET_MIN;
   sAdsPrintModule[lCtr].sI_GeneralShiftY.lC_Max     := sC_Config_P.lL_PU_GENERALSHIFT_Y_SET_MAX;
 
-  fbPrintModule[lCtr].init( nIdx     := TO_UDINT(lCtr)
+  fbPrintModule[lCtr].Init( nIdx     := TO_UDINT(lCtr)
                           , pAdsPm   := ADR(sAdsPrintModule[lCtr])
-                          , nBlockId := ePr_BLK_PM);
+                          , fPrintResolution := nC_PrintResolution
+                          , fSubPxResolution := nC_SubPixelResolution
+                          , fTaskCycleTime := pModuleDef^.fCycleTime_s
+                          , pModuleMachineState := 
+  );
+
   
 	(*-- FB --*)
   //fbVencoder[lCtr].fI_SetSpeed
@@ -1243,9 +1063,7 @@ fbPm();  // call it once for self-initialisation
 FB_PU[ePr_PU_UNIT_1].registerStatusClient(sClient := fbPm);
 
 (*-- Container management init ------------------------------------------------------------------*)
-FOR lCtr := 1 TO iCPr_NB_PM DO 
-  fBCTManager[lCtr].Init();
-END_FOR
+fBCTManagerMain.Init();
 
 (*-- Worker init --------------------------------------------------------------------------------*)
 FOR lCtr := 1 TO iCPr_NB_PG DO
@@ -1454,7 +1272,11 @@ sMappingInfo.bReady := TRUE;
 (********************************* END OF ACTION *************************************************)]]></ST>
       </Implementation>
     </Action>
-    <Action Name="RemVar" Id="{d86ae6c7-ddc6-452f-b5d0-ae652db9db97}">
+    <Method Name="RemVar" Id="{3987c6f2-0d6d-4799-9841-ca583af23f3b}">
+      <Declaration><![CDATA[METHOD RemVar
+VAR
+  lCtr : INT;
+END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[(*==== INIT ====*)
 IF bL_InitRemVar THEN
@@ -1479,9 +1301,6 @@ IF bL_InitRemVar THEN
     sR_RemVar_P.aL_Pattern := 16#ABCD;
 
     FOR lCtr := 1 TO iCPr_NB_PU DO
-      iL_ResolutionPhPx   [lCtr]                         := 600;
-      iL_ResolutionSubPx  [lCtr]                         := 32;
-      fL_SubstrateLen     [lCtr]                         := 0.700;
 
       sAdsSheetAlignment  [lCtr].bI_UsePrintMark         := TRUE;
       sAdsSheetAlignment  [lCtr].sI_PrintMarkSizeX.fI_Val:= 12.0; (*mm*)
@@ -1491,10 +1310,6 @@ IF bL_InitRemVar THEN
 //      Fb_PaperP_Detect_Cam[lCtr].iI_CurrentTimeStampComp := 2_000;
 //      Fb_PaperP_Detect_Cam[lCtr].iI_SensorTimeStampComp  := 150;
 
-    END_FOR;
-
-    FOR lCtr := 1 TO iCPr_NB_PM DO
-      fL_ResolutionEncoder[lCtr]                         := 38.34952;
     END_FOR;
 
     sAdsPrintGroup[ePr_PG_GROUP_1].sI_ShiftPositionX.lI_Val   := 100_000; (*um*)
@@ -1530,20 +1345,12 @@ IF bL_InitRemVar THEN
       sAdsPrintUnit[lCtr].sI_ShiftJobX.lI_Val           := sR_RemVar_P.lL_sAdsPrintUnit_sI_ShiftJobX[lCtr];
       sAdsPrintUnit[lCtr].sI_ShiftJobY.lI_Val           := sR_RemVar_P.lL_sAdsPrintUnit_sI_ShiftJobY[lCtr];
 
-      iL_ResolutionPhPx      [lCtr]                     := sR_RemVar_P.iL_ResolutionPhPx      [lCtr];
-      iL_ResolutionSubPx     [lCtr]                     := sR_RemVar_P.iL_ResolutionSubPx     [lCtr];
-      fL_SubstrateLen        [lCtr]                     := sR_RemVar_P.fL_SubstrateLen        [lCtr];
-
       sAdsSheetAlignment[lCtr].bI_UsePrintMark          := sR_RemVar_P.bL_WithMark;
       sAdsSheetAlignment[lCtr].sI_PrintMarkSizeX.fI_Val := sR_RemVar_P.fL_MarkLength;
       sAdsSheetAlignment[lCtr].sI_PrintMarkSizeY.fI_Val := sR_RemVar_P.fL_MarkHeigth;
-      sAdsSheetAlignment[lCtr].sI_HeadGap.fI_Val        := sR_RemVar_P.fL_HeadGap;
     END_FOR;
 
-    (*--- PM ---*)
-    FOR lCtr := 1 TO iCPr_NB_PM DO
-      fL_ResolutionEncoder[lCtr]                        := sR_RemVar_P.fL_ResolutionEncoderPM[lCtr];
-    END_FOR;
+
 
     (*--- PG ---*)
     FOR lCtr := 1 TO iCPr_NB_PG DO
@@ -1585,20 +1392,11 @@ ELSE
     sR_RemVar_P.lL_sAdsPrintUnit_sI_ShiftJobX[lCtr]       := sAdsPrintUnit[lCtr].sI_ShiftJobX.lI_Val;
     sR_RemVar_P.lL_sAdsPrintUnit_sI_ShiftJobY[lCtr]       := sAdsPrintUnit[lCtr].sI_ShiftJobY.lI_Val;
 
-    sR_RemVar_P.iL_ResolutionPhPx   [lCtr]                := iL_ResolutionPhPx   [lCtr];
-    sR_RemVar_P.iL_ResolutionSubPx  [lCtr]                := iL_ResolutionSubPx  [lCtr];
-
-    sR_RemVar_P.fL_SubstrateLen        [lCtr]             := fL_SubstrateLen        [lCtr];
 
     sR_RemVar_P.bL_WithMark                               := sAdsSheetAlignment[lCtr].bI_UsePrintMark;
     sR_RemVar_P.fL_MarkLength                             := sAdsSheetAlignment[lCtr].sI_PrintMarkSizeX.fI_Val;
     sR_RemVar_P.fL_MarkHeigth                             := sAdsSheetAlignment[lCtr].sI_PrintMarkSizeY.fI_Val;
-    sR_RemVar_P.fL_HeadGap                                := sAdsSheetAlignment[lCtr].sI_HeadGap.fI_Val;
-  END_FOR;
 
-  (*--- PM ---*)
-  FOR lCtr := 1 TO iCPr_NB_PM DO
-    sR_RemVar_P.fL_ResolutionEncoderPM[lCtr]              := fL_ResolutionEncoder[lCtr]; 
   END_FOR;
 
   (*--- PG ---*)
@@ -1628,7 +1426,7 @@ ELSE
 
 END_IF;]]></ST>
       </Implementation>
-    </Action>
+    </Method>
     <Method Name="Testing" Id="{1556e5de-05b1-4cc9-99a3-a90b95b77a8c}">
       <Declaration><![CDATA[METHOD Testing : BOOL
 VAR_INPUT
@@ -1675,12 +1473,7 @@ fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted 
       </Implementation>
     </Action>
     <LineIds Name="PRG_PRINT">
-      <LineId Id="71671" Count="12" />
-      <LineId Id="72152" Count="0" />
-      <LineId Id="72154" Count="0" />
-      <LineId Id="72153" Count="0" />
-      <LineId Id="72155" Count="1" />
-      <LineId Id="71684" Count="467" />
+      <LineId Id="74005" Count="351" />
       <LineId Id="45822" Count="0" />
     </LineIds>
     <LineIds Name="PRG_PRINT.Control">
@@ -1717,12 +1510,14 @@ fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted 
       <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="PRG_PRINT.init">
-      <LineId Id="1329" Count="55" />
+      <LineId Id="1329" Count="31" />
+      <LineId Id="1914" Count="0" />
+      <LineId Id="1366" Count="3" />
+      <LineId Id="1919" Count="0" />
+      <LineId Id="1371" Count="13" />
       <LineId Id="1792" Count="0" />
       <LineId Id="1385" Count="2" />
-      <LineId Id="1389" Count="6" />
-      <LineId Id="1814" Count="3" />
-      <LineId Id="1396" Count="14" />
+      <LineId Id="1389" Count="21" />
       <LineId Id="1834" Count="0" />
       <LineId Id="1833" Count="0" />
       <LineId Id="1841" Count="0" />
@@ -1735,13 +1530,18 @@ fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted 
       <LineId Id="1870" Count="8" />
       <LineId Id="1451" Count="1" />
       <LineId Id="1824" Count="1" />
+      <LineId Id="1907" Count="2" />
+      <LineId Id="1905" Count="0" />
+      <LineId Id="1920" Count="0" />
       <LineId Id="1453" Count="9" />
       <LineId Id="1464" Count="10" />
       <LineId Id="1476" Count="11" />
       <LineId Id="1848" Count="0" />
       <LineId Id="1488" Count="59" />
       <LineId Id="1896" Count="2" />
-      <LineId Id="1548" Count="98" />
+      <LineId Id="1548" Count="93" />
+      <LineId Id="1643" Count="0" />
+      <LineId Id="1645" Count="1" />
       <LineId Id="1649" Count="22" />
       <LineId Id="1678" Count="4" />
       <LineId Id="1684" Count="87" />
@@ -1782,63 +1582,14 @@ fbRTrigMarkSelectInverted(); IF fbRTrigMarkSelectInverted.Q THEN bMarksInverted 
       <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="PRG_PRINT.RemVar">
-      <LineId Id="412" Count="4" />
-      <LineId Id="682" Count="0" />
-      <LineId Id="688" Count="0" />
-      <LineId Id="683" Count="4" />
-      <LineId Id="689" Count="0" />
-      <LineId Id="417" Count="10" />
-      <LineId Id="429" Count="0" />
-      <LineId Id="667" Count="0" />
-      <LineId Id="690" Count="0" />
-      <LineId Id="431" Count="3" />
-      <LineId Id="691" Count="0" />
-      <LineId Id="437" Count="1" />
-      <LineId Id="701" Count="0" />
-      <LineId Id="439" Count="0" />
-      <LineId Id="472" Count="0" />
-      <LineId Id="709" Count="0" />
-      <LineId Id="711" Count="0" />
-      <LineId Id="723" Count="1" />
-      <LineId Id="473" Count="0" />
-      <LineId Id="696" Count="2" />
-      <LineId Id="474" Count="0" />
-      <LineId Id="479" Count="9" />
-      <LineId Id="669" Count="0" />
-      <LineId Id="489" Count="0" />
-      <LineId Id="492" Count="1" />
-      <LineId Id="677" Count="0" />
-      <LineId Id="679" Count="2" />
-      <LineId Id="676" Count="0" />
-      <LineId Id="496" Count="0" />
-      <LineId Id="702" Count="0" />
-      <LineId Id="515" Count="7" />
-      <LineId Id="707" Count="0" />
-      <LineId Id="666" Count="0" />
-      <LineId Id="528" Count="3" />
-      <LineId Id="534" Count="0" />
-      <LineId Id="542" Count="1" />
-      <LineId Id="725" Count="1" />
-      <LineId Id="733" Count="0" />
-      <LineId Id="741" Count="1" />
-      <LineId Id="544" Count="4" />
-      <LineId Id="551" Count="16" />
-      <LineId Id="668" Count="0" />
-      <LineId Id="568" Count="17" />
-      <LineId Id="587" Count="0" />
-      <LineId Id="705" Count="0" />
-      <LineId Id="665" Count="0" />
-      <LineId Id="703" Count="0" />
-      <LineId Id="597" Count="3" />
-      <LineId Id="604" Count="1" />
-      <LineId Id="743" Count="4" />
-      <LineId Id="606" Count="4" />
-      <LineId Id="612" Count="8" />
-      <LineId Id="622" Count="7" />
-      <LineId Id="670" Count="0" />
-      <LineId Id="630" Count="0" />
-      <LineId Id="704" Count="0" />
-      <LineId Id="1" Count="0" />
+      <LineId Id="6" Count="22" />
+      <LineId Id="32" Count="42" />
+      <LineId Id="79" Count="3" />
+      <LineId Id="84" Count="1" />
+      <LineId Id="89" Count="40" />
+      <LineId Id="134" Count="6" />
+      <LineId Id="146" Count="25" />
+      <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="PRG_PRINT.Testing">
       <LineId Id="22" Count="0" />

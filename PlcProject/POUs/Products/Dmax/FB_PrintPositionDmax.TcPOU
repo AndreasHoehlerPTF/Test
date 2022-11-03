@@ -39,7 +39,7 @@ VAR
   fbPositionMaster          : FB_PositionMaster;
 
   // internal vars
-  fEncoderReso              : LREAL;                // used encoder resolution
+  fEncoderReso              : LREAL;                // used encoder resolution (config + speedcomp)
   rTrigMoving               : R_TRIG;
   // simulation
   _bSim                     : BOOL;
@@ -58,7 +58,7 @@ fEncoderReso := _fEncoderResolution;
 IF _bEnSpeedComp THEN
   fEncoderReso := F_EncoderSpeedComp(   
     fMasterSpeed:=fbPositionMaster.fMasterSpeed,
-    fResolution:=fEncoderReso,
+    fResolution:=_fEncoderResolution,
     fSpeedCompFactor:=_fSpeedCompFactor,
     fSpeedCompRefSpeed:=_fSpeedCompRefSpeed
   );
@@ -92,6 +92,25 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[_bSim := bSimEnable;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="fEnoderResolution" Id="{48893527-b087-4406-b1d0-258ef0d4826e}">
+      <Declaration><![CDATA[PROPERTY fEnoderResolution : LREAL]]></Declaration>
+      <Get Name="Get" Id="{6cd2975c-4091-4856-aaae-e3fa9a7e3c7d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[fEnoderResolution := _fEncoderResolution;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{8933a36c-a8a6-43ad-800f-50ac32d72fc6}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[_fEncoderResolution := fEnoderResolution;]]></ST>
         </Implementation>
       </Set>
     </Property>
@@ -216,6 +235,12 @@ fbPositionMaster.bSim := FALSE;]]></ST>
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintPositionDmax.bSimEnable.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintPositionDmax.fEnoderResolution.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintPositionDmax.fEnoderResolution.Set">
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintPositionDmax.getPosition">

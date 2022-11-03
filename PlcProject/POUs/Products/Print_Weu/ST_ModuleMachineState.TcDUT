@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <DUT Name="ST_ModuleMachineState" Id="{88c2e62a-a764-452f-a984-142cc11cfd23}">
+    <Declaration><![CDATA[TYPE ST_ModuleMachineState :
+STRUCT
+  // Inputs (from machine)
+  bPrinterHood            : BOOL;
+  bServiceDoors           : BOOL;
+  bExhaustVacuumWarning   : BOOL;
+  bExhaustVacuumError     : BOOL;
+  bExhaustFUError         : BOOL;
+  bDriftControlError      : BOOL;
+  bDriftControlMissMarks  : BOOL;
+  bSafetyNOk              : BOOL;
+  
+  // new
+  bUnitInPrintPosition    : BOOL;
+  bEngaged                : BOOL;
+  bPrintEnabled           : BOOL;
+  
+  // other
+  fSubstrateThickness     : REAL := 0.000_1;   // Substrate thickness [m]
+  fSubstrateLen           : REAL;              // Substrate length [m]
+  fWebStretchCalculated   : LREAL;             // Web strech factor converted
+  nLateralRegister        : DINT;              // Lateral register [µm]
+  nModule2ToModule3       : DINT;              // Distance between Module 2 and 3 [µm]
+  bTargetSpeedReached     : BOOL;              // Target speed reached
+  nNeutralFibreFactor     : DINT;              // Neutral fibre factor [%]
+  bMarksExist             : BOOL;              // Marks exist
+  bMarksInverted          : BOOL;              // Marks are inverted (flipped x axis)
+  
+  // Outputs (to Machine)
+  nO_PrintMarkPosBits     : WORD;              // Print mark position (bit coded)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

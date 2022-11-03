@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <DUT Name="ST_REM_VAR_P" Id="{a7b8894e-4fbc-4ed5-9da3-36d82ee48f34}">
     <Declaration><![CDATA[TYPE ST_REM_VAR_P :
 (*************************************************************************************************)
@@ -16,20 +16,20 @@
 
 STRUCT
   (*PU*)
-  iL_ResolutionPhPx                      : ARRAY [1..iCPr_NB_PU] OF INT;    (*printhead pixel resolution [dpi]*)
-  fL_ResolutionEncoder                   : ARRAY [1..iCPr_NB_PU] OF LREAL;  (*resolution of encoder [um/increment]*)
-  iL_ResolutionSubPx                     : ARRAY [1..iCPr_NB_PU] OF INT;    (*subpixel pulse resolution [pulse/px]*)
-  fL_Pg_xOffset                          : ARRAY [1..iCPr_NB_PG] OF LREAL;  (*static offset of print group from start detection [m]*)
-  fL_Pg_vStartShiftFactor                : ARRAY [1..iCPr_NB_PU] OF LREAL;  (*shift of virtual start signal value from detection towards print group [m]*)
-  fL_Pg_vStartShiftOffset                : ARRAY [1..iCPr_NB_PU] OF LREAL;  (*shift of virtual start signal value from detection towards print group [m]*)
-  fL_SubstrateLen                        : ARRAY [1..iCPr_NB_PU] OF REAL;   (*length of substrate [m]*)
+  //iL_ResolutionPhPx                      : ARRAY [1..iCPr_NB_PU] OF INT;    (*printhead pixel resolution [dpi]*)
+  //fL_ResolutionEncoder                   : ARRAY [1..iCPr_NB_PU] OF LREAL;  (*resolution of encoder [um/increment]*)
+  //iL_ResolutionSubPx                     : ARRAY [1..iCPr_NB_PU] OF INT;    (*subpixel pulse resolution [pulse/px]*)
+  //fL_Pg_xOffset                          : ARRAY [1..iCPr_NB_PG] OF LREAL;  (*static offset of print group from start detection [m]*)
+  //fL_Pg_vStartShiftFactor                : ARRAY [1..iCPr_NB_PU] OF LREAL;  (*shift of virtual start signal value from detection towards print group [m]*)
+  //fL_Pg_vStartShiftOffset                : ARRAY [1..iCPr_NB_PU] OF LREAL;  (*shift of virtual start signal value from detection towards print group [m]*)
+  //fL_SubstrateLen                        : ARRAY [1..iCPr_NB_PU] OF REAL;   (*length of substrate [m]*)
 
   bL_sAdsPrintUnit_bI_Enable             : ARRAY [1..iCPr_NB_PU] OF BOOL;
   lL_sAdsPrintUnit_sI_ShiftJobX          : ARRAY [1..iCPr_NB_PU] OF DINT;   (*Job(Unit) shift X in Pixel*)
   lL_sAdsPrintUnit_sI_ShiftJobY          : ARRAY [1..iCPr_NB_PU] OF DINT;   (*Job(Unit) shift Y in Pixel*)
 
   (*PM*)
-  fL_ResolutionEncoderPM                 : ARRAY [1..iCPr_NB_PM] OF LREAL;  (*resolution of encoder [um/increment]*)
+  //fL_ResolutionEncoderPM                 : ARRAY [1..iCPr_NB_PM] OF LREAL;  (*resolution of encoder [um/increment]*)
 
   (*PG*)
   rL_sAdsPrintGroup_bI_Enable            : ARRAY [1..iCPr_NB_PG] OF BOOL;
@@ -53,15 +53,15 @@ STRUCT
   bL_WithMark                            : BOOL;  (*use mark detection*)
   fL_MarkLength                          : REAL;  (*mark length*)
   fL_MarkHeigth                          : REAL;  (*mark width*)
-  fL_HeadGap                             : REAL;
+  //fL_HeadGap                             : REAL;
 
-  bL_SpeedCompensationEnable             : BOOL;
-  fL_SpeedCompensationFactor             : REAL;
-  fL_SpeedCompensationBase               : REAL;
+  //bL_SpeedCompensationEnable             : BOOL;
+  //fL_SpeedCompensationFactor             : REAL;
+  //fL_SpeedCompensationBase               : REAL;
 
   fR_DriftTimeShift                      : LREAL;
   
-  iL_MonitorTempPH                       : INT;  (*Monitor level of temperature*)
+  //iL_MonitorTempPH                       : INT;  (*Monitor level of temperature*)
 
 (*Last entry----retain (remanent) variables of PRG_PRINT and realated modules*)
   aL_Pattern                             : UDINT;  (*check pattern for rem validity*)

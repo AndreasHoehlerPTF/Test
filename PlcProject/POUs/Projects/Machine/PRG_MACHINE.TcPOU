@@ -428,7 +428,7 @@ FOR iL_Counter := 1 TO iCPr_NB_PM DO
   iMachineInk[iL_Counter].pReceiptMessage    := fb_MsgQueueMachine[1].bO_ReceiptMessage;
 END_FOR
 
-//bI_MachineStopped        := PRG_PRINT.bL_MachineStopped[ePr_PU_UNIT_1];
+
 fI_PrintingPosition      := PRG_PRINT.sAdsSheetAlignment[ePr_PU_UNIT_1].sI_HeadGap.fI_Val;
 bI_PrintActive           := PRG_PRINT.FB_PU[ePr_PU_UNIT_1].sO_UnitStatus.bPrinting;
 sI_JobInkConsumption     := PRG_PRINT.sAdsPrintUnit[ePr_PU_UNIT_1].sI_JobInkConsumption;
@@ -479,13 +479,9 @@ END_IF
 (*System command: sleep/wake up, emergency stop                                                                      *)
 (*-------------------------------------------------------------------------------------------------------------------*)
 
+(*EStop handling*)
 iSystemCmd.setEmergencyState(bEmergency := IbEAP_EStop);
 rfTrig_Estop(CLK:=IbEAP_EStop);
-
-// setup intermediate variable still used everywhere
-sO_SystemCmd.bEStop := FALSE;
-sO_SystemCmd.bSleep := FALSE;
-sO_SystemCmd.bAirNotOk := FALSE;
 
 (*Sleep and WakeUp from machine*)
 fb_RTrigShutdownActive(CLK := IbEAP_StandbyActive AND ObEAP_ShutdownReady);
@@ -496,6 +492,12 @@ IF bL_SleepVisu             THEN iSystemCmd.enterSleep('Visu'); bL_SleepVisu := 
 IF bL_WakeUpVisu            THEN iSystemCmd.exitSleep('Visu'); bL_WakeUpVisu := FALSE; END_IF
 IF fb_RTrigOpModeHoming.Q   THEN iSystemCmd.exitSleep('Homing'); END_IF 
 bAllowSleepFromMachine := ObEAP_ShutdownReady;
+
+// setup intermediate variable still used everywhere
+sO_SystemCmd.bEStop := iSystemStatus.bEmergency;
+sO_SystemCmd.bSleep := iSystemStatus.bSleep;
+sO_SystemCmd.bAirNotOk := FALSE;
+
 
 
 FOR iL_Counter := 1 TO iCPr_NB_PM DO
@@ -1437,18 +1439,17 @@ fb_CleaningPU[2].fI_PositionPrint   := 1;
       <LineId Id="85877" Count="2" />
       <LineId Id="83879" Count="0" />
       <LineId Id="85880" Count="0" />
-      <LineId Id="83883" Count="20" />
+      <LineId Id="83883" Count="2" />
+      <LineId Id="88468" Count="0" />
+      <LineId Id="83887" Count="16" />
       <LineId Id="86318" Count="0" />
       <LineId Id="83904" Count="20" />
       <LineId Id="85862" Count="5" />
       <LineId Id="83930" Count="4" />
+      <LineId Id="88855" Count="0" />
       <LineId Id="87986" Count="1" />
       <LineId Id="88087" Count="0" />
-      <LineId Id="87992" Count="0" />
-      <LineId Id="87991" Count="0" />
-      <LineId Id="87989" Count="1" />
-      <LineId Id="87988" Count="0" />
-      <LineId Id="87985" Count="0" />
+      <LineId Id="88854" Count="0" />
       <LineId Id="83935" Count="0" />
       <LineId Id="88079" Count="1" />
       <LineId Id="83936" Count="0" />
@@ -1456,7 +1457,9 @@ fb_CleaningPU[2].fI_PositionPrint   := 1;
       <LineId Id="88076" Count="1" />
       <LineId Id="83942" Count="0" />
       <LineId Id="88081" Count="0" />
+      <LineId Id="88850" Count="3" />
       <LineId Id="83975" Count="0" />
+      <LineId Id="88856" Count="1" />
       <LineId Id="83989" Count="54" />
       <LineId Id="84045" Count="0" />
       <LineId Id="87213" Count="0" />

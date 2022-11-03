@@ -196,6 +196,11 @@
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
+              <v n="TextID">"6067"</v>
+              <v n="TextDefault">" Offset [m]"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
               <v n="TextID">"986"</v>
               <v n="TextDefault">" Offset [m] : %f"</v>
               <l n="LanguageTexts" t="ArrayList" />
@@ -316,6 +321,11 @@
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
+              <v n="TextID">"13811"</v>
+              <v n="TextDefault">" Speed-dependent factor [s]"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
               <v n="TextID">"985"</v>
               <v n="TextDefault">" Speed-dependent factor [s] :
  %f"</v>
@@ -398,8 +408,18 @@
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
+              <v n="TextID">"18487"</v>
+              <v n="TextDefault">"%0.1f [m/min]"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
               <v n="TextID">"7779"</v>
               <v n="TextDefault">"%0.1f [mbar] "</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"6147"</v>
+              <v n="TextDefault">"%0.1f [um]"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
@@ -413,6 +433,11 @@
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
+              <v n="TextID">"6769"</v>
+              <v n="TextDefault">"%0.3f [m/s]"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
               <v n="TextID">"1141"</v>
               <v n="TextDefault">"%0.4f"</v>
               <l n="LanguageTexts" t="ArrayList" />
@@ -420,6 +445,11 @@
             <o>
               <v n="TextID">"397"</v>
               <v n="TextDefault">"%0.6f"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"4314"</v>
+              <v n="TextDefault">"%0.6f [ms]"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
@@ -870,6 +900,22 @@
             <o>
               <v n="TextID">"441"</v>
               <v n="TextDefault">"1"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"6166"</v>
+              <v n="TextDefault">"1. Activate (Drop)SpeedComp with Time set to 0
+
+2. Test1: print with production speed1
+   -&gt; Measure displacement with Speed1
+
+3. Test2: print with production speed2
+   -&gt; Measure displacement with Speed2
+
+4. Enter Speed and Displacement values in
+    table for Test1 and Test2
+
+5. Start new Time calculation"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
@@ -1857,6 +1903,16 @@ Bit 7: 16#80: Over run error"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
+              <v n="TextID">"18477"</v>
+              <v n="TextDefault">"Calculate new time"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"1431"</v>
+              <v n="TextDefault">"Calculate new Time"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
               <v n="TextID">"33"</v>
               <v n="TextDefault">"Calibration"</v>
               <l n="LanguageTexts" t="ArrayList" />
@@ -2511,6 +2567,11 @@ connected manually"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
+              <v n="TextID">"2419"</v>
+              <v n="TextDefault">"Dead/Add Time"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
               <v n="TextID">"761"</v>
               <v n="TextDefault">"Debug counter index found: %d"</v>
               <l n="LanguageTexts" t="ArrayList" />
@@ -2802,6 +2863,11 @@ VISU_VACUUM"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
+              <v n="TextID">"2162"</v>
+              <v n="TextDefault">"Displacement"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
               <v n="TextID">"12778"</v>
               <v n="TextDefault">"Distance mark 1 to 2 [mm]"</v>
               <l n="LanguageTexts" t="ArrayList" />
@@ -2871,6 +2937,16 @@ dt"</v>
             <o>
               <v n="TextID">"64"</v>
               <v n="TextDefault">"DropSize : %d"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"4615"</v>
+              <v n="TextDefault">"DropSpeed"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"14399"</v>
+              <v n="TextDefault">"DropSpeedCorr"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
@@ -2984,6 +3060,11 @@ dt"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
+              <v n="TextID">"2501"</v>
+              <v n="TextDefault">"Enable Correction"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
               <v n="TextID">"266"</v>
               <v n="TextDefault">"Enable Dgas valve"</v>
               <l n="LanguageTexts" t="ArrayList" />
@@ -3081,6 +3162,11 @@ dt"</v>
             <o>
               <v n="TextID">"234"</v>
               <v n="TextDefault">"Enabled"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"7765"</v>
+              <v n="TextDefault">"Enabled compensation"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
@@ -3681,6 +3767,31 @@ dt"</v>
             <o>
               <v n="TextID">"3904"</v>
               <v n="TextDefault">"Head base plate gap to roller table [m]: %f"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"4341"</v>
+              <v n="TextDefault">"Head base plate to roller table"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"14853"</v>
+              <v n="TextDefault">"Head base plate to roller table [mm]"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"10221"</v>
+              <v n="TextDefault">"Head base plate to roller table [m]"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"16374"</v>
+              <v n="TextDefault">"Head base plate to table gap [mm]"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"4730"</v>
+              <v n="TextDefault">"Head base plate to table [mm]"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
@@ -5835,6 +5946,21 @@ speed
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
+              <v n="TextID">"14670"</v>
+              <v n="TextDefault">"PM"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"13698"</v>
+              <v n="TextDefault">"PM1"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"9706"</v>
+              <v n="TextDefault">"PM2"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
               <v n="TextID">"16202"</v>
               <v n="TextDefault">"PM: %d"</v>
               <l n="LanguageTexts" t="ArrayList" />
@@ -6172,6 +6298,11 @@ VISU_PU"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
+              <v n="TextID">"5941"</v>
+              <v n="TextDefault">"PrintGroup: %d"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
               <v n="TextID">"141"</v>
               <v n="TextDefault">"Printhead 1"</v>
               <l n="LanguageTexts" t="ArrayList" />
@@ -6436,6 +6567,26 @@ for purge"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
+              <v n="TextID">"2760"</v>
+              <v n="TextDefault">"Printline 1"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"8759"</v>
+              <v n="TextDefault">"Printline 2"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"12243"</v>
+              <v n="TextDefault">"Printline 3"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"16572"</v>
+              <v n="TextDefault">"Printline 4"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
               <v n="TextID">"414"</v>
               <v n="TextDefault">"PrintMode"</v>
               <l n="LanguageTexts" t="ArrayList" />
@@ -6468,6 +6619,11 @@ for purge"</v>
             <o>
               <v n="TextID">"897"</v>
               <v n="TextDefault">"Product"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"5301"</v>
+              <v n="TextDefault">"ProductionSpeed"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
@@ -7488,6 +7644,16 @@ Px"</v>
             <o>
               <v n="TextID">"769"</v>
               <v n="TextDefault">"Settings with (X) must be enabled to simulate a multipage job"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"14005"</v>
+              <v n="TextDefault">"Setup"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"6153"</v>
+              <v n="TextDefault">"Setup SpeedCompensation"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
@@ -8521,6 +8687,16 @@ meniscus"</v>
             <o>
               <v n="TextID">"8226"</v>
               <v n="TextDefault">"TEST01"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"1251"</v>
+              <v n="TextDefault">"Test1"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"2109"</v>
+              <v n="TextDefault">"Test2"</v>
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
