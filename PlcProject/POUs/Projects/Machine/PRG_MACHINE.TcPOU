@@ -278,6 +278,7 @@ VAR
   fb_RTrigOpModeHoming                      : R_TRIG;
   fb_RTrigEngaged                           : ARRAY[1..iCPr_NB_PM] OF R_TRIG;
   fb_FTrigEngaged                           : ARRAY[1..iCPr_NB_PM] OF F_TRIG;
+  fb_RTrigPrintEnabled                      : ARRAY[1..iCPr_NB_PM] OF R_TRIG;
   fb_TonSleepToMachine                      : TON;
 
   fb_CappingCommandAfterEStop               : FB_CappingCommand;
@@ -302,7 +303,9 @@ VAR
   sC_Config_M                               : ST_CONFIG_M;
 
   (*Separator pump for tank drainage*)
-  fb_TofSeparatorPump                       : ARRAY[1..iCMa_NB_Cp] OF TOF;
+  fb_TofSeparatorPumpNiveau                 : ARRAY[1..iCMa_NB_Cp] OF TOF;
+  fb_TpSeparatorPumpMachine                 : ARRAY[1..iCMa_NB_Cp] OF TP;
+  fb_TofSeparatorPumpPurge                  : ARRAY[1..iCMa_NB_Cp] OF TOF;
 
   bL_ManualVacuumBin                        : ARRAY[1..iCMa_NB_Cp] OF BOOL := [FALSE,FALSE];
   fb_RTrigManualVacuumBin                   : ARRAY[1..iCMa_NB_Cp] OF R_TRIG;
@@ -428,6 +431,7 @@ END_VAR
 
 VAR PERSISTENT
   tR_TimeSeparatorPump                      : TIME := T#2M;   (*Separator pump for tank drainage*)
+  tR_TimeSeparatorPump2                     : TIME := T#20S;  (*Separator pump for tank drainage*)
 
   tR_CleanerActivationAfterChange           : TIME := T#30S;
   lR_CleanerActivationAfterChange           : DINT := 30;          (*[%]*)
@@ -754,6 +758,8 @@ FOR iL_Counter := 1 TO iCPr_NB_PM DO
     bL_ProductionMode[iL_Counter] := FALSE;
   END_IF
 *)
+
+  fb_RTrigPrintEnabled[iL_Counter](CLK := IbEAP_PrintEnabled[iL_Counter]);
 END_FOR
 
 
@@ -879,9 +885,18 @@ FOR iL_Counter := 1 TO iCMa_NB_Cp DO
 
 
   (*Separator pump for tank drainage*)
-  fb_TofSeparatorPump[iL_Counter]( IN := bL_IO_EStopOK AND NOT bIKp_SeparatorNiveau_Ok[iL_Counter]
-                                 , PT := tR_TimeSeparatorPump);
-  bO_SeparatorPumpDrainage[iL_Counter] := fb_TofSeparatorPump[iL_Counter].Q OR (iMachineInk[iL_Counter].pPurgeBusy AND NOT PRG_INK.bO_TankRefuseLevelFull);
+  //if level reached (with off-delay)
+  fb_TofSeparatorPumpNiveau[iL_Counter]( IN := bL_IO_EStopOK AND NOT bIKp_SeparatorNiveau_Ok[iL_Counter]
+                                       , PT := tR_TimeSeparatorPump);
+  //if Engaged or PrintEnabled is set (pulse)
+  fb_TpSeparatorPumpMachine[iL_Counter]( IN := fb_RTrigEngaged[iL_Counter].Q OR fb_RTrigPrintEnabled[iL_Counter].Q
+                                       , PT := tR_TimeSeparatorPump2);
+  //while Purge (with off-delay)
+  fb_TofSeparatorPumpPurge [iL_Counter]( IN := iMachineInk[iL_Counter].pPurgeBusy AND NOT PRG_INK.bO_TankRefuseLevelFull
+                                       , PT := tR_TimeSeparatorPump2);
+  bO_SeparatorPumpDrainage[iL_Counter] :=    fb_TofSeparatorPumpNiveau[iL_Counter].Q
+                                        //OR fb_TpSeparatorPumpMachine[iL_Counter].Q  not used yet 
+                                          OR fb_TofSeparatorPumpPurge [iL_Counter].Q;
 END_FOR
 
 
@@ -1622,38 +1637,7 @@ fb_CleaningPU[2].fI_PositionPrint   := 1;
       </Implementation>
     </Action>
     <LineIds Name="PRG_MACHINE">
-      <LineId Id="83840" Count="38" />
-      <LineId Id="85877" Count="2" />
-      <LineId Id="83879" Count="0" />
-      <LineId Id="85880" Count="0" />
-      <LineId Id="83883" Count="20" />
-      <LineId Id="86318" Count="0" />
-      <LineId Id="83904" Count="20" />
-      <LineId Id="85862" Count="5" />
-      <LineId Id="83930" Count="113" />
-      <LineId Id="84045" Count="0" />
-      <LineId Id="87213" Count="0" />
-      <LineId Id="87216" Count="0" />
-      <LineId Id="87215" Count="0" />
-      <LineId Id="84047" Count="35" />
-      <LineId Id="85868" Count="4" />
-      <LineId Id="84993" Count="0" />
-      <LineId Id="87210" Count="1" />
-      <LineId Id="84083" Count="14" />
-      <LineId Id="85873" Count="2" />
-      <LineId Id="84098" Count="143" />
-      <LineId Id="84245" Count="4" />
-      <LineId Id="84251" Count="9" />
-      <LineId Id="85424" Count="0" />
-      <LineId Id="84262" Count="8" />
-      <LineId Id="85876" Count="0" />
-      <LineId Id="84272" Count="48" />
-      <LineId Id="86320" Count="2" />
-      <LineId Id="86325" Count="4" />
-      <LineId Id="86324" Count="0" />
-      <LineId Id="86766" Count="2" />
-      <LineId Id="86773" Count="0" />
-      <LineId Id="84321" Count="243" />
+      <LineId Id="89749" Count="759" />
       <LineId Id="75881" Count="0" />
     </LineIds>
     <LineIds Name="PRG_MACHINE.EpsitronFuseControl">
