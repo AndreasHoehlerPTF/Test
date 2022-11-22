@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <GVL Name="GVL_WEU" Id="{a16cfcaa-61b7-4980-8e53-aee83575b2d6}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL CONSTANT
+  nC_WorkerPrintPerPm : UDINT := 2;
+  //nC_PcPerWorker : UDINT := 2;
+  //nC_PhPerPc : UDINT := 2;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

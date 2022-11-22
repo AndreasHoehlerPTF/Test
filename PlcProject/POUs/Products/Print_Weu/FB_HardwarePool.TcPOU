@@ -1,0 +1,320 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <POU Name="FB_HardwarePool" Id="{dc6e6fc1-676a-439f-b6a6-c9c7d3aaaa52}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_HardwarePool EXTENDS T_NamedBase IMPLEMENTS I_HardwarePool
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+  //Registered devices
+  _rPc   : ARRAY [1..iCPr_NB_PC] OF POINTER TO FB_PC;
+  _rPh   : ARRAY [1..iCPr_NB_PH] OF POINTER TO FB_PH;
+  _nPcCount : UDINT;
+  _nPhCount : UDINT;
+  
+  //Initialization data
+  _bInitOk             : BOOL;
+  _sAmsNetIdLocalhost  : STRING;
+  _sAmsNetIdIo         : STRING;
+  _pOd                 : POINTER TO FB_OD;
+  _pConfig             : POINTER TO ST_CONFIG_P;
+  
+  // Firmware update
+  (* -- fw/hw upgrade -- *)
+  fb_fwhw_update       : FB_CALMAR_UPDATE;
+  (* -- hib remote update -- *)
+	fb_pc_hib_rupd       : ARRAY[1..iCPr_NB_PC] OF FB_PC_HIB_RUPD;(*HIB remote update channles*)
+  fb_hib_rup           : FB_HIB_UPDATE;                         (*HIB remote updater*)
+  
+  //Visu
+  _bVisuInitOk         : BOOL;
+  fb_visu_pc                                 : FB_PC_Visu;
+  fb_visu_ph                                 : FB_PH_Visu;
+  
+  fBPcSelector         : FB_VisuSelector;
+  fBPhSelector         : FB_VisuSelector;
+  
+  _rPcVisuSel          : POINTER TO FB_PC;
+  _rPhVisuSel          : POINTER TO FB_PH;
+  _rAdsPcVisuSel       : POINTER TO ST_ADS_PC;
+  _rAdsPhVisuSel       : POINTER TO ST_ADS_PH;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[fb_fwhw_update();
+fb_hib_rup();
+]]></ST>
+    </Implementation>
+    <Property Name="bError_fwhw_update" Id="{0f605c44-5743-4fb7-9932-da50df6a2395}">
+      <Declaration><![CDATA[PROPERTY bError_fwhw_update : BOOL]]></Declaration>
+      <Get Name="Get" Id="{420c1e82-844d-4b35-8b8d-2c11a1c59ae2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="bError_hib_rup" Id="{c6cdf711-cbe8-4672-b742-c12cece0cc50}">
+      <Declaration><![CDATA[PROPERTY bError_hib_rup : BOOL]]></Declaration>
+      <Get Name="Get" Id="{4e7b66e9-e213-4bf1-8cc0-438ab5393cd6}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="init" Id="{b7133213-8fc5-4d3a-b538-d707a667bd2d}">
+      <Declaration><![CDATA[METHOD init
+VAR_INPUT
+  sAmsNetIdLocalhost  : STRING;
+  sAmsNetIdIo         : STRING;
+  pOd                 : POINTER TO FB_OD;
+  pConfig             : POINTER TO ST_CONFIG_P;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_sAmsNetIdLocalhost  := sAmsNetIdLocalhost;  
+_sAmsNetIdIo         := sAmsNetIdIo;         
+_pOd                 := pOd;  
+_pConfig             := pConfig;
+
+
+
+(*File Downloader*)
+(*************************************************************************************************)
+(* - firmware*)
+fb_fwhw_update.aI_appl_file_path := F_Concat3(aC_PlcConfigPath, aC_PlcFlashFileSubPath, 'user.appl');
+fb_fwhw_update.aI_fpga_file_path := F_Concat3(aC_PlcConfigPath, aC_PlcFlashFileSubPath, 'user.fpga');
+fb_fwhw_update(pI_fbPc:= _rPc);
+fb_fwhw_update.init();
+
+(* - hib remote update*)
+fb_hib_rup.bI_Enable := TRUE;
+fb_hib_rup.aI_FilePath := F_Concat3(aC_PlcConfigPath, aC_PlcFlashFileSubPath, 'user.hib');
+fb_hib_rup(sI_Ary_Fb:=fb_pc_hib_rupd, pI_Ary_Fb_Pc:=_rPc);
+
+_bInitOk := TRUE;
+               ]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="nPcs" Id="{1daf2440-0af1-4f1c-90c6-86b30a842297}">
+      <Declaration><![CDATA[PROPERTY nPcs : UDINT]]></Declaration>
+      <Get Name="Get" Id="{20874829-0cf3-4933-95ac-062aa6610e02}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[nPcs := _nPcCount;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="pPcs" Id="{0f995b90-a445-47fa-9319-61e8b667bb69}">
+      <Declaration><![CDATA[PROPERTY pPcs : POINTER TO ARRAY[1..iCPr_NB_PC] OF POINTER TO FB_PC]]></Declaration>
+      <Get Name="Get" Id="{48c3b5c6-325d-4bd9-9bb1-cc2015a0f72e}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[pPcs := ADR(_rPc);]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="registerPc" Id="{80bacc8d-0d64-4a6d-b6a7-a780efba270b}">
+      <Declaration><![CDATA[METHOD registerPc : BOOL
+VAR_INPUT
+	sNewPc	    : POINTER TO FB_PC;
+END_VAR
+
+VAR
+  aName : STRING;
+	pAds: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF _nPcCount<TO_UDINT(iCPr_NB_PC) AND sNewPc <> 0 AND _bInitOk THEN
+  _nPcCount := _nPcCount + 1;
+  _rPc[_nPcCount] := sNewPc;
+  
+  (*still done in PRG_PRINT
+  aName := _pConfig^.aC_PC_NAME;
+  aName :=CONCAT(aName, TO_STRING(_nPcCount)); 
+  
+  //Init Device
+  sNewPc^.init(
+    aName               := aName,
+    pAdsConfig          := pAdsConfig,
+    sAmsNetIdLocalHost  := _sAmsNetIdLocalhost,
+    sAmsNetIdIo         := _sAmsNetIdIo,
+    nEcatSlaveAddr      := TO_UINT(nC_Pc_EcatBaseAddress+TO_INT(_nPcCount)-1),
+    nBlockId            := TO_INT(ePr_BLK_PC),
+    pOd                 := _pOd,
+    bHeaterEnableExist  := FALSE,
+    bPrintEnableExist   := TRUE
+ ); *)
+
+ELSE
+    LogError('register PC failed');
+END_IF
+
+
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="registerPh" Id="{855927c5-b5cb-408e-bb30-d12a26f9ede4}">
+      <Declaration><![CDATA[METHOD registerPh : BOOL
+VAR_INPUT
+	pNewPh	     : POINTER TO CalmarCompPrint.FB_PH;
+  //pAdsConfig   : POINTER TO FB_ADS_Config;
+  //pConnectedCb : POINTER TO CalmarCompPrint.FB_PC;
+  //iChannel     : INT;
+END_VAR
+
+VAR
+  aName : STRING;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF _nPhCount<TO_UDINT(iCPr_NB_PH) AND pNewPh <> 0 AND _bInitOk THEN
+  _nPhCount := _nPhCount + 1;
+  _rPh[_nPhCount] := pNewPh;
+  
+  (* still done in PRG_PRINT
+  aName := _pConfig^.aC_PH_NAME;
+  aName :=CONCAT(aName, TO_STRING(_nPhCount)); 
+ 
+  pNewPh^.init(
+    aName              := aName,     
+    pAdsConfig         := pAdsConfig,
+    sPhDef             := GVL_PrintDef.XAAR_GS12U,    
+    tTempMonitor       := T#30S,
+    iFoeHandler        := pConnectedCb^,
+    iChannel           := iChannel,
+    bPositionX_Exist   := TRUE,                               
+    aPositionX_Unit    := _pConfig^.aC_PH_POSITION_X_UNIT,   
+    lPositionX_Min     := _pConfig^.lL_PH_POSITION_X_SET_MIN, 
+    lPositionX_Max     := _pConfig^.lL_PH_POSITION_X_SET_MAX,
+    bPositionY_Exist   := TRUE,                              
+    aPositionY_Unit    := _pConfig^.aC_PH_POSITION_Y_UNIT,  
+    lPositionY_Min     := _pConfig^.lL_PH_POSITION_Y_SET_MIN, 
+    lPositionY_Max     := _pConfig^.lL_PH_POSITION_Y_SET_MAX,
+    bVoltageScale_Exist := TRUE,
+    aVoltageScale_Unit  := '%', 
+    fVoltageScale_Min   := 90.0,  
+    fVoltageScale_Max   := 110.0 
+  );
+  *)
+
+ELSE
+    LogError('register PH failed');
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Action Name="visu" Id="{935fe5c8-9c27-4705-85d3-899e8605f357}">
+      <Implementation>
+        <ST><![CDATA[//Init Visu
+IF NOT _bVisuInitOk THEN
+  fBPcSelector.setAryBounds(iLowerBoundary := 1,iUpperBoundary := TO_DINT(_nPcCount));
+  fBPhSelector.setAryBounds(iLowerBoundary := 1,iUpperBoundary := TO_DINT(_nPhCount));
+  _bVisuInitOk :=TRUE;
+END_IF
+
+//Visu ********************
+_rPcVisuSel       := _rPc[fBPcSelector.pSelect^];
+_rAdsPcVisuSel    := _rPc[fBPcSelector.pSelect^]^._pAds;
+_rPhVisuSel       := _rPh[fBPhSelector.pSelect^];
+_rAdsPhVisuSel    := _rPh[fBPcSelector.pSelect^]^._pAdsIf;
+]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="FB_HardwarePool">
+      <LineId Id="36" Count="1" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HardwarePool.bError_fwhw_update.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HardwarePool.bError_hib_rup.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HardwarePool.init">
+      <LineId Id="22" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="41" Count="11" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="27" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HardwarePool.nPcs.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HardwarePool.pPcs.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HardwarePool.registerPc">
+      <LineId Id="7" Count="0" />
+      <LineId Id="15" Count="1" />
+      <LineId Id="108" Count="0" />
+      <LineId Id="122" Count="0" />
+      <LineId Id="110" Count="1" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="99" Count="7" />
+      <LineId Id="94" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="17" Count="2" />
+      <LineId Id="40" Count="1" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HardwarePool.registerPh">
+      <LineId Id="8" Count="2" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="113" Count="0" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="84" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="99" Count="0" />
+      <LineId Id="72" Count="2" />
+      <LineId Id="100" Count="1" />
+      <LineId Id="76" Count="6" />
+      <LineId Id="65" Count="0" />
+      <LineId Id="87" Count="2" />
+      <LineId Id="86" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="114" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="11" Count="1" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HardwarePool.visu">
+      <LineId Id="5" Count="0" />
+      <LineId Id="1" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="2" Count="1" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="8" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

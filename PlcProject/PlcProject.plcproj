@@ -39,12 +39,12 @@ Fribourg/Switzerland (2017)</Description>
     <Folder Include="POUs\Products\Ink\InkCirculation" />
     <Folder Include="POUs\Products\Machine" />
     <Folder Include="POUs\Products\Machine\CleaningStation" />
-    <Folder Include="POUs\Products\Dmax" />
     <Folder Include="POUs\Products\Ink" />
     <Folder Include="POUs\Products\obsolete">
       <ExcludeFromBuild>true</ExcludeFromBuild>
     </Folder>
     <Folder Include="POUs\Products\Print_Weu" />
+    <Folder Include="POUs\Products\Print_Weu\Mark" />
     <Folder Include="POUs\Products\Print_Weu\UV_LED_Modul" />
     <Folder Include="POUs\Projects" />
     <Folder Include="POUs\Projects\InkSystem" />
@@ -107,34 +107,6 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\CheckPointer.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\Dmax\FB_ContainerDefGrid.TcPOU">
-      <SubType>Code</SubType>
-      <LinkAlways>true</LinkAlways>
-    </Compile>
-    <Compile Include="POUs\Products\Dmax\FB_CTManagerDefGrid.TcPOU">
-      <SubType>Code</SubType>
-      <LinkAlways>true</LinkAlways>
-    </Compile>
-    <Compile Include="POUs\Products\Dmax\FB_DropSpeedComp.TcPOU">
-      <SubType>Code</SubType>
-      <LinkAlways>true</LinkAlways>
-    </Compile>
-    <Compile Include="POUs\Products\Dmax\FB_PrintPositionDmax.TcPOU">
-      <SubType>Code</SubType>
-      <LinkAlways>true</LinkAlways>
-    </Compile>
-    <Compile Include="POUs\Products\Dmax\FB_StartPositionDummy.TcPOU">
-      <SubType>Code</SubType>
-      <LinkAlways>true</LinkAlways>
-    </Compile>
-    <Compile Include="POUs\Products\Dmax\F_EncoderSpeedComp.TcPOU">
-      <SubType>Code</SubType>
-      <LinkAlways>true</LinkAlways>
-    </Compile>
-    <Compile Include="POUs\Products\Dmax\_VISU_DropSpeedComp_Setup.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
     <Compile Include="POUs\Products\FB_InspectionSystemTrigger.TcPOU">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
@@ -196,8 +168,20 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Products\obsolete\FB_HWLATCH.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Products\obsolete\FB_Pm_WEU.TcPOU">
+      <SubType>Code</SubType>
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </Compile>
     <Compile Include="POUs\Products\obsolete\FB_StartPositionDummy_HOA.TcPOU">
       <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\obsolete\FB_WorkerWeu.TcPOU">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="POUs\Products\obsolete\FB_WorkerWeu_Print.TcPOU">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
     </Compile>
     <Compile Include="POUs\Products\obsolete\_VISU_DRIFTCONTROL.TcVIS">
       <SubType>Code</SubType>
@@ -206,11 +190,14 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Products\Print_Weu\E_PosDomain.TcTLEO">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Products\Print_Weu\FB_HardwarePool.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Products\Print_Weu\FB_NeutralFibreDetermine.TcPOU">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_Pm_WEU.TcPOU">
+    <Compile Include="POUs\Products\Print_Weu\FB_ParamMediatorWeu.TcPOU">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
@@ -225,21 +212,20 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Products\Print_Weu\FB_StartPositionWeu.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_MarkDetection_Triangle.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_WorkerWeu_Print.TcPOU">
+    <Compile Include="POUs\Products\Print_Weu\GVL_WEU.TcGVL">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_WorkerWeu.TcPOU">
-      <SubType>Code</SubType>
-      <LinkAlways>true</LinkAlways>
-    </Compile>
-    <Compile Include="POUs\Products\Print_Weu\ST_MarkDefinition_Triangle.TcDUT">
+    <Compile Include="POUs\Products\Print_Weu\I_HardwarePool.TcIO">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\ST_ModuleMachineState.TcDUT">
+    <Compile Include="POUs\Products\Print_Weu\Mark\FB_MarkDetection_Triangle.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\ST_MarkDefinition_Triangle.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\ST_ModuleMachineInterface.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\UV_LED_Modul\FB_UvLedModule.TcPOU">
@@ -416,6 +402,10 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
+    <Compile Include="VISUs\Projects\Print\VISU_Hardware.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
     <Compile Include="VISUs\Projects\Print\VISU_PhEnable_M2.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
@@ -470,6 +460,10 @@ Fribourg/Switzerland (2017)</Description>
       <DefaultResolution>CalmarCommons, * (WIFAG-Polytype)</DefaultResolution>
       <Namespace>CalmarCommons</Namespace>
     </PlaceholderReference>
+    <PlaceholderReference Include="CalmarCompDevices">
+      <DefaultResolution>CalmarCompDevices, * (WIFAG-Polytype)</DefaultResolution>
+      <Namespace>CalmarCompDevices</Namespace>
+    </PlaceholderReference>
     <PlaceholderReference Include="CalmarCompInkSystem">
       <DefaultResolution>CalmarCompInkSystem, * (WIFAG-Polytype)</DefaultResolution>
       <Namespace>CalmarCompInkSystem</Namespace>
@@ -491,6 +485,10 @@ Fribourg/Switzerland (2017)</Description>
     <PlaceholderReference Include="CalmarCompSystem">
       <DefaultResolution>CalmarCompSystem, * (WIFAG-Polytype)</DefaultResolution>
       <Namespace>CalmarCompSystem</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="CalmarProdDmax">
+      <DefaultResolution>CalmarProdDmax, * (WIFAG-Polytype)</DefaultResolution>
+      <Namespace>CalmarProdDmax</Namespace>
     </PlaceholderReference>
     <PlaceholderReference Include="RecipeManagement">
       <DefaultResolution>Recipe Management, 3.3.1.0 (System)</DefaultResolution>
@@ -598,54 +596,26 @@ Fribourg/Switzerland (2017)</Description>
   </ItemGroup>
   <ItemGroup>
     <PlaceholderResolution Include="CalmarCommons">
-      <Resolution>CalmarCommons, 1.7.0.0 (WIFAG-Polytype)</Resolution>
+      <Resolution>CalmarCommons, 1.7.0 (WIFAG-Polytype)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="CalmarCompDevices">
+      <Resolution>CalmarCompDevices, 1.7.0 (WIFAG-Polytype)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CalmarCompInkSystem">
-      <Resolution>CalmarCompInkSystem, 1.7.0.0 (WIFAG-Polytype)</Resolution>
+      <Resolution>CalmarCompInkSystem, 1.7.0 (WIFAG-Polytype)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CalmarCompMachine">
-      <Resolution>CalmarCompMachine, 1.7.0.0 (WIFAG-Polytype)</Resolution>
+      <Resolution>CalmarCompMachine, 1.7.0 (WIFAG-Polytype)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CalmarCompPrint">
-      <Resolution>CalmarCompPrint, 2.1.0.0 (WIFAG-Polytype)</Resolution>
+      <Resolution>CalmarCompPrint, 2.1.0 (WIFAG-Polytype)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CalmarCompSystem">
-      <Resolution>CalmarCompSystem, 1.7.0.0 (WIFAG-Polytype)</Resolution>
+      <Resolution>CalmarCompSystem, 1.7.0 (WIFAG-Polytype)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CmpIecTask">
       <Resolution>CmpIecTask, 3.5.13.0 (System)</Resolution>
     </PlaceholderResolution>
-  </ItemGroup>
-  <ItemGroup>
-    <SubObject Include="FB_WorkerWeu_Print.aPaState" />
-    <SubObject Include="FB_WorkerWeu_Print.aPaState.Get" />
-    <SubObject Include="FB_WorkerWeu_Print.Attach" />
-    <SubObject Include="FB_WorkerWeu_Print.InitMsg" />
-    <SubObject Include="FB_WorkerWeu_Print.InitWorkerPrint" />
-    <SubObject Include="FB_WorkerWeu_Print.mJobStart" />
-    <SubObject Include="FB_WorkerWeu_Print.mJobStop" />
-    <SubObject Include="FB_WorkerWeu_Print.registerPc" />
-    <SubObject Include="FB_WorkerWeu_Print.registerPh" />
-    <SubObject Include="FB_WorkerWeu_Print.sPcFlags" />
-    <SubObject Include="FB_WorkerWeu_Print.sPcFlags.Get" />
-    <SubObject Include="FB_WorkerWeu_Print.sPcState" />
-    <SubObject Include="FB_WorkerWeu_Print.sPcState.Get" />
-    <SubObject Include="FB_WorkerWeu_Print.work" />
-    <SubObject Include="FB_WorkerWeu.Abort" />
-    <SubObject Include="FB_WorkerWeu.Attach" />
-    <SubObject Include="FB_WorkerWeu.bAttached" />
-    <SubObject Include="FB_WorkerWeu.bAttached.Get" />
-    <SubObject Include="FB_WorkerWeu.fPosition" />
-    <SubObject Include="FB_WorkerWeu.fPosition.Get" />
-    <SubObject Include="FB_WorkerWeu.fPosition.Set" />
-    <SubObject Include="FB_WorkerWeu.getCtInst" />
-    <SubObject Include="FB_WorkerWeu.Init" />
-    <SubObject Include="FB_WorkerWeu.mJobStart" />
-    <SubObject Include="FB_WorkerWeu.mJobStop" />
-    <SubObject Include="FB_WorkerWeu.Release" />
-    <SubObject Include="FB_WorkerWeu.setName" />
-    <SubObject Include="FB_WorkerWeu.setupPosition" />
-    <SubObject Include="FB_WorkerWeu.work" />
   </ItemGroup>
   <ProjectExtensions>
     <PlcProjectOptions>
@@ -654,6 +624,26 @@ Fribourg/Switzerland (2017)</Description>
           <o xml:space="preserve" t="OptionKey">
       <v n="Name">"&lt;ProjectRoot&gt;"</v>
       <d n="SubKeys" t="Hashtable" ckt="String" cvt="OptionKey">
+        <v>{246001F4-279D-43AC-B241-948EB31120E1}</v>
+        <o>
+          <v n="Name">"{246001F4-279D-43AC-B241-948EB31120E1}"</v>
+          <d n="SubKeys" t="Hashtable" />
+          <d n="Values" t="Hashtable" ckt="String">
+            <v>SymbolLibraryConfiguration</v>
+            <v>"VisuSymbols (System);False
+"</v>
+            <v>UnicodeStrings</v>
+            <v>false</v>
+            <v>GlobalTextListFilePath</v>
+            <v>""</v>
+            <v>ExtendedSettings</v>
+            <v>false</v>
+            <v>GlobalVisuImageFilePath</v>
+            <v>".\"</v>
+            <v>GeneralPropertySupport</v>
+            <v>false</v>
+          </d>
+        </o>
         <v>{8F99A816-E488-41E4-9FA3-846536012284}</v>
         <o>
           <v n="Name">"{8F99A816-E488-41E4-9FA3-846536012284}"</v>
@@ -664,13 +654,52 @@ Fribourg/Switzerland (2017)</Description>
         <o>
           <v n="Name">"{29BD8D0C-3586-4548-BB48-497B9A01693F}"</v>
           <d n="SubKeys" t="Hashtable" ckt="String" cvt="OptionKey">
+            <v>NamingConventions</v>
+            <o>
+              <v n="Name">"NamingConventions"</v>
+              <d n="SubKeys" t="Hashtable" />
+              <d n="Values" t="Hashtable" />
+            </o>
+            <v>Metrics</v>
+            <o>
+              <v n="Name">"Metrics"</v>
+              <d n="SubKeys" t="Hashtable" />
+              <d n="Values" t="Hashtable" />
+            </o>
             <v>Rules</v>
             <o>
               <v n="Name">"Rules"</v>
               <d n="SubKeys" t="Hashtable" ckt="String" cvt="OptionKey">
+                <v>167</v>
+                <o>
+                  <v n="Name">"167"</v>
+                  <d n="SubKeys" t="Hashtable" />
+                  <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
+                    <v>bActive</v>
+                    <v>True</v>
+                  </d>
+                </o>
                 <v>4</v>
                 <o>
                   <v n="Name">"4"</v>
+                  <d n="SubKeys" t="Hashtable" />
+                  <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
+                    <v>bActive</v>
+                    <v>False</v>
+                  </d>
+                </o>
+                <v>33</v>
+                <o>
+                  <v n="Name">"33"</v>
+                  <d n="SubKeys" t="Hashtable" />
+                  <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
+                    <v>bActive</v>
+                    <v>False</v>
+                  </d>
+                </o>
+                <v>6</v>
+                <o>
+                  <v n="Name">"6"</v>
                   <d n="SubKeys" t="Hashtable" />
                   <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
                     <v>bActive</v>
@@ -695,29 +724,14 @@ Fribourg/Switzerland (2017)</Description>
                     <v>False</v>
                   </d>
                 </o>
-                <v>6</v>
-                <o>
-                  <v n="Name">"6"</v>
-                  <d n="SubKeys" t="Hashtable" />
-                  <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
-                    <v>bActive</v>
-                    <v>False</v>
-                  </d>
-                </o>
-                <v>33</v>
-                <o>
-                  <v n="Name">"33"</v>
-                  <d n="SubKeys" t="Hashtable" />
-                  <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
-                    <v>bActive</v>
-                    <v>False</v>
-                  </d>
-                </o>
               </d>
               <d n="Values" t="Hashtable" />
             </o>
           </d>
-          <d n="Values" t="Hashtable" />
+          <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
+            <v>PerformStaticAnalyse</v>
+            <v>False</v>
+          </d>
         </o>
         <v>{40450F57-0AA3-4216-96F3-5444ECB29763}</v>
         <o>
@@ -743,6 +757,8 @@ Fribourg/Switzerland (2017)</Description>
           <v n="Name">"{C70B7845-2722-4a9b-A0EA-88C877A4B36F}"</v>
           <d n="SubKeys" t="Hashtable" />
           <d n="Values" t="Hashtable" ckt="String">
+            <v>EnableMaxAuthenticationTrials</v>
+            <v>true</v>
             <v>MaxAuthenticationTrials</v>
             <v>3</v>
             <v>UserList</v>
@@ -765,22 +781,22 @@ Fribourg/Switzerland (2017)</Description>
             <o t="GroupList">
               <a n="Groups" cet="Group">
                 <o>
-                  <v n="Id">{ce01190b-f443-40f9-9969-d3fb5dc54c2e}</v>
-                  <v n="Name">"Everyone"</v>
+                  <v n="Id">{229969a0-ec33-41b3-81e2-9ddfa8399272}</v>
+                  <v n="Name">"Owner"</v>
                   <v n="Description">""</v>
-                  <v n="IsEveryoneGroup">true</v>
-                  <v n="IsOwnerGroup">false</v>
+                  <v n="IsEveryoneGroup">false</v>
+                  <v n="IsOwnerGroup">true</v>
                   <l n="UserMembers" t="ArrayList" cet="Guid">
                     <v>a34a1b1b-b505-4596-85af-4a78c0b623d9</v>
                   </l>
                   <l n="GroupMembers" t="ArrayList" />
                 </o>
                 <o>
-                  <v n="Id">{229969a0-ec33-41b3-81e2-9ddfa8399272}</v>
-                  <v n="Name">"Owner"</v>
+                  <v n="Id">{ce01190b-f443-40f9-9969-d3fb5dc54c2e}</v>
+                  <v n="Name">"Everyone"</v>
                   <v n="Description">""</v>
-                  <v n="IsEveryoneGroup">false</v>
-                  <v n="IsOwnerGroup">true</v>
+                  <v n="IsEveryoneGroup">true</v>
+                  <v n="IsOwnerGroup">false</v>
                   <l n="UserMembers" t="ArrayList" cet="Guid">
                     <v>a34a1b1b-b505-4596-85af-4a78c0b623d9</v>
                   </l>
@@ -795,13 +811,31 @@ Fribourg/Switzerland (2017)</Description>
                 <v>d41d8cd98f00b204e9800998ecf8427e</v>
               </d>
             </o>
-            <v>EnableMaxAuthenticationTrials</v>
-            <v>true</v>
           </d>
         </o>
         <v>{192FAD59-8248-4824-A8DE-9177C94C195A}</v>
         <o>
           <v n="Name">"{192FAD59-8248-4824-A8DE-9177C94C195A}"</v>
+          <d n="SubKeys" t="Hashtable" />
+          <d n="Values" t="Hashtable" ckt="String" cvt="String">
+            <v>CurrentUmlCompilerVersion</v>
+            <v>4.0.2.1</v>
+          </d>
+        </o>
+        <v>{535658C0-5AF5-460d-99A4-BFFB984A829A}</v>
+        <o>
+          <v n="Name">"{535658C0-5AF5-460d-99A4-BFFB984A829A}"</v>
+          <d n="SubKeys" t="Hashtable" />
+          <d n="Values" t="Hashtable" ckt="String">
+            <v>VersionConstraint</v>
+            <o t="NewestVersionConstraintToSave" />
+            <v>EnableBreakpointLogging</v>
+            <v>false</v>
+          </d>
+        </o>
+        <v>{F66C7017-BDD8-4114-926C-81D6D687E35F}</v>
+        <o>
+          <v n="Name">"{F66C7017-BDD8-4114-926C-81D6D687E35F}"</v>
           <d n="SubKeys" t="Hashtable" />
           <d n="Values" t="Hashtable" />
         </o>
@@ -812,32 +846,6 @@ Fribourg/Switzerland (2017)</Description>
           <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
             <v>ReplaceConstants</v>
             <v>True</v>
-          </d>
-        </o>
-        <v>{F66C7017-BDD8-4114-926C-81D6D687E35F}</v>
-        <o>
-          <v n="Name">"{F66C7017-BDD8-4114-926C-81D6D687E35F}"</v>
-          <d n="SubKeys" t="Hashtable" />
-          <d n="Values" t="Hashtable" />
-        </o>
-        <v>{246001F4-279D-43AC-B241-948EB31120E1}</v>
-        <o>
-          <v n="Name">"{246001F4-279D-43AC-B241-948EB31120E1}"</v>
-          <d n="SubKeys" t="Hashtable" />
-          <d n="Values" t="Hashtable" ckt="String">
-            <v>SymbolLibraryConfiguration</v>
-            <v>"VisuSymbols (System);False
-"</v>
-            <v>UnicodeStrings</v>
-            <v>false</v>
-            <v>GlobalTextListFilePath</v>
-            <v>""</v>
-            <v>ExtendedSettings</v>
-            <v>false</v>
-            <v>GlobalVisuImageFilePath</v>
-            <v>".\"</v>
-            <v>GeneralPropertySupport</v>
-            <v>false</v>
           </d>
         </o>
       </d>
@@ -852,6 +860,7 @@ Fribourg/Switzerland (2017)</Description>
           <Type n="Guid">System.Guid</Type>
           <Type n="Hashtable">System.Collections.Hashtable</Type>
           <Type n="Int32">System.Int32</Type>
+          <Type n="NewestVersionConstraintToSave">{af9bafe2-ba31-4b15-a2b9-48a0f2cd09fb}</Type>
           <Type n="OptionKey">{54dd0eac-a6d8-46f2-8c27-2f43c7e49861}</Type>
           <Type n="String">System.String</Type>
           <Type n="User">{cd83029e-13b0-491e-9e4b-921adda0d86b}</Type>

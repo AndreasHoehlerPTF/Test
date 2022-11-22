@@ -5,36 +5,45 @@
   A DVT PrintModule (DEU, DSU, WEU).
   
 *)
-FUNCTION_BLOCK FB_PrintModule EXTENDS T_NamedBase IMPLEMENTS I_PrintStatusClient
+FUNCTION_BLOCK FB_PrintModule EXTENDS T_NamedBase IMPLEMENTS I_PrintSubsystem
 VAR_INPUT
   // encoder input --> directly mapped into FB_PrintPosition 
-  // machine state by reference in init
+  // machine state by pointer in init()
+  // external start pos interface by pointer in init()
+  bEnableWorker  : ARRAY[1..GVL_WEU.nC_WorkerPrintPerPm] OF BOOL;    // external configurative enable PG
+  fPrintOffsetX  : ARRAY[1..GVL_WEU.nC_WorkerPrintPerPm] OF LREAL;   // external configurative offsets to PM (PU / PM /PG) 
+  fPrintOffsetY  : ARRAY[1..GVL_WEU.nC_WorkerPrintPerPm] OF LREAL;   // external configurative offsets to PM (PU / PM / PG / Machine) 
 END_VAR
 
 VAR
   //config
-  _nIdx                   : UDINT;   // for visu selection only (remove later) 
+  _bMasterModule          : BOOL;         // this is the master module (position and CT creation)
+  _nIdx                   : UDINT;        // for visu selection only (remove later)
   _pAdsPm                 : POINTER TO ST_ADS_PM; //ads config/status interface
   _pAdsSa                 : POINTER TO ST_ADS_DVTSHEETALIGNMENT; // sheet alignemnt ads
   
   _fResolutionPrint       : LREAL;
   _fResolutionSubPx       : LREAL;
+  _fDistToMasterPm        : LREAL;        // distance to master reference module (mech.), does not include DetectToPu
+  _nYShift_PcRamCenter    : UDINT;        // y-shift for centered image in CB RAM [px]
   // - references
-  _pModuleMachineState    : POINTER TO ST_ModuleMachineState;   // reference to machine states
+  _pModuleMachineState    : POINTER TO ST_ModuleMachineInterface;   // reference to machine states
+  _pCTManager             : POINTER TO FB_CTManagerDefGrid;
   
   // status
   bInit                   : BOOL;   // initialized
   bJobActive              : BOOL;   // a job is started
   bReadyForPrinting       : BOOL;   // Module ready for printing
-  bHardwareHold           : BOOL;   // hw hold 
+  bHardwareHold           : BOOL;   // hw hold
   
   // instances
   fbPrintPosition         : FB_PrintPositionDmax;
-  fbDropSpeedComp         : FB_DropSpeedComp;           // compensation drop ToF in X direction
+  //fbDropSpeedComp         : FB_DropSpeedComp;           // compensation drop ToF in X direction
   fbStartPosDetect        : FB_StartPositionWeu;
-  fBCTManager             : FB_CTManagerDefGrid;        // deformation grid container manager
-    
+  fbWorkerPrint           : ARRAY[1..GVL_WEU.nC_WorkerPrintPerPm] OF FB_WorkerDefGrid_Print;
+  
   // helper
+  nCtr : UDINT;
   fMasterSpeed, fSpeedMpMin : LREAL;
   fPuElevation            : LREAL;
   nPos_SubPx, nPos_Px     : DINT;
@@ -95,36 +104,84 @@ nPos_SubPx := fbPrintPosition.getPosition(nPosition_px=>nPos_Px, fPosition_um=>f
 
 // Drop speed compensation
 fPuElevation := (_pAdsSa^.sI_HeadGap.fI_Val / 1000) + fC_HeadOffsetPlate - _pModuleMachineState^.fSubstrateThickness;
-fbDropSpeedComp(fMasterSpeed:=fMasterSpeed, fDropTravelDistance:=fPuElevation);
+//now in Worker, maybe move here: fbDropSpeedComp(fMasterSpeed:=fMasterSpeed, fDropTravelDistance:=fPuElevation);
+//fbDropSpeedComp.fDropPlacementError
 
 
 // StartPosition detection
 updateMarkDefinition();
-// --> Lateral (y) Offset 
+// --> Lateral (y) Offset
+{warning 'TODO: SubstrateLength from Job or Machine? Check somewhere'} 
 fbStartPosDetect(
   bEnable:=_pModuleMachineState^.bTargetSpeedReached AND bProductionSpeedReached,
   nCurrentPos:=nPos_SubPx,
   fCurrentSpeed:=fMasterSpeed,
-  fSubstrateLength:=_pModuleMachineState^.fSubstrateLen ODER vom Job je nach missmatch
+  fSubstrateLength:=_pModuleMachineState^.fSubstrateLen,
+  bUseExternalStartPos:=(NOT _pModuleMachineState^.bMarksExist AND _nIdx > 1)   // first module is master
 );
 
-// Container handling
-fBCTManager.nPositions[E_PosDomain.master_pos] := nPos_SubPx;
-fBCTManager.nPositions[E_PosDomain.pos_px]     := nPos_Px;
-fBCTManager();
+{warning 'TODO: set HardwareHold'}
+bHardwareHold := NOT fbPrintPosition.bSpeedProduction OR NOT _pModuleMachineState^.bPrintEnabled;    //before: machine stopped/NOT upper5MpMin, module enabled, driftControl OK
 
-//fBCTManager.CreateCT();
-//fBCTManager.DestroyCT();
-//fBCTManager.getCT(nIdx := 1)
+
+// Worker
+// - fill I_SubSystem correctly from all workers
+FOR nCtr := 1 TO GVL_WEU.nC_WorkerPrintPerPm DO
+  fbWorkerPrint[nCtr].fPosition :=  fPrintOffsetX[nCtr]
+                                  + (fbWorkerPrint[nCtr].fStartShiftOffset + fbWorkerPrint[nCtr].fStartShiftFactor * fMasterSpeed)   // pre-start (attach position)
+                                  + _fDistToMasterPm
+                                  + master detect offset,
+  fbWorkerPrint[nCtr].bEnable := bEnableWorker[nCtr];     // AND _pModuleMachineState^.bEngaged;
+  fbWorkerPrint[nCtr](
+    nEncoderPos           := nPos_SubPx,
+    bHardwareSync         := bHwSyncCmd,
+    bHardwareHold         := bHardwareHold,
+    fPrintStartOffset     :=  fPrintOffsetX[nCtr]     // NOTE: dynamic corrections done in Worker (dropSpeedComp / global grid dx))
+                            + module detect offset,   // modules detect distance or the Master if in simulation mode
+                            {warning 'TODO: Vorzeichen von lateral offset & LateralOffser +/-?: Vorher war -'}
+                            {warning 'TODO: why not using PM Y-Shift for Manual PM offset? and why will we need an offset in um in PLC?'}
+    fPrintYOffset         := LIMIT(
+                            0,
+                              _nYShift_PcRamCenter
+                              + fPrintOffsetY[nCtr]      // calc with CB Shift, PU y-Shift, PG y-shift
+                              + F_MeterToSubPixel(fbStartPosDetect.fLateralOffset, nC_PrintResolution)    // Y from mark detection
+                              + _pModuleMachineState^.nLateralRegister,    // lateral register from machine
+                              //+ Manual PM Offset (manaul lateral offset per pm (VISU) 
+                            2*_nYShift_PcRamCenter),
+    fMasterSpeed          := fMasterSpeed,
+    fPUElevation          := fPuElevation,  // for internal dropSpeedCorrection
+    fPUPlate1_Temperature := 0, // for banana correction
+    fPUPlate2_Temperature := 0, // for banana correction
+//    bError                => ,
+//    nError                => ,
+  );
+END_FOR
+
 
 // messaging
 Messaging();
 ]]></ST>
     </Implementation>
-    <Folder Name="I_PrintStatusClient" Id="{69116f41-841a-4b41-b4b9-7c93f5f8b542}" />
+    <Folder Name="I_PrintSubsystem" Id="{b9baebe0-50ad-459a-b691-c90f1f0a0353}">
+      <Folder Name="I_PrintStatusClient" Id="{69116f41-841a-4b41-b4b9-7c93f5f8b542}" />
+    </Folder>
     <Folder Name="Position" Id="{12a320fc-93c2-445f-a96d-a4cd86407a32}" />
     <Folder Name="Sim" Id="{6de8d664-1ecd-4e7c-9e04-bad56ccd972b}" />
     <Folder Name="Status" Id="{0e451606-8ae6-4dab-a358-fd42b219dee8}" />
+    <Property Name="bEnabled" Id="{dd69c9d0-97e4-4804-a2b8-0a4f121996a6}" FolderPath="I_PrintSubsystem\">
+      <Declaration><![CDATA[PROPERTY bEnabled : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{9df46838-8058-4926-a0a9-f40c29312791}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bEnabled := _bConnected AND fBProcessUnitPrint.bEnabled;
+
+// all lines or one line active, printEnable, Engaged?]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
     <Property Name="bEngaged" Id="{a171e1bc-3b76-4b6d-9e1d-d5d08b596c61}" FolderPath="Status\">
       <Declaration><![CDATA[PROPERTY bEngaged : BOOL]]></Declaration>
       <Get Name="Get" Id="{96eabca3-d7cb-45a6-a85f-fa83e749869b}">
@@ -133,6 +190,18 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[bEngaged := _pModuleMachineState^.bEngaged;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="bError" Id="{aa8ead8c-c8ea-4424-b28e-c9c90288ae50}" FolderPath="I_PrintSubsystem\">
+      <Declaration><![CDATA[PROPERTY bError : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{1d85b498-9e47-4331-80bd-154a01353d1d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bError := _bError AND fBProcessUnitPrint.bError;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -147,6 +216,42 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
+    <Property Name="bPausePrintCanEx" Id="{a476de0b-ce3a-444f-8c6a-909663aa9e0a}" FolderPath="I_PrintSubsystem\">
+      <Declaration><![CDATA[PROPERTY bPausePrintCanEx : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{3831860d-bca0-4575-a1fa-b2dad5acba06}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bPausePrintCanEx := fBProcessUnitPrint.bPausePrintCanEx;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="bPcEnabled" Id="{fcc9388a-50a8-47f2-ac1e-f6017deffdbd}" FolderPath="I_PrintSubsystem\">
+      <Declaration><![CDATA[PROPERTY bPcEnabled : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{bf03388c-6851-43f5-9888-6f7ed2127fff}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bPcEnabled := fBProcessUnitPrint.bPcEnabled;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="bPrinting" Id="{b0858cdd-fa1a-4645-b26d-55418fd7ee65}" FolderPath="I_PrintSubsystem\">
+      <Declaration><![CDATA[PROPERTY bPrinting : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{f6225527-9cc1-41c0-b905-6a4985b2e712}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bPrinting := fBProcessUnitPrint.bPrinting;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
     <Property Name="bProductionSpeedReached" Id="{9ff20b5c-5f63-447e-9c18-e9105a23b352}" FolderPath="Position\">
       <Declaration><![CDATA[PROPERTY bProductionSpeedReached : BOOL]]></Declaration>
       <Get Name="Get" Id="{6c9aeca4-3cc5-4809-a817-3f50d14b5f9d}">
@@ -155,6 +260,18 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[bProductionSpeedReached := fbPrintPosition.bSpeedProduction;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="bReady" Id="{74926271-aad5-4394-afe7-6d8e1935336e}" FolderPath="I_PrintSubsystem\">
+      <Declaration><![CDATA[PROPERTY bReady : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{7f4a77e6-9bcd-49d5-a0d2-107097fe7d5d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bReady := fBProcessUnitPrint.bReady AND fBProcessUnitMaster.bActivationComplete;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -177,6 +294,30 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
+    <Property Name="bStartPrintCanEx" Id="{9f802a56-908d-4f5b-9e35-622b41b86581}" FolderPath="I_PrintSubsystem\">
+      <Declaration><![CDATA[PROPERTY bStartPrintCanEx : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{f5efc731-6b4f-4136-8393-6c8a6fcba5ed}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bStartPrintCanEx := fBProcessUnitPrint.bStartPrintCanEx;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="bStopPrintCanEx" Id="{3f0f6920-f9be-42af-a5ef-4fea8338cad9}" FolderPath="I_PrintSubsystem\">
+      <Declaration><![CDATA[PROPERTY bStopPrintCanEx : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{4a7c173f-2a72-4904-b485-d64f5dab3c8b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bStopPrintCanEx := fBProcessUnitPrint.bStopPrintCanEx;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
     <Property Name="bSyncCmd" Id="{8c9b7208-05bb-4de2-9fc3-012291795493}" FolderPath="Position\">
       <Declaration><![CDATA[(* 
   Hardware sync request.
@@ -191,25 +332,52 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
+    <Property Name="fDistToMasterPm" Id="{455cd95b-6303-4ebf-9e88-dadf5560910b}" FolderPath="Position\">
+      <Declaration><![CDATA[PROPERTY fDistToMasterPm : LREAL]]></Declaration>
+      <Get Name="Get" Id="{46f7fea5-d578-4bd4-83a8-86c060ec2c6c}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[fDistToMasterPm := _fDistToMasterPm;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{f074952a-7751-4515-a0a8-a9ec10297272}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[_fDistToMasterPm := fDistToMasterPm;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Method Name="Init" Id="{4338a7a6-6293-49ad-a96d-3660b8a91900}">
       <Declaration><![CDATA[METHOD Init : BOOL
 VAR_INPUT
-  nIdx                  : UDINT;                // module id
-  pAdsPm                : POINTER TO ST_ADS_PM; // module ads interface
-  pAdsSa                : POINTER TO ST_ADS_DVTSHEETALIGNMENT; // sheet alignemnt ads
+  nIdx                  : UDINT;                                // Module id
+  pAdsPm                : POINTER TO ST_ADS_PM;                 // ADS module
+  pAdsSa                : POINTER TO ST_ADS_DVTSHEETALIGNMENT;  // ADS sheet alignement
+  pAdsCam               : POINTER TO ST_ADS_CAMERA;             // ADS camera
+  
   // config print
   fPrintResolution      : LREAL := 600;         // print(head) resolution in [dpi]
   fSubPxResolution      : LREAL := 32;          // SubPixel resolution [SubPx], resolution factor (fI_PrintResolution*fI_SubPxResolution=>Output resolution)
+  fPrintUnitWidth       : LREAL;                // PrintUnit width mechanical [m]
+  nYShift_PcRamCenter   : UDINT;                // Y shift for centered image data in RAM [px]
   fTaskCycleTime        : LREAL;                // Task cycle time in [s]
   // references
-  pModuleMachineState   : POINTER TO ST_ModuleMachineState;
-
+  pModuleMachineInterface : POINTER TO ST_ModuleMachineInterface;
+  pCTManager            : POINTER TO FB_CTManagerDefGrid;       // used for internal worker (registerPosition, get
+  iProdManager          : I_ProdManager;
+END_VAR
+VAR
+  nCtr : UDINT;
 END_VAR
 VAR CONSTANT
-  fC_PROD_MASTER_SPEED                      : LREAL := 5.0;    (*[m/min]*)
+  fC_PROD_MASTER_SPEED  : LREAL := 5.0;    (*[m/min]*)
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF pAdsPm = 0 OR pAdsSa = 0 OR pModuleMachineState = 0 THEN
+        <ST><![CDATA[IF pAdsPm = 0 OR pAdsSa = 0 OR pModuleMachineInterface = 0 OR pCTManager = 0 THEN
   LogError('Invalid parameter');
   RETURN;
 END_IF
@@ -220,6 +388,9 @@ _pAdsPm := pAdsPm;
 _pAdsSa := pAdsSa;
 _fResolutionPrint := fPrintResolution;
 _fResolutionSubPx := fSubPxResolution;
+_nYShift_PcRamCenter := nYShift_PcRamCenter;
+_pModuleMachineState := pModuleMachineInterface;
+_pCTManager := pCTManager;
 
 // positioning
 fbPrintPosition.Init(
@@ -232,8 +403,41 @@ fbPrintPosition.Init(
 // start position
 fbStartPosDetect.Init( fPrintResolution:=nC_PrintResolution,
                        fSubPxResolution:=nC_SubPixelResolution,
-                       pMarkDefinition:=ADR(sMarkDefinition)
+                       pMarkDefinition:=ADR(sMarkDefinition),
+                       iStartPosDetectExt:=iStartPosDetectExt
 );
+
+
+// Worker
+FOR nCtr := 1 TO GVL_WEU.nC_WorkerPrintPerPm DO
+  fbWorkerPrint[nCtr].Init(
+    fPrintResolution:=fPrintResolution,
+    fSubPxResolution:=fSubPxResolution,
+    pCtManager:=pCTManager,
+    pParamMediator:=,
+    pMsgConfig:=ADR(sL_MsgConfig)
+  );
+  fbWorkerPrint[nCtr].InitMsg(pMsgInterface:=);
+  fbWorkerPrint[nCtr].InitWorkerPrint(
+    pAdsIfCam:=pAdsCam,
+    fPrintUnitWidth:=fPrintUnitWidth,
+    fLimitCorrectionX:=1000,
+    fLimitCorrectionY:=nYShift_PcRamCenter-1
+  );
+  fbWorkerPrint[nCtr].reg();
+END_FOR 
+
+// register PCs 
+FOR lCtr := 1 TO iCPr_NB_PC DO
+  fbWorkerWeu[iCPr_MAP_PC_PG[lCtr]].registerPc(iNewPC := FB_PC[lCtr]);
+END_FOR;
+// register PHs
+FOR lCtr := 1 TO iCPr_NB_PH DO
+  fbWorkerWeu[iCPr_MAP_PC_PG[iCPr_MAP_PH_PC[lCtr]]].registerPh(iPH := FB_PH[lCtr]);
+END_FOR
+
+
+
 
 (*Messaging*)
 sL_MsgConfig.bI_Enable       := TRUE;
@@ -279,8 +483,21 @@ bInit := TRUE;
 ]]></ST>
       </Implementation>
     </Method>
+    <Method Name="Master" Id="{bd73207e-06a1-49a5-a720-7c437fc7b5de}">
+      <Declaration><![CDATA[METHOD PRIVATE Master
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Code only run on MASTER Module
+
+// update master CT Manager position
+_pCTManager^.nPositions[E_PosDomain.master_pos] := nPos_SubPx;
+_pCTManager^.nPositions[E_PosDomain.pos_px]     := nPos_Px;]]></ST>
+      </Implementation>
+    </Method>
     <Method Name="Messaging" Id="{643d2082-2a1e-46ab-80d2-9108069a18fe}">
-      <Declaration><![CDATA[METHOD Messaging
+      <Declaration><![CDATA[METHOD PRIVATE Messaging
 VAR_INPUT
 END_VAR
 ]]></Declaration>
@@ -301,14 +518,14 @@ fb_MsgQueue();
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="mJobPause" Id="{887afe17-63bc-4ae9-bb47-91b262d82129}" FolderPath="I_PrintStatusClient\">
+    <Method Name="mJobPause" Id="{887afe17-63bc-4ae9-bb47-91b262d82129}" FolderPath="I_PrintSubsystem\I_PrintStatusClient\">
       <Declaration><![CDATA[METHOD mJobPause
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Method Name="mJobStart" Id="{113944aa-4f4e-400e-92a4-4d59053804f5}" FolderPath="I_PrintStatusClient\">
+    <Method Name="mJobStart" Id="{113944aa-4f4e-400e-92a4-4d59053804f5}" FolderPath="I_PrintSubsystem\I_PrintStatusClient\">
       <Declaration><![CDATA[METHOD mJobStart
 VAR_INPUT
 	sJobDef	: CalmarCompPrint.I_JobDefinition;
@@ -319,7 +536,7 @@ END_VAR
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="mJobStop" Id="{25cf927b-a2bf-4366-ac82-13a7b4acfdb6}" FolderPath="I_PrintStatusClient\">
+    <Method Name="mJobStop" Id="{25cf927b-a2bf-4366-ac82-13a7b4acfdb6}" FolderPath="I_PrintSubsystem\I_PrintStatusClient\">
       <Declaration><![CDATA[METHOD mJobStop
 VAR_INPUT
 	sStatus	: CalmarCompPrint.I_JobStatus;
@@ -329,7 +546,7 @@ END_VAR
         <ST><![CDATA[bJobActive := FALSE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="mProduced" Id="{430beb9d-42f5-4cab-972b-9b0f17e309c5}" FolderPath="I_PrintStatusClient\">
+    <Method Name="mProduced" Id="{430beb9d-42f5-4cab-972b-9b0f17e309c5}" FolderPath="I_PrintSubsystem\I_PrintStatusClient\">
       <Declaration><![CDATA[METHOD mProduced
 VAR_INPUT
 	(* current progress*)
@@ -352,16 +569,55 @@ sMarkDefinition.bInvertedX := _pModuleMachineState^.bMarksInverted;]]></ST>
       </Implementation>
     </Method>
     <LineIds Name="FB_PrintModule">
-      <LineId Id="1000" Count="51" />
+      <LineId Id="1362" Count="42" />
+      <LineId Id="1538" Count="0" />
+      <LineId Id="1405" Count="0" />
+      <LineId Id="1536" Count="1" />
+      <LineId Id="1406" Count="3" />
+      <LineId Id="1532" Count="2" />
+      <LineId Id="1531" Count="0" />
+      <LineId Id="1539" Count="0" />
+      <LineId Id="1411" Count="3" />
+      <LineId Id="1419" Count="1" />
+      <LineId Id="1439" Count="0" />
+      <LineId Id="1452" Count="0" />
+      <LineId Id="1421" Count="0" />
+      <LineId Id="1455" Count="0" />
+      <LineId Id="1454" Count="0" />
+      <LineId Id="1451" Count="0" />
+      <LineId Id="1436" Count="1" />
+      <LineId Id="1440" Count="0" />
+      <LineId Id="1456" Count="0" />
+      <LineId Id="1422" Count="11" />
       <LineId Id="770" Count="0" />
     </LineIds>
+    <LineIds Name="FB_PrintModule.bEnabled.Get">
+      <LineId Id="5" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="8" Count="0" />
+    </LineIds>
     <LineIds Name="FB_PrintModule.bEngaged.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.bError.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule.bMoving.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
+    <LineIds Name="FB_PrintModule.bPausePrintCanEx.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.bPcEnabled.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.bPrinting.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
     <LineIds Name="FB_PrintModule.bProductionSpeedReached.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.bReady.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule.bSim.Get">
@@ -370,29 +626,40 @@ sMarkDefinition.bInvertedX := _pModuleMachineState^.bMarksInverted;]]></ST>
     <LineIds Name="FB_PrintModule.bSim.Set">
       <LineId Id="2" Count="0" />
     </LineIds>
+    <LineIds Name="FB_PrintModule.bStartPrintCanEx.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.bStopPrintCanEx.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
     <LineIds Name="FB_PrintModule.bSyncCmd.Get">
       <LineId Id="18" Count="0" />
     </LineIds>
+    <LineIds Name="FB_PrintModule.fDistToMasterPm.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.fDistToMasterPm.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
     <LineIds Name="FB_PrintModule.Init">
-      <LineId Id="104" Count="5" />
-      <LineId Id="178" Count="0" />
-      <LineId Id="110" Count="0" />
-      <LineId Id="229" Count="0" />
-      <LineId Id="176" Count="1" />
-      <LineId Id="180" Count="0" />
-      <LineId Id="163" Count="0" />
-      <LineId Id="162" Count="0" />
-      <LineId Id="164" Count="0" />
-      <LineId Id="166" Count="2" />
-      <LineId Id="165" Count="0" />
-      <LineId Id="247" Count="0" />
-      <LineId Id="246" Count="0" />
-      <LineId Id="249" Count="2" />
-      <LineId Id="248" Count="0" />
-      <LineId Id="111" Count="39" />
-      <LineId Id="198" Count="0" />
-      <LineId Id="197" Count="0" />
+      <LineId Id="372" Count="10" />
+      <LineId Id="478" Count="0" />
+      <LineId Id="383" Count="27" />
+      <LineId Id="501" Count="5" />
+      <LineId Id="516" Count="0" />
+      <LineId Id="500" Count="0" />
+      <LineId Id="411" Count="0" />
+      <LineId Id="508" Count="7" />
+      <LineId Id="507" Count="0" />
+      <LineId Id="412" Count="44" />
       <LineId Id="14" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule.Master">
+      <LineId Id="5" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="6" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule.Messaging">
       <LineId Id="6" Count="12" />

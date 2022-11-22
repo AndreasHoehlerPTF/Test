@@ -1,12 +1,18 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="FB_StartPositionWeu" Id="{57e46adf-0651-4188-b0a4-ce8ff8a13827}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK FB_StartPositionWeu EXTENDS T_NamedBase IMPLEMENTS I_StartPosDetect
+    <Declaration><![CDATA[(*
+  This StartPosDetect supports different modes:
+  - Triangle Markus
+  - Internal StartPos generation (simulation based on substrate length and gap)
+*)
+FUNCTION_BLOCK FB_StartPositionWeu EXTENDS T_NamedBase IMPLEMENTS I_StartPosDetect
 VAR_INPUT
   bEnable                         : BOOL;            // enable start position detection
   nCurrentPos                     : DINT;            // current position in Pulses/Subpixels
   fCurrentSpeed                   : LREAL;           // actual speed of conveyor in [m/s]
   fSubstrateLength                : LREAL;           // substrate length in [m]
+  bUseExternalStartPos            : BOOL;            // Use external start position source
 END_VAR
 VAR_OUTPUT
   fLateralOffset                  : LREAL;           // Lateral +/- shift in Y [m]
@@ -21,7 +27,9 @@ VAR
   _fResolutionPrint : LREAL;
   _fResolutionSubPx : LREAL;
   _pMarkDefinition : POINTER TO ST_MarkDefinition_Triangle;
-  
+  _iStartPosDetectExt : I_StartPosDetect;   // external start position source
+   
+  // instances
   fbMarkDetection : FB_MarkDetection_Triangle;    // StartPosition detection by marks
   fbStartPosSim   : FB_StartPositionDummy;        // StartPosition simulation
 
@@ -50,8 +58,10 @@ fSubstrateLengthDetected := fSubstrateLength;
 
 // mode selection
 IF _pMarkDefinition = 0 OR_ELSE NOT _pMarkDefinition^.bEnabled THEN
-  nMode := SIMULATE_EXTERN;
-  nMode := SIMULATE_INTERN;
+  nMode :=  SEL(bUseExternalStartPos AND _iStartPosDetectExt <> 0, 
+                  SIMULATE_INTERN, 
+                  SIMULATE_EXTERN
+                );
 ELSIF NOT _pMarkDefinition^.bEnabled THEN   // if mark config is given and enabled
   nMode := MARK; 
 END_IF
@@ -85,8 +95,10 @@ IF nMode = MARK  THEN
   
 ELSIF nMode = SIMULATE_INTERN THEN
   // without mark, simulate internally, started by external trigger and re-occur after every image/sheet length
+  fbStartPosSim.bEnable := bEnable;                     // start simulatin with enable
+  fbStartPosSim.bAutoTrigger := TRUE;
+  fbStartPosSim.fSheetGap := 0;
   fbStartPosSim.fSubstrateLength := fSubstrateLength;   // same as given
-  fbStartPosSim.bSimEnable := bEnable;                  // start simulatin with enable
   fbStartPosSim(
     //bTrigger:=,
     lPosition:=nCurrentPos,
@@ -116,7 +128,6 @@ END_IF
 tOn_MissingMarksCheck(IN := bEnable AND NOT _bStart, PT := REAL_TO_TIME((2 * fSubstrateLength) / fCurrentSpeed * 1000), 
                       Q=>nPrintMarkPosBits.0
 );
-
 ]]></ST>
     </Implementation>
     <Folder Name="I_StartPosDetect" Id="{3bb3d753-1c9e-472a-8c3f-aec14f002339}" />
@@ -159,6 +170,7 @@ VAR_INPUT
   fPrintResolution      : LREAL := 600;         // print(head) resolution in [dpi]
   fSubPxResolution      : LREAL := 32;          // SubPixel resolution [SubPx], resolution factor (fI_PrintResolution*fI_SubPxResolution=>Output resolution)
   pMarkDefinition       : POINTER TO ST_MarkDefinition_Triangle;
+  iStartPosDetectExt     : I_StartPosDetect;   // external start position source
 END_VAR
 ]]></Declaration>
       <Implementation>
@@ -167,6 +179,7 @@ END_VAR
 _fResolutionPrint := fPrintResolution;
 _fResolutionSubPx := fSubPxResolution;
 _pMarkDefinition := pMarkDefinition;
+_iStartPosDetectExt := iStartPosDetectExt;
 
 // (optional) we use pointerTo_PU.registerStatusClient(sClient := fbStartPosSim);
 
@@ -207,7 +220,7 @@ END_VAR
       <LineId Id="131" Count="0" />
       <LineId Id="22" Count="0" />
       <LineId Id="155" Count="0" />
-      <LineId Id="238" Count="1" />
+      <LineId Id="254" Count="3" />
       <LineId Id="156" Count="0" />
       <LineId Id="240" Count="0" />
       <LineId Id="157" Count="0" />
@@ -235,8 +248,9 @@ END_VAR
       <LineId Id="85" Count="0" />
       <LineId Id="152" Count="0" />
       <LineId Id="180" Count="0" />
-      <LineId Id="184" Count="0" />
+      <LineId Id="246" Count="1" />
       <LineId Id="87" Count="0" />
+      <LineId Id="248" Count="0" />
       <LineId Id="169" Count="3" />
       <LineId Id="168" Count="0" />
       <LineId Id="215" Count="0" />
@@ -256,7 +270,6 @@ END_VAR
       <LineId Id="39" Count="0" />
       <LineId Id="163" Count="0" />
       <LineId Id="165" Count="0" />
-      <LineId Id="129" Count="0" />
       <LineId Id="117" Count="0" />
     </LineIds>
     <LineIds Name="FB_StartPositionWeu.bStartTrig.Get">
@@ -269,6 +282,7 @@ END_VAR
       <LineId Id="15" Count="1" />
       <LineId Id="5" Count="0" />
       <LineId Id="13" Count="1" />
+      <LineId Id="30" Count="0" />
       <LineId Id="28" Count="0" />
       <LineId Id="27" Count="0" />
       <LineId Id="18" Count="0" />

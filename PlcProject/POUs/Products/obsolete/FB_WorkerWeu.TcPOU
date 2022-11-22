@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="FB_WorkerWeu" Id="{3650ee95-10b0-4788-8cb9-9677368dce0d}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK ABSTRACT FB_WorkerWeu EXTENDS FB_Worker
 VAR_OUTPUT
@@ -8,7 +8,7 @@ VAR_OUTPUT
 END_VAR
 VAR
   // config
-  _pCtManager       : POINTER TO FB_CTManagerWeu;  // CT Manager reference
+  _pCtManager       : POINTER TO FB_CTManagerDefGrid;  // CT Manager reference
   _nTrackPosDomain  : E_PosDomain;    // Tracking position domain 
   _fPrintResolution : LREAL := 1;     // print(head) resolution in [dpi]
   _fSubPxResolution : LREAL := 1;     // SubPixel resolution [SubPx], resolution factor (fI_PrintResolution*fI_SubPxResolution=>Output resolution
@@ -19,12 +19,14 @@ VAR
   // job
   _bJobActive       : BOOL;           // a job is active
   // ct
-  _pAttachedCt      : POINTER TO FB_ContainerWeu;  // currently attached container
+  _pAttachedCt      : POINTER TO FB_ContainerDefGrid;  // currently attached container
   fCtPosition       : LREAL;          // Container position relative to worker position in [SubPx (E_PosDomain.master_pos)]
   _bForceRelease    : BOOL;
 END_VAR
 VAR_STAT
   // static variables, same for all Workers
+  _aJobName         : T_MaxString;
+  _aJobGuid         : T_MaxString;
   _fImageWidthM     : LREAL;          // image width in [m]
   _fImageDepthM     : LREAL;          // image depth in [m]
   _fCtSecurityReleasePos : LREAL := 0;     // [SubPx] position where to release current ct at last (security release)

@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <Itf Name="I_HardwarePool" Id="{b4c5cd3d-5e91-4396-bf52-168caeb885c5}">
+    <Declaration><![CDATA[INTERFACE I_HardwarePool
+]]></Declaration>
+    <Method Name="registerPc" Id="{2a3c4c0e-2ebc-446e-bd59-919efea24de5}">
+      <Declaration><![CDATA[METHOD registerPc : BOOL
+VAR_INPUT
+  sNewPc : POINTER TO FB_PC;
+  //pAdsConfig  : POINTER TO FB_ADS_Config;
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="registerPh" Id="{8a0a5ac0-51d0-4726-a9f5-18888bbb4870}">
+      <Declaration><![CDATA[METHOD registerPh : BOOL
+VAR_INPUT
+    pNewPh       : POINTER TO FB_PH;
+    //pAdsConfig   : POINTER TO FB_ADS_Config;
+    //pConnectedCb : POINTER TO CalmarCompPrint.FB_PC;
+    //iChannel     : INT;
+END_VAR
+]]></Declaration>
+    </Method>
+  </Itf>
+</TcPlcObject>

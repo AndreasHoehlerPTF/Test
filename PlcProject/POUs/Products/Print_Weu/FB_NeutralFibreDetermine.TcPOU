@@ -12,7 +12,7 @@ VAR_INPUT
   tIKp_TimeStampPos02       AT%I* : T_DCTIME64;  (*TimeStamp Pos_Edge @EL1252*)
   tIKn_TimeStampNeg02       AT%I* : T_DCTIME64;  (*TimeStamp Neg_Edge @EL1252*)
 
-  fI_ConveyorSpeed                : LREAL;       (*Current speed of substrate in [m/s]*)
+  fSpeed                          : LREAL;       (*Current speed of substrate in [m/s]*)
 END_VAR
 
 VAR_OUTPUT
@@ -46,7 +46,7 @@ END_IF
 
 IF fbRTrigMark02.Q THEN
 	fL_DurationMark01to02 := (ULINT_TO_LREAL(tIKp_TimeStampPos02) - ULINT_TO_LREAL(tIKp_TimeStampPos01)) / 1_000_000.0; (*[ms]*)
-	fL_LengthMark01to02   := ((fL_DurationMark01to02 / 1000) * fI_ConveyorSpeed) * 1000;    (*[mm]*)
+	fL_LengthMark01to02   := ((fL_DurationMark01to02 / 1000) * fSpeed) * 1000;    (*[mm]*)
 	nL_DeltaMark01to02    := LREAL_TO_DINT((fL_LengthMark01to02 * _nResolution) / 25.4);    (*[SubPx]*)
 END_IF
 
@@ -69,19 +69,7 @@ bInitOk := TRUE;]]></ST>
       </Implementation>
     </Method>
     <LineIds Name="FB_NeutralFibreDetermine">
-      <LineId Id="2387" Count="0" />
-      <LineId Id="4534" Count="0" />
-      <LineId Id="4595" Count="2" />
-      <LineId Id="4585" Count="0" />
-      <LineId Id="4589" Count="0" />
-      <LineId Id="4588" Count="0" />
-      <LineId Id="4584" Count="0" />
-      <LineId Id="4535" Count="0" />
-      <LineId Id="4540" Count="0" />
-      <LineId Id="4542" Count="0" />
-      <LineId Id="4583" Count="0" />
-      <LineId Id="4537" Count="0" />
-      <LineId Id="2388" Count="0" />
+      <LineId Id="4662" Count="14" />
       <LineId Id="1688" Count="0" />
     </LineIds>
     <LineIds Name="FB_NeutralFibreDetermine.Init">

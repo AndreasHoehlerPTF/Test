@@ -177,7 +177,7 @@
 		</DataType>
 	</DataTypes>
 	<Project GUID="{06E29AE1-7FD1-4F58-87FC-AD943F8BCC74}" Name="PlcProject" PrjFilePath="..\..\PlcProject\PlcProject.plcproj" TmcFilePath="..\..\PlcProject\PlcProject.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" CopyTmcToTarget="true" CopyTpyToTarget="false" ClearInvalidPersist="true">
-		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc" TmcHash="{AC43416F-DB7E-7E27-35B4-14EB97CCD95D}">
+		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc" TmcHash="{6E6E8092-0843-8E8B-651F-1AE0F0D15B82}">
 			<Name>PlcProject Instance</Name>
 			<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 			<Vars VarGrpType="1">
@@ -238,11 +238,6 @@
 					<Type>DINT</Type>
 				</Var>
 				<Var>
-					<Name>PRG_PRINT.bIKp_LatCVal</Name>
-					<Comment><![CDATA[C-Latch valid @EL5101]]></Comment>
-					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
-				</Var>
-				<Var>
 					<Name>PRG_PRINT.lIKp_EncPulse</Name>
 					<Comment><![CDATA[current encoder position]]></Comment>
 					<Type GUID="{25064278-D686-DB73-C1A4-2DEAEDC17D4D}">ARRAY [1..2] OF UDINT</Type>
@@ -251,6 +246,11 @@
 					<Name>PRG_PRINT.lIKp_EncLatch</Name>
 					<Comment><![CDATA[last latched postion]]></Comment>
 					<Type GUID="{25064278-D686-DB73-C1A4-2DEAEDC17D4D}">ARRAY [1..2] OF UDINT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.bIKp_LatCVal</Name>
+					<Comment><![CDATA[C-Latch valid @EL5101]]></Comment>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.bI_EncoderWcState</Name>
@@ -651,15 +651,6 @@
 			<Vars VarGrpType="2" AreaNo="1">
 				<Name>PrgPrint Outputs</Name>
 				<Var>
-					<Name>PRG_PRINT.bO_ActivateLatch</Name>
-					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.bOKp_EnLatC</Name>
-					<Comment><![CDATA[C-Latch enable/reset @EL5101]]></Comment>
-					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
-				</Var>
-				<Var>
 					<Name>PRG_PRINT.ObPrinterJobLoaded</Name>
 					<Comment><![CDATA[Printer job loaded]]></Comment>
 					<Type>BOOL</Type>
@@ -668,6 +659,15 @@
 					<Name>PRG_PRINT.ObPrinterPrinting</Name>
 					<Comment><![CDATA[Printer printing]]></Comment>
 					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.bO_ActivateLatch</Name>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.bOKp_EnLatC</Name>
+					<Comment><![CDATA[C-Latch enable/reset @EL5101]]></Comment>
+					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[1].sO_PhHw</Name>
@@ -1764,6 +1764,11 @@
 					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
+					<Name>PRG_INK.bIKn_TankInkLevelReached</Name>
+					<Comment><![CDATA[-BX53, BX57: HT front level reached]]></Comment>
+					<Type GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}">ARRAY [1..4] OF BOOL</Type>
+				</Var>
+				<Var>
 					<Name>PRG_INK.bIKn_TankCleanerLevelEmpty</Name>
 					<Comment><![CDATA[Tank cleaner level empty reached]]></Comment>
 					<Type>BOOL</Type>
@@ -1772,11 +1777,6 @@
 					<Name>PRG_INK.bIKn_TankRefuseLevelFull</Name>
 					<Comment><![CDATA[Tank refuse level full reached]]></Comment>
 					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bIKn_TankInkLevelReached</Name>
-					<Comment><![CDATA[-BX53, BX57: HT front level reached]]></Comment>
-					<Type GUID="{064EA673-04B6-D0C1-CD14-82E56022843A}">ARRAY [1..4] OF BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.bI_Balance_AckInit</Name>
@@ -2061,14 +2061,14 @@
 					<Type>USINT</Type>
 				</Var>
 				<Var>
-					<Name>PRG_INK.cO_Balance_TxBuffWord</Name>
-					<Comment><![CDATA[EL6021: Data out 0..49]]></Comment>
-					<Type GUID="{0BF29E54-38D5-B9F8-5230-399B8034A23F}">ARRAY [0..49] OF UINT</Type>
-				</Var>
-				<Var>
 					<Name>PRG_INK.bO_Barcode_ReqInit</Name>
 					<Comment><![CDATA[EL6001: Barcode scanner request init]]></Comment>
 					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.cO_Balance_TxBuffWord</Name>
+					<Comment><![CDATA[EL6021: Data out 0..49]]></Comment>
+					<Type GUID="{0BF29E54-38D5-B9F8-5230-399B8034A23F}">ARRAY [0..49] OF UINT</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.bO_Barcode_AckRec</Name>
@@ -3114,26 +3114,6 @@
 			<Vars VarGrpType="1" ContextId="3" AreaNo="48">
 				<Name>PrgSystem Inputs</Name>
 				<Var>
-					<Name>PRG_INK.bI_Balance_BufferFull</Name>
-					<Comment><![CDATA[EL6021: Balance buffer full]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Balance_FramingError</Name>
-					<Comment><![CDATA[EL6021: Balance framing error]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Balance_OverRunError</Name>
-					<Comment><![CDATA[EL6021: Balance over run error]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Barcode_AckSend</Name>
-					<Comment><![CDATA[EL6001: Barcode scanner acknowledge send]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
 					<Name>PRG_MACHINE.bIKp_CabinetTemp_Ok</Name>
 					<Comment><![CDATA[monitoring input]]></Comment>
 					<Type>BOOL</Type>
@@ -3162,6 +3142,26 @@
 					<Name>PRG_MACHINE.InEAP_TargetSpeed</Name>
 					<Comment><![CDATA[Neutral fibre factor [m/min]]]></Comment>
 					<Type>DINT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Balance_BufferFull</Name>
+					<Comment><![CDATA[EL6021: Balance buffer full]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Balance_FramingError</Name>
+					<Comment><![CDATA[EL6021: Balance framing error]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Balance_OverRunError</Name>
+					<Comment><![CDATA[EL6021: Balance over run error]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Barcode_AckSend</Name>
+					<Comment><![CDATA[EL6001: Barcode scanner acknowledge send]]></Comment>
+					<Type>BOOL</Type>
 				</Var>
 			</Vars>
 			<Vars VarGrpType="2" ContextId="3" AreaNo="49">
