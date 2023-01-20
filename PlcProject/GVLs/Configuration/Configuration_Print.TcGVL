@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <GVL Name="Configuration_Print" Id="{251eea7d-3dd0-4abf-821a-58ad561533d4}">
+    <Declaration><![CDATA[//{attribute 'qualified_only'}
+{attribute 'Tc2GvlVarNames'}
+VAR_GLOBAL CONSTANT
+(*************************************************************************************************)
+(*Configuration Print*)
+(*************************************************************************************************)
+
+(*ADS*)
+(*************************************************************************************************)
+iCPr_NB_BLOCK_TYPES               : INT := 6;    (*Number of different ADS block types*)
+
+(*Print*)
+nC_PrintResolution                : UDINT := 600;     (*Print resolutions native*)
+nC_SubPixelResolution             : UDINT := 32;      (*SubPixel resolution, resolution extension of print resolution*)
+nC_MemorySectionWidth             : UDINT := 16#800;  (*NIOS Memory section width/height*)
+nC_MemorySectionDepth             : UDINT := 16#6000; (*NIOS Memory section depth/length*)
+nC_YShiftOffset                   : UDINT := (nC_MemorySectionWidth - GVL_PrintDef.RIGEN5.iC_Ph_Width) / 2;  // [px] 384px for RICOH_GEN5
+
+
+
+(*DEVICE COUNT*)
+iCPr_NB_PH                        : INT := 24;  (*Number of printheads*)
+iCPr_NB_PC                        : INT := 8;   (*Number of printhead controllers*)
+iCPr_NB_PG                        : INT := 4;   (*Number of printhead groups*)
+iCPr_NB_PM                        : INT := 2;   (*Number of print modules*)
+iCPr_NB_PU                        : INT := 1;   (*Number of print units*)
+iCPr_NB_SUBSTRATE_DEVICES         : INT := 1;   (*Number of substrate control devices*)
+iCPr_NB_ASPECT                    : INT := 1;   (*Number of aspect definitions*)
+
+iCPr_PH_MAPPING                   : ARRAY[1..iCPr_NB_PH] OF ST_MappingDefinition := 
+[ 
+  // PM 1 - NOTE: nPC global, nPcPc per pc, other values relative to PM
+  (nPhInst := 1,  nPcInst := 1, nPm := 1, nPg := 1, nPa := 1, nPs := 1, nPc := 1, nPcCh := 1),    // 1
+  (nPhInst := 2,  nPcInst := 1, nPm := 1, nPg := 1, nPa := 1, nPs := 1, nPc := 1, nPcCh := 2),    // 2
+  (nPhInst := 3,  nPcInst := 1, nPm := 1, nPg := 1, nPa := 1, nPs := 1, nPc := 1, nPcCh := 3),    // 3
+  (nPhInst := 4,  nPcInst := 2, nPm := 1, nPg := 1, nPa := 1, nPs := 1, nPc := 2, nPcCh := 1),    // 4
+  (nPhInst := 5,  nPcInst := 2, nPm := 1, nPg := 1, nPa := 1, nPs := 1, nPc := 2, nPcCh := 2),    // 5
+  (nPhInst := 6,  nPcInst := 2, nPm := 1, nPg := 1, nPa := 1, nPs := 1, nPc := 2, nPcCh := 3),    // 6
+  (nPhInst := 7,  nPcInst := 3, nPm := 1, nPg := 2, nPa := 1, nPs := 1, nPc := 3, nPcCh := 1),    // 7
+  (nPhInst := 8,  nPcInst := 3, nPm := 1, nPg := 2, nPa := 1, nPs := 1, nPc := 3, nPcCh := 2),    // 8
+  (nPhInst := 9,  nPcInst := 3, nPm := 1, nPg := 2, nPa := 1, nPs := 1, nPc := 3, nPcCh := 3),    // 9
+  (nPhInst := 10, nPcInst := 4, nPm := 1, nPg := 2, nPa := 1, nPs := 1, nPc := 4, nPcCh := 1),    // 10
+  (nPhInst := 11, nPcInst := 4, nPm := 1, nPg := 2, nPa := 1, nPs := 1, nPc := 4, nPcCh := 2),    // 11
+  (nPhInst := 12, nPcInst := 4, nPm := 1, nPg := 2, nPa := 1, nPs := 1, nPc := 4, nPcCh := 3),    // 12
+  // PM 2 - NOTE: nPC global, nPcPc per pc, other values relative to PM
+  (nPhInst := 13, nPcInst := 5, nPm := 2, nPg := 1, nPa := 1, nPs := 1, nPc := 1, nPcCh := 1),    // 13
+  (nPhInst := 14, nPcInst := 5, nPm := 2, nPg := 1, nPa := 1, nPs := 1, nPc := 1, nPcCh := 2),    // 14
+  (nPhInst := 15, nPcInst := 5, nPm := 2, nPg := 1, nPa := 1, nPs := 1, nPc := 1, nPcCh := 3),    // 15
+  (nPhInst := 16, nPcInst := 6, nPm := 2, nPg := 1, nPa := 1, nPs := 1, nPc := 2, nPcCh := 1),    // 16
+  (nPhInst := 17, nPcInst := 6, nPm := 2, nPg := 1, nPa := 1, nPs := 1, nPc := 2, nPcCh := 2),    // 17
+  (nPhInst := 18, nPcInst := 6, nPm := 2, nPg := 1, nPa := 1, nPs := 1, nPc := 2, nPcCh := 3),    // 18
+  (nPhInst := 19, nPcInst := 7, nPm := 2, nPg := 2, nPa := 1, nPs := 1, nPc := 3, nPcCh := 1),    // 19
+  (nPhInst := 20, nPcInst := 7, nPm := 2, nPg := 2, nPa := 1, nPs := 1, nPc := 3, nPcCh := 2),    // 20
+  (nPhInst := 21, nPcInst := 7, nPm := 2, nPg := 2, nPa := 1, nPs := 1, nPc := 3, nPcCh := 3),    // 21
+  (nPhInst := 22, nPcInst := 8, nPm := 2, nPg := 2, nPa := 1, nPs := 1, nPc := 4, nPcCh := 1),    // 22
+  (nPhInst := 23, nPcInst := 8, nPm := 2, nPg := 2, nPa := 1, nPs := 1, nPc := 4, nPcCh := 2),    // 23
+  (nPhInst := 24, nPcInst := 8, nPm := 2, nPg := 2, nPa := 1, nPs := 1, nPc := 4, nPcCh := 3)     // 24
+];
+
+
+(*UNIT*)
+iCPr_NB_PG_UNIT                   : INT := 4;   (*Number of groups in unit1*)
+
+(*Mapping MODULE*)
+iCPr_MAP_PM_PG                    : ARRAY [1..iCPr_NB_PM] OF INT := [1,3];    (*Mapping print module to first printhead group*)
+
+(*GROUP*)
+iCPr_NB_PC_GROUP_MAX              : INT := 2;   (*Maximal number of printead controller per group*)
+iCPr_NB_PC_GROUP1                 : INT := 2;   (*Number of printhead controllers per group*)
+iCPr_NB_PC_GROUP                  : ARRAY [1..iCPr_NB_PG] OF INT := [2,2,2,2];    (*Number of printhead controllers per group*)
+
+(*Mapping GROUP*)
+iCPr_MAP_PG_PU                    : ARRAY [1..iCPr_NB_PG] OF INT := [1,1,1,1];    (*Mapping printhead group to print unit*)
+iCPr_MAP_PG_PM                    : ARRAY [1..iCPr_NB_PG] OF INT := [1,1,2,2];    (*Mapping printhead group to print module*)
+iCPr_MAP_PG_HTG                   : ARRAY [1..iCPr_NB_PG] OF INT := [1,1,2,2];    (*Mapping printhead group to headertank group*)
+
+(*CONTROLLER*)
+iCPr_NB_PH_PC                     : ARRAY [1..iCPr_NB_PC] OF INT := [3,3,3,3,3,3,3,3];  (*Number or printhead per controller*)
+
+(*CONTROLLER existing, order see aC_PC_NAME_DETAIL*)
+bCPr_PC_EXIST                     : ARRAY [1..iCPr_NB_PC] OF BOOL := [TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE];
+
+(*Mapping CONTROLLER*)
+iCPr_MAP_PC_PG                    : ARRAY [1..iCPr_NB_PC] OF INT := [1,1,2,2,3,3,4,4];  (*Mapping printhead controller to printhead group*)
+iCPr_MAP_PC_PH                    : ARRAY [1..iCPr_NB_PC, 1..iCPr_NB_PH_PER_CONTROLLER] OF INT
+                                                := [ 1,  3,  5, -1,
+                                                     2,  4,  6, -1,
+                                                     7,  9, 11, -1,
+                                                     8, 10, 12, -1,
+                                                    13, 15, 17, -1,
+                                                    14, 16, 18, -1,
+                                                    19, 21, 23, -1,
+                                                    20, 22, 24, -1];   (*Mapping printhead controller to printhead*)
+                                                (*ARRAY  --------------------------------------*)
+                                                (*|          PC  1  2  3  4  5  6  7  8 *)
+                                                (*|              |  |  |  |  |  |  |  | *)
+                                                (*|Channel 1 - [ 1, 2, 7, 8,13,14,19,20]*)
+                                                (*|        2 - [ 3, 4, 9,10,15,16,21,22]*)
+                                                (*|        3 - [ 5, 6,11,12,17,18,23,24]*)
+                                                (*|        4 - [-1,-1,-1,-1,-1,-1,-1,-1]*)
+                                                
+(*PRINTHEAD*)
+iCPr_NB_PH_PER_CONTROLLER         : INT := 4;   (*!!!Number of printhead channel per controller board, hw spec*)
+
+(*PRINTHEAD existing, order see aC_PH_NAME_DETAIL*)
+bCPr_PH_EXIST                     : ARRAY [1..iCPr_NB_PH] OF BOOL := [TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE];
+
+(*Mapping PRINTHEAD*)
+iCPr_MAP_PH_PC                    : ARRAY [1..iCPr_NB_PH] OF INT  := [1,2,1,2,1,2,3,4,3,4,3,4,5,6,5,6,5,6,7,8,7,8,7,8];  (*Mapping printhead to printhead controller*)
+cCPr_MAP_PH_PC_Index              : ARRAY [1..iCPr_NB_PH] OF BYTE := [1,1,2,2,3,3,1,1,2,2,3,3,1,1,2,2,3,3,1,1,2,2,3,3];  (*Mapping printhead to printhead controller index*)
+iCPr_MAP_PH_HT                    : ARRAY [1..iCPr_NB_PH] OF INT  := [1,1,1,1,1,1,2,2,2,2,2,2,3,3,3,3,3,3,4,4,4,4,4,4];  (*Mapping printhead to headertank*)
+iCPr_MAP_PH_PM                    : ARRAY [1..iCPr_NB_PH] OF INT  := [1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2];  (*Mapping printhead to print module*)
+
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

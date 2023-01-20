@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <POU Name="FB_ModuleMaster" Id="{d174fcea-8a30-4fbf-8484-3c054af3ade2}" SpecialFunc="None">
+    <Declaration><![CDATA[(*
+  This fb is the master controller of modules.
+  Like an interface handler/provider for Module to Main communiation
+*)
+FUNCTION_BLOCK FB_ModuleMaster EXTENDS T_NamedBase IMPLEMENTS I_ModuleMaster, I_HardwarePool
+VAR
+  // references
+  _pPU : POINTER TO FB_PU;
+  _iHwPool : I_HardwarePool;
+  
+  _pMasterModule : POINTER TO FB_PrintModule_Base;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+// Noting to do]]></ST>
+    </Implementation>
+    <Folder Name="I_HardwarePool" Id="{f7cf7209-17a6-41b9-9db7-2cb856085d44}" />
+    <Folder Name="I_ModuleMaster" Id="{96598412-2f6b-42bc-90f9-92e56d561add}" />
+    <Property Name="iHardwarePool" Id="{a847ca78-a2f3-4e9b-8e9d-71d00c55cae8}" FolderPath="I_ModuleMaster\">
+      <Declaration><![CDATA[PROPERTY iHardwarePool : I_HardwarePool
+]]></Declaration>
+      <Get Name="Get" Id="{d9d0d816-0eab-497b-aa8b-b6c3586e2191}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[iHardwarePool := _iHwPool;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="iMasterPrintPosition" Id="{df366969-a76e-4b45-acd7-0d54f39708ef}" FolderPath="I_ModuleMaster\">
+      <Declaration><![CDATA[PROPERTY iMasterPrintPosition : I_PrintPosition
+]]></Declaration>
+      <Get Name="Get" Id="{986a3c62-960e-4fbd-adda-e849e845e901}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[IF _pMasterModule = 0 THEN RETURN; END_IF
+
+iMasterPrintPosition := _pMasterModule^.iPrintPosition; ]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="Init" Id="{9211467c-5c9b-41c8-a36e-23ed4e2b55b2}">
+      <Declaration><![CDATA[METHOD Init : BOOL
+VAR_INPUT
+  pPU : POINTER TO FB_PU;
+  iHwPool : I_HardwarePool;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF pPU = 0 OR iHwPool = 0 THEN LogError('init() invalid init parameter'); RETURN; END_IF
+
+_pPU := pPU;
+_iHwPool := iHwPool;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="registerPc" Id="{5d9de9ad-1299-41df-bd83-47f2b3d4a0f4}" FolderPath="I_HardwarePool\">
+      <Declaration><![CDATA[METHOD registerPc : BOOL
+VAR_INPUT
+	pNewPc	: POINTER TO CalmarCompPrint.FB_PC;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_iHwPool.registerPc(pNewPc:=pNewPc);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="registerPh" Id="{0f191415-4cf5-4595-8669-cd2ca33f11d7}" FolderPath="I_HardwarePool\">
+      <Declaration><![CDATA[METHOD registerPh : BOOL
+VAR_INPUT
+	pNewPh	: POINTER TO CalmarCompPrint.FB_PH;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_iHwPool.registerPh(pNewPh:=pNewPh);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="registerPuStatusClient" Id="{e2476ae7-981b-4329-bb18-d3f85fad3146}" FolderPath="I_ModuleMaster\">
+      <Declaration><![CDATA[(*
+  Register for PU StatusClient
+*)
+METHOD registerPuStatusClient : BOOL
+VAR_INPUT
+	sClient	: CalmarCompPrint.I_PrintStatusClient;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[registerPuStatusClient := _pPU^.registerStatusClient(sClient:=sClient);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="registerPuSubystem" Id="{359e2db7-fa5d-424c-bc4d-0ea6eff60e9a}" FolderPath="I_ModuleMaster\">
+      <Declaration><![CDATA[METHOD registerPuSubystem : BOOL
+VAR_INPUT
+	iSubSys	: I_PrintSubsystem;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_pPU^.registerStatusClient(sClient := iSubSys);
+_pPU^.registerSubystem(sSubSys:= iSubSys); 
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setMasterModule" Id="{e2704455-e4dc-4ab4-9587-790388a55ee0}">
+      <Declaration><![CDATA[METHOD setMasterModule : BOOL
+VAR_INPUT
+  pModule : POINTER TO FB_PrintModule_Base;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// note make this a private method if MasterModule knows it modules
+IF pModule = 0 THEN LogError('setMasterModule: invalid module given, ignore'); RETURN; END_IF
+
+_pMasterModule := pModule;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_ModuleMaster">
+      <LineId Id="13" Count="1" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ModuleMaster.iHardwarePool.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ModuleMaster.iMasterPrintPosition.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ModuleMaster.Init">
+      <LineId Id="5" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="10" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ModuleMaster.registerPc">
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ModuleMaster.registerPh">
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ModuleMaster.registerPuStatusClient">
+      <LineId Id="10" Count="0" />
+      <LineId Id="19" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ModuleMaster.registerPuSubystem">
+      <LineId Id="8" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="13" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ModuleMaster.setMasterModule">
+      <LineId Id="5" Count="0" />
+      <LineId Id="8" Count="1" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

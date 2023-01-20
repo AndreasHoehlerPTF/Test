@@ -17,8 +17,8 @@ VAR
   _bInitOk             : BOOL;
   _sAmsNetIdLocalhost  : STRING;
   _sAmsNetIdIo         : STRING;
-  _pOd                 : POINTER TO FB_OD;
-  _pConfig             : POINTER TO ST_CONFIG_P;
+  _pOd                 : POINTER TO FB_OD;        // not yet used (used for intializing pc/pc hardware
+  _pConfig             : POINTER TO ST_CONFIG_P;  // not yet used (used for intializing pc/pc hardware
   
   // Firmware update
   (* -- fw/hw upgrade -- *)
@@ -44,7 +44,9 @@ END_VAR
     <Implementation>
       <ST><![CDATA[fb_fwhw_update();
 fb_hib_rup();
-]]></ST>
+
+// update visu
+visu();]]></ST>
     </Implementation>
     <Property Name="bError_fwhw_update" Id="{0f605c44-5743-4fb7-9932-da50df6a2395}">
       <Declaration><![CDATA[PROPERTY bError_fwhw_update : BOOL]]></Declaration>
@@ -53,7 +55,8 @@ fb_hib_rup();
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[bError_fwhw_update := FALSE;
+//bError_fwhw_update := fb_fwhw_update.bL_Upd_Error;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -64,7 +67,8 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[bError_hib_rup := FALSE;
+//bError_hib_rup := fb_hib_rup.bL_Busy;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -127,7 +131,7 @@ END_VAR
     <Method Name="registerPc" Id="{80bacc8d-0d64-4a6d-b6a7-a780efba270b}">
       <Declaration><![CDATA[METHOD registerPc : BOOL
 VAR_INPUT
-	sNewPc	    : POINTER TO FB_PC;
+	pNewPc	    : POINTER TO FB_PC;
 END_VAR
 
 VAR
@@ -136,27 +140,28 @@ VAR
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF _nPcCount<TO_UDINT(iCPr_NB_PC) AND sNewPc <> 0 AND _bInitOk THEN
+        <ST><![CDATA[IF _nPcCount<TO_UDINT(iCPr_NB_PC) AND pNewPc <> 0 THEN
   _nPcCount := _nPcCount + 1;
-  _rPc[_nPcCount] := sNewPc;
+  _rPc[_nPcCount] := pNewPc;
   
-  (*still done in PRG_PRINT
-  aName := _pConfig^.aC_PC_NAME;
-  aName :=CONCAT(aName, TO_STRING(_nPcCount)); 
-  
-  //Init Device
-  sNewPc^.init(
-    aName               := aName,
-    pAdsConfig          := pAdsConfig,
-    sAmsNetIdLocalHost  := _sAmsNetIdLocalhost,
-    sAmsNetIdIo         := _sAmsNetIdIo,
-    nEcatSlaveAddr      := TO_UINT(nC_Pc_EcatBaseAddress+TO_INT(_nPcCount)-1),
-    nBlockId            := TO_INT(ePr_BLK_PC),
-    pOd                 := _pOd,
-    bHeaterEnableExist  := FALSE,
-    bPrintEnableExist   := TRUE
- ); *)
-
+  IF _pConfig <> 0 THEN
+    (*still done in PRG_PRINT
+    aName := _pConfig^.aC_PC_NAME;
+    aName :=CONCAT(aName, TO_STRING(_nPcCount)); 
+    
+    //Init Device
+    sNewPc^.init(
+      aName               := aName,
+      pAdsConfig          := pAdsConfig,
+      sAmsNetIdLocalHost  := _sAmsNetIdLocalhost,
+      sAmsNetIdIo         := _sAmsNetIdIo,
+      nEcatSlaveAddr      := TO_UINT(nC_Pc_EcatBaseAddress+TO_INT(_nPcCount)-1),
+      nBlockId            := TO_INT(ePr_BLK_PC),
+      pOd                 := _pOd,
+      bHeaterEnableExist  := FALSE,
+      bPrintEnableExist   := TRUE
+   ); *)
+  END_IF
 ELSE
     LogError('register PC failed');
 END_IF
@@ -181,36 +186,37 @@ VAR
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF _nPhCount<TO_UDINT(iCPr_NB_PH) AND pNewPh <> 0 AND _bInitOk THEN
+        <ST><![CDATA[IF _nPhCount<TO_UDINT(iCPr_NB_PH) AND pNewPh <> 0 THEN
   _nPhCount := _nPhCount + 1;
   _rPh[_nPhCount] := pNewPh;
   
-  (* still done in PRG_PRINT
-  aName := _pConfig^.aC_PH_NAME;
-  aName :=CONCAT(aName, TO_STRING(_nPhCount)); 
- 
-  pNewPh^.init(
-    aName              := aName,     
-    pAdsConfig         := pAdsConfig,
-    sPhDef             := GVL_PrintDef.XAAR_GS12U,    
-    tTempMonitor       := T#30S,
-    iFoeHandler        := pConnectedCb^,
-    iChannel           := iChannel,
-    bPositionX_Exist   := TRUE,                               
-    aPositionX_Unit    := _pConfig^.aC_PH_POSITION_X_UNIT,   
-    lPositionX_Min     := _pConfig^.lL_PH_POSITION_X_SET_MIN, 
-    lPositionX_Max     := _pConfig^.lL_PH_POSITION_X_SET_MAX,
-    bPositionY_Exist   := TRUE,                              
-    aPositionY_Unit    := _pConfig^.aC_PH_POSITION_Y_UNIT,  
-    lPositionY_Min     := _pConfig^.lL_PH_POSITION_Y_SET_MIN, 
-    lPositionY_Max     := _pConfig^.lL_PH_POSITION_Y_SET_MAX,
-    bVoltageScale_Exist := TRUE,
-    aVoltageScale_Unit  := '%', 
-    fVoltageScale_Min   := 90.0,  
-    fVoltageScale_Max   := 110.0 
-  );
-  *)
-
+  IF _pConfig <> 0 THEN
+    (* still done in PRG_PRINT
+    aName := _pConfig^.aC_PH_NAME;
+    aName :=CONCAT(aName, TO_STRING(_nPhCount)); 
+   
+    pNewPh^.init(
+      aName              := aName,     
+      pAdsConfig         := pAdsConfig,
+      sPhDef             := GVL_PrintDef.XAAR_GS12U,    
+      tTempMonitor       := T#30S,
+      iFoeHandler        := pConnectedCb^,
+      iChannel           := iChannel,
+      bPositionX_Exist   := TRUE,                               
+      aPositionX_Unit    := _pConfig^.aC_PH_POSITION_X_UNIT,   
+      lPositionX_Min     := _pConfig^.lL_PH_POSITION_X_SET_MIN, 
+      lPositionX_Max     := _pConfig^.lL_PH_POSITION_X_SET_MAX,
+      bPositionY_Exist   := TRUE,                              
+      aPositionY_Unit    := _pConfig^.aC_PH_POSITION_Y_UNIT,  
+      lPositionY_Min     := _pConfig^.lL_PH_POSITION_Y_SET_MIN, 
+      lPositionY_Max     := _pConfig^.lL_PH_POSITION_Y_SET_MAX,
+      bVoltageScale_Exist := TRUE,
+      aVoltageScale_Unit  := '%', 
+      fVoltageScale_Min   := 90.0,  
+      fVoltageScale_Max   := 110.0 
+    );
+    *)
+  END_IF
 ELSE
     LogError('register PH failed');
 END_IF]]></ST>
@@ -235,12 +241,16 @@ _rAdsPhVisuSel    := _rPh[fBPcSelector.pSelect^]^._pAdsIf;
     </Action>
     <LineIds Name="FB_HardwarePool">
       <LineId Id="36" Count="1" />
+      <LineId Id="78" Count="0" />
+      <LineId Id="77" Count="0" />
       <LineId Id="9" Count="0" />
     </LineIds>
     <LineIds Name="FB_HardwarePool.bError_fwhw_update.Get">
+      <LineId Id="5" Count="0" />
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_HardwarePool.bError_hib_rup.Get">
+      <LineId Id="5" Count="0" />
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_HardwarePool.init">
@@ -266,6 +276,7 @@ _rAdsPhVisuSel    := _rPh[fBPcSelector.pSelect^]^._pAdsIf;
       <LineId Id="7" Count="0" />
       <LineId Id="15" Count="1" />
       <LineId Id="108" Count="0" />
+      <LineId Id="132" Count="0" />
       <LineId Id="122" Count="0" />
       <LineId Id="110" Count="1" />
       <LineId Id="20" Count="0" />
@@ -284,6 +295,7 @@ _rAdsPhVisuSel    := _rPh[fBPcSelector.pSelect^]^._pAdsIf;
     <LineIds Name="FB_HardwarePool.registerPh">
       <LineId Id="8" Count="2" />
       <LineId Id="83" Count="0" />
+      <LineId Id="126" Count="0" />
       <LineId Id="113" Count="0" />
       <LineId Id="85" Count="0" />
       <LineId Id="84" Count="0" />

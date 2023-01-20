@@ -40,11 +40,13 @@ Fribourg/Switzerland (2017)</Description>
     <Folder Include="POUs\Products\Machine" />
     <Folder Include="POUs\Products\Machine\CleaningStation" />
     <Folder Include="POUs\Products\Ink" />
+    <Folder Include="POUs\Products\todo" />
     <Folder Include="POUs\Products\obsolete">
       <ExcludeFromBuild>true</ExcludeFromBuild>
     </Folder>
     <Folder Include="POUs\Products\Print_Weu" />
     <Folder Include="POUs\Products\Print_Weu\Mark" />
+    <Folder Include="POUs\Products\Print_Weu\SRS" />
     <Folder Include="POUs\Products\Print_Weu\UV_LED_Modul" />
     <Folder Include="POUs\Projects" />
     <Folder Include="POUs\Projects\InkSystem" />
@@ -89,6 +91,10 @@ Fribourg/Switzerland (2017)</Description>
     </Compile>
     <Compile Include="GVLs\Configuration\CONFIGURATION.TcGVL">
       <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="GVLs\Configuration\Configuration_Print.TcGVL">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
     </Compile>
     <Compile Include="GVLs\Configuration\Definitions.TcGVL">
       <SubType>Code</SubType>
@@ -193,15 +199,17 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Products\Print_Weu\FB_HardwarePool.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Products\Print_Weu\FB_ModuleMaster.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Products\Print_Weu\FB_NeutralFibreDetermine.TcPOU">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_ParamMediatorWeu.TcPOU">
+    <Compile Include="POUs\Products\Print_Weu\FB_PrintModule_Base.TcPOU">
       <SubType>Code</SubType>
-      <LinkAlways>true</LinkAlways>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_PrintModule.TcPOU">
+    <Compile Include="POUs\Products\Print_Weu\FB_PrintModule_WEU.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\FB_PrintOverview.TcPOU">
@@ -209,8 +217,13 @@ Fribourg/Switzerland (2017)</Description>
       <LinkAlways>true</LinkAlways>
       <ExcludeFromBuild>true</ExcludeFromBuild>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_StartPositionWeu.TcPOU">
+    <Compile Include="POUs\Products\Print_Weu\FB_WorkerDefGrid_Inspection.TcPOU">
       <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\FB_WorkerDefGrid_Print_WEU.TcPOU">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\GVL_WEU.TcGVL">
       <SubType>Code</SubType>
@@ -219,13 +232,72 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Products\Print_Weu\I_HardwarePool.TcIO">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\Mark\FB_MarkDetection_Triangle.TcPOU">
+    <Compile Include="POUs\Products\Print_Weu\I_ModuleMaster.TcIO">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\Mark\ST_MarkDefinition_Triangle.TcDUT">
+    <Compile Include="POUs\Products\Print_Weu\I_ProdManager.TcIO">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\ST_ModuleMachineInterface.TcDUT">
+    <Compile Include="POUs\Products\Print_Weu\Mark\FB_MarkCamera_WEU.TcPOU">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\FB_MarkDefinition.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\FB_MarkDetection.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\I_MarkDefinition.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\ST_MarkDefinition.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\ST_MarkState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\_VISU_CameraTrigger.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\_VISU_MarkCamera_WEU.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\VISU_MarkCamera_WEU.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\_VISU_MarkDefinition.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\_VISU_MarkDetection.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\_VISU_MarkTriangle.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\SRS\FB_SRS.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\SRS\ST_SRS.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\SRS\_VISU_SRS.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\ST_MappingDefinition.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\ST_ModuleMachineInterface_IN.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\ST_ModuleMachineInterface_OUT.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\UV_LED_Modul\FB_UvLedModule.TcPOU">
@@ -235,7 +307,23 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
+    <Compile Include="POUs\Products\Print_Weu\_VISU_Hardware.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
     <Compile Include="POUs\Products\Print_Weu\VISU_PAPER_POS_DETECT.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\_VISU_ModuleMaster.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\_VISU_PcMiniVertical.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\_VISU_PhEnable.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -251,19 +339,30 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="POUs\Products\VISU_DropSpeedComp_Setup.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
-    <Compile Include="POUs\Products\_VISU_StartPositionDummy.TcVIS">
+    <Compile Include="POUs\Products\todo\VISU_DropSpeedComp_Setup.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="POUs\Projects\InkSystem\PRG_INK.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Projects\Machine\FB_MachineComm.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Projects\Machine\PRG_MACHINE.TcPOU">
       <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Projects\Machine\VISU_MACHINE.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Projects\Machine\_VISU_MachineComm.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Projects\Machine\_VISU_MachineIn.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="POUs\Projects\Print\PRG_PRINT.TcPOU">
       <SubType>Code</SubType>
@@ -402,15 +501,7 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="VISUs\Projects\Print\VISU_Hardware.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
-    <Compile Include="VISUs\Projects\Print\VISU_PhEnable_M2.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
-    <Compile Include="VISUs\Projects\Print\VISU_PhEnable_M3.TcVIS">
+    <Compile Include="VISUs\Projects\Print\_VISU_edit.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -423,10 +514,6 @@ Fribourg/Switzerland (2017)</Description>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="VISUs\Projects\Print\VISU_Workers.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
-    <Compile Include="VISUs\Projects\Print\_VISU_PcMiniVertical.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -485,6 +572,10 @@ Fribourg/Switzerland (2017)</Description>
     <PlaceholderReference Include="CalmarCompSystem">
       <DefaultResolution>CalmarCompSystem, * (WIFAG-Polytype)</DefaultResolution>
       <Namespace>CalmarCompSystem</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="CalmarCompTcpIp">
+      <DefaultResolution>CalmarCompTcpIp, * (WIFAG-Polytype)</DefaultResolution>
+      <Namespace>CalmarCompTcpIp</Namespace>
     </PlaceholderReference>
     <PlaceholderReference Include="CalmarProdDmax">
       <DefaultResolution>CalmarProdDmax, * (WIFAG-Polytype)</DefaultResolution>
@@ -547,6 +638,10 @@ Fribourg/Switzerland (2017)</Description>
       <DefaultResolution>Tc2_EtherCAT, * (Beckhoff Automation GmbH)</DefaultResolution>
       <Namespace>Tc2_EtherCAT</Namespace>
     </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_Math">
+      <DefaultResolution>Tc2_Math, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_Math</Namespace>
+    </PlaceholderReference>
     <PlaceholderReference Include="Tc2_Standard">
       <DefaultResolution>Tc2_Standard, * (Beckhoff Automation GmbH)</DefaultResolution>
       <Namespace>Tc2_Standard</Namespace>
@@ -596,7 +691,7 @@ Fribourg/Switzerland (2017)</Description>
   </ItemGroup>
   <ItemGroup>
     <PlaceholderResolution Include="CalmarCommons">
-      <Resolution>CalmarCommons, 1.7.0 (WIFAG-Polytype)</Resolution>
+      <Resolution>CalmarCommons, 1.7.0.1 (WIFAG-Polytype)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CalmarCompDevices">
       <Resolution>CalmarCompDevices, 1.7.0 (WIFAG-Polytype)</Resolution>
@@ -617,6 +712,11 @@ Fribourg/Switzerland (2017)</Description>
       <Resolution>CmpIecTask, 3.5.13.0 (System)</Resolution>
     </PlaceholderResolution>
   </ItemGroup>
+  <ItemGroup>
+    <SubObject Include="FB_WorkerDefGrid_Print_WEU.aPaState">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+  </ItemGroup>
   <ProjectExtensions>
     <PlcProjectOptions>
       <XmlArchive>
@@ -624,23 +724,14 @@ Fribourg/Switzerland (2017)</Description>
           <o xml:space="preserve" t="OptionKey">
       <v n="Name">"&lt;ProjectRoot&gt;"</v>
       <d n="SubKeys" t="Hashtable" ckt="String" cvt="OptionKey">
-        <v>{246001F4-279D-43AC-B241-948EB31120E1}</v>
+        <v>{535658C0-5AF5-460d-99A4-BFFB984A829A}</v>
         <o>
-          <v n="Name">"{246001F4-279D-43AC-B241-948EB31120E1}"</v>
+          <v n="Name">"{535658C0-5AF5-460d-99A4-BFFB984A829A}"</v>
           <d n="SubKeys" t="Hashtable" />
           <d n="Values" t="Hashtable" ckt="String">
-            <v>SymbolLibraryConfiguration</v>
-            <v>"VisuSymbols (System);False
-"</v>
-            <v>UnicodeStrings</v>
-            <v>false</v>
-            <v>GlobalTextListFilePath</v>
-            <v>""</v>
-            <v>ExtendedSettings</v>
-            <v>false</v>
-            <v>GlobalVisuImageFilePath</v>
-            <v>".\"</v>
-            <v>GeneralPropertySupport</v>
+            <v>VersionConstraint</v>
+            <o t="NewestVersionConstraintToSave" />
+            <v>EnableBreakpointLogging</v>
             <v>false</v>
           </d>
         </o>
@@ -721,7 +812,7 @@ Fribourg/Switzerland (2017)</Description>
                   <d n="SubKeys" t="Hashtable" />
                   <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
                     <v>bActive</v>
-                    <v>False</v>
+                    <v>True</v>
                   </d>
                 </o>
               </d>
@@ -757,8 +848,6 @@ Fribourg/Switzerland (2017)</Description>
           <v n="Name">"{C70B7845-2722-4a9b-A0EA-88C877A4B36F}"</v>
           <d n="SubKeys" t="Hashtable" />
           <d n="Values" t="Hashtable" ckt="String">
-            <v>EnableMaxAuthenticationTrials</v>
-            <v>true</v>
             <v>MaxAuthenticationTrials</v>
             <v>3</v>
             <v>UserList</v>
@@ -781,22 +870,22 @@ Fribourg/Switzerland (2017)</Description>
             <o t="GroupList">
               <a n="Groups" cet="Group">
                 <o>
-                  <v n="Id">{229969a0-ec33-41b3-81e2-9ddfa8399272}</v>
-                  <v n="Name">"Owner"</v>
+                  <v n="Id">{ce01190b-f443-40f9-9969-d3fb5dc54c2e}</v>
+                  <v n="Name">"Everyone"</v>
                   <v n="Description">""</v>
-                  <v n="IsEveryoneGroup">false</v>
-                  <v n="IsOwnerGroup">true</v>
+                  <v n="IsEveryoneGroup">true</v>
+                  <v n="IsOwnerGroup">false</v>
                   <l n="UserMembers" t="ArrayList" cet="Guid">
                     <v>a34a1b1b-b505-4596-85af-4a78c0b623d9</v>
                   </l>
                   <l n="GroupMembers" t="ArrayList" />
                 </o>
                 <o>
-                  <v n="Id">{ce01190b-f443-40f9-9969-d3fb5dc54c2e}</v>
-                  <v n="Name">"Everyone"</v>
+                  <v n="Id">{229969a0-ec33-41b3-81e2-9ddfa8399272}</v>
+                  <v n="Name">"Owner"</v>
                   <v n="Description">""</v>
-                  <v n="IsEveryoneGroup">true</v>
-                  <v n="IsOwnerGroup">false</v>
+                  <v n="IsEveryoneGroup">false</v>
+                  <v n="IsOwnerGroup">true</v>
                   <l n="UserMembers" t="ArrayList" cet="Guid">
                     <v>a34a1b1b-b505-4596-85af-4a78c0b623d9</v>
                   </l>
@@ -811,6 +900,8 @@ Fribourg/Switzerland (2017)</Description>
                 <v>d41d8cd98f00b204e9800998ecf8427e</v>
               </d>
             </o>
+            <v>EnableMaxAuthenticationTrials</v>
+            <v>true</v>
           </d>
         </o>
         <v>{192FAD59-8248-4824-A8DE-9177C94C195A}</v>
@@ -822,15 +913,13 @@ Fribourg/Switzerland (2017)</Description>
             <v>4.0.2.1</v>
           </d>
         </o>
-        <v>{535658C0-5AF5-460d-99A4-BFFB984A829A}</v>
+        <v>{E709B08B-B6E4-4966-8EED-D793A13114C6}</v>
         <o>
-          <v n="Name">"{535658C0-5AF5-460d-99A4-BFFB984A829A}"</v>
+          <v n="Name">"{E709B08B-B6E4-4966-8EED-D793A13114C6}"</v>
           <d n="SubKeys" t="Hashtable" />
-          <d n="Values" t="Hashtable" ckt="String">
-            <v>VersionConstraint</v>
-            <o t="NewestVersionConstraintToSave" />
-            <v>EnableBreakpointLogging</v>
-            <v>false</v>
+          <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
+            <v>ReplaceConstants</v>
+            <v>False</v>
           </d>
         </o>
         <v>{F66C7017-BDD8-4114-926C-81D6D687E35F}</v>
@@ -839,13 +928,24 @@ Fribourg/Switzerland (2017)</Description>
           <d n="SubKeys" t="Hashtable" />
           <d n="Values" t="Hashtable" />
         </o>
-        <v>{E709B08B-B6E4-4966-8EED-D793A13114C6}</v>
+        <v>{246001F4-279D-43AC-B241-948EB31120E1}</v>
         <o>
-          <v n="Name">"{E709B08B-B6E4-4966-8EED-D793A13114C6}"</v>
+          <v n="Name">"{246001F4-279D-43AC-B241-948EB31120E1}"</v>
           <d n="SubKeys" t="Hashtable" />
-          <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
-            <v>ReplaceConstants</v>
-            <v>True</v>
+          <d n="Values" t="Hashtable" ckt="String">
+            <v>SymbolLibraryConfiguration</v>
+            <v>"VisuSymbols (System);False
+"</v>
+            <v>UnicodeStrings</v>
+            <v>false</v>
+            <v>GlobalTextListFilePath</v>
+            <v>""</v>
+            <v>ExtendedSettings</v>
+            <v>false</v>
+            <v>GlobalVisuImageFilePath</v>
+            <v>".\"</v>
+            <v>GeneralPropertySupport</v>
+            <v>false</v>
           </d>
         </o>
       </d>

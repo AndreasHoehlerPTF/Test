@@ -21,8 +21,6 @@ VAR_GLOBAL CONSTANT
   iCSYS_GEN_BLOCK_MAP_CONFIG        : UINT := 0;   (*Configuration FB_GEN_BLOCK_MAPPING*)
                                                    (*Bit0: use extended block id then UINT :=  1; (iC_CFG_BIT_EXT_ID) *)
 
-  bCSYS_EStopInputNegativLogic      : BOOL := FALSE;  (*PRG_SYSTEMBASE.FB_Emergency.bI_EStop has negative logic*)
-
 
 (*************************************************************************************************)
 (*Configuration InkSystem*)
@@ -198,94 +196,6 @@ VAR_GLOBAL CONSTANT
 	fCIk_BALANCE_CLEANER_EMPTY        : REAL := 1.0;  (*[kg]*)
 
   
-  
-(*************************************************************************************************)
-(*Configuration Print*)
-(*************************************************************************************************)
-
-(*ADS*)
-(*************************************************************************************************)
-  iCPr_NB_BLOCK_TYPES               : INT := 6;    (*Number of different ADS block types*)
-
-  (*Print*)
-  nC_PrintResolution                : UDINT := 600;     (*Print resolutions native*)
-  nC_SubPixelResolution             : UDINT := 32;      (*SubPixel resolution, resolution extension of print resolution*)
-  nC_MemorySectionWidth             : UDINT := 16#800;  (*NIOS Memory section width/height*)
-  nC_MemorySectionDepth             : UDINT := 16#6000; (*NIOS Memory section depth/length*)
-
-  (*DEVICE COUNT*)
-  iCPr_NB_PH                        : INT := 24;  (*Number of printheads*)
-  iCPr_NB_PC                        : INT := 8;   (*Number of printhead controllers*)
-  iCPr_NB_PG                        : INT := 4;   (*Number of printhead groups*)
-  iCPr_NB_PM                        : INT := 2;   (*Number of printhead modules*)
-  iCPr_NB_PU                        : INT := 1;   (*Number of print units*)
-  iCPr_NB_SUBSTRATE_DEVICES         : INT := 1;   (*Number of substrate control devices*)
-  iCPr_NB_ASPECT                    : INT := 1;   (*Number of aspect definitions*)
-
-  (*UNIT*)
-  iCPr_NB_PG_UNIT                   : INT := 4;   (*Number of groups in unit1*)
-
-  (*Mapping MODULE*)
-  iCPr_MAP_PM_PG                    : ARRAY [1..iCPr_NB_PM] OF INT := [1,3];    (*Mapping print module to first printhead group*)
-
-  (*GROUP*)
-  iCPr_NB_PC_GROUP_MAX              : INT := 2;   (*Maximal number of printead controller per group*)
-  iCPr_NB_PC_GROUP1                 : INT := 2;   (*Number of printhead controllers per group*)
-  iCPr_NB_PC_GROUP                  : ARRAY [1..iCPr_NB_PG] OF INT := [2,2,2,2];    (*Number of printhead controllers per group*)
-
-  (*Mapping GROUP*)
-  iCPr_MAP_PG_PU                    : ARRAY [1..iCPr_NB_PG] OF INT := [1,1,1,1];    (*Mapping printhead group to print unit*)
-  iCPr_MAP_PG_PM                    : ARRAY [1..iCPr_NB_PG] OF INT := [1,1,2,2];    (*Mapping printhead group to print module*)
-  iCPr_MAP_PG_HTG                   : ARRAY [1..iCPr_NB_PG] OF INT := [1,1,2,2];    (*Mapping printhead group to headertank group*)
-
-  (*CONTROLLER*)
-  iCPr_NB_PH_PC                     : ARRAY [1..iCPr_NB_PC] OF INT := [3,3,3,3,3,3,3,3];  (*Number or printhead per controller*)
-
-  (*CONTROLLER existing, order see aC_PC_NAME_DETAIL*)
-  bCPr_PC_EXIST                     : ARRAY [1..iCPr_NB_PC] OF BOOL := [TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE];
-
-  (*Mapping CONTROLLER*)
-  iCPr_MAP_PC_PG                    : ARRAY [1..iCPr_NB_PC] OF INT := [1,1,2,2,3,3,4,4];  (*Mapping printhead controller to printhead group*)
-  iCPr_MAP_PC_PH                    : ARRAY [1..iCPr_NB_PC, 1..iCPr_NB_PH_PER_CONTROLLER] OF INT
-                                                  := [ 1,  3,  5, -1,
-                                                       2,  4,  6, -1,
-                                                       7,  9, 11, -1,
-                                                       8, 10, 12, -1,
-                                                      13, 15, 17, -1,
-                                                      14, 16, 18, -1,
-                                                      19, 21, 23, -1,
-                                                      20, 22, 24, -1];   (*Mapping printhead controller to printhead*)
-                                                  (*ARRAY  --------------------------------------*)
-                                                  (*|          PC  1  2  3  4  5  6  7  8 *)
-                                                  (*|              |  |  |  |  |  |  |  | *)
-                                                  (*|Channel 1 - [ 1, 2, 7, 8,13,14,19,20]*)
-                                                  (*|        2 - [ 3, 4, 9,10,15,16,21,22]*)
-                                                  (*|        3 - [ 5, 6,11,12,17,18,23,24]*)
-                                                  (*|        4 - [-1,-1,-1,-1,-1,-1,-1,-1]*)
-                                                  
-  (*PRINTHEAD*)
-  iCPr_NB_PH_PER_CONTROLLER         : INT := 4;   (*!!!Number of printhead channel per controller board, hw spec*)
-
-  (*PRINTHEAD existing, order see aC_PH_NAME_DETAIL*)
-  bCPr_PH_EXIST                     : ARRAY [1..iCPr_NB_PH] OF BOOL := [TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE];
-
-  (*Mapping PRINTHEAD*)
-  iCPr_MAP_PH_PC                    : ARRAY [1..iCPr_NB_PH] OF INT  := [1,2,1,2,1,2,3,4,3,4,3,4,5,6,5,6,5,6,7,8,7,8,7,8];  (*Mapping printhead to printhead controller*)
-  cCPr_MAP_PH_PC_Index              : ARRAY [1..iCPr_NB_PH] OF BYTE := [1,1,2,2,3,3,1,1,2,2,3,3,1,1,2,2,3,3,1,1,2,2,3,3];  (*Mapping printhead to printhead controller index*)
-  iCPr_MAP_PH_HT                    : ARRAY [1..iCPr_NB_PH] OF INT  := [1,1,1,1,1,1,2,2,2,2,2,2,3,3,3,3,3,3,4,4,4,4,4,4];  (*Mapping printhead to headertank*)
-  iCPr_MAP_PH_PM                    : ARRAY [1..iCPr_NB_PH] OF INT  := [1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2];  (*Mapping printhead to print module*)
-
-
-  (*Static offset for YShift depends on cSectionWidth and cHeadWidth*)
-  cSectionWidth                     : DINT := 10_240;
-  cHeadWidth                        : DINT := 1280;
-  cYShiftOffset                     : DINT := ((cSectionWidth - cHeadWidth) / 2) + 1;
-  
-  (*DriftController*)
-  iCPr_DRIFTCONTROL_PGAIN           : LREAL := 0.5;
-  iCPr_DRIFTCONTROL_IGAIN           : LREAL := 20;
-
-
 (*************************************************************************************************)
 (*Configuration Machine                                                                          *)
 (*************************************************************************************************)

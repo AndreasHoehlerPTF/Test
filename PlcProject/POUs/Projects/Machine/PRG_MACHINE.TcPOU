@@ -93,14 +93,10 @@ VAR_INPUT
   bI_PrintActive                            : BOOL;   (*Printing active*)
   //bI_MachineStopped                         : BOOL;   (*Machine stopped*)
   sI_JobInkConsumption                      : ST_JOB_INK_CONSUMPTION; (*Job ink consumption information*)
-  iI_Res_Ph                                 : INT;    (*[dpi] resolution printhead native*)
-  iI_Res_SubPix                             : INT;    (*[-] resolution subpixel*)
   bI_PrintUnitStart                         : BOOL;   (*Printing unit start*)
   bI_PrintUnitStop                          : BOOL;   (*Printing unit stop*)
   lI_PrintedCopies                          : UDINT;  (*Printed copies*)
   bI_VacuumOk                               : BOOL;
-  bI_DriftContrSupErr                       : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Drift controller supervision*)
-  bI_DriftContrError                        : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Drift controller error*)
   bI_CommandPrintlineExec                   : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Printline is executing*)  
 END_VAR
 
@@ -283,11 +279,7 @@ VAR
   fb_RTrigCleaningFromMachine               : ARRAY[1..iCPr_NB_PM] OF R_TRIG;
   bL_CleaningCommandFromMachine             : ARRAY[1..iCPr_NB_PM] OF BOOL;
 	fb_TofCleaningActive                      : ARRAY[1..iCPr_NB_PM] OF TOF;
-
-  lL_MaxPrintSpeedMin                       : DINT;                     (*Minimum of max print speed [m/min]*)
-  bL_MaxPrintSpeedExceeded                  : BOOL;                     (*Max print speed exceeded*)
-  fb_MavMasterSpeed                         : FB_FILTER_MAV;            (*Moving average filter*)
-
+  
   fb_TofPrintSystemOk                       : TOF;
 
   sC_Config_M                               : ST_CONFIG_M;
@@ -316,6 +308,9 @@ VAR
 
   fb_TpResetFuse                            : TP;
 
+  (*Machine communication NEW*)
+  fbMachineComm                             : FB_MachineComm;
+  
   (*Epsitron fuse control*)
   fbPowerControl                            : FB_WeuPowerControl;
 
@@ -377,8 +372,6 @@ VAR PERSISTENT
   lR_CleanerActivationAfterChange           : DINT := 30;          (*[%]*)
   bR_VaccumPumpActivationAfterCleanerChange : BOOL;
 
-  fR_MaxPrintSpeedMinTolerance              : LREAL := 1.0;                    (*Max print speed tolerance check [m/min]*)
-
   tR_TimeSeparatorLevelCheck                : TIME := T#20S;   (*SeparatorLevel check*)
 END_VAR
 ]]></Declaration>
@@ -432,8 +425,6 @@ END_FOR
 fI_PrintingPosition      := PRG_PRINT.sAdsSheetAlignment[ePr_PU_UNIT_1].sI_HeadGap.fI_Val;
 bI_PrintActive           := PRG_PRINT.FB_PU[ePr_PU_UNIT_1].sO_UnitStatus.bPrinting;
 sI_JobInkConsumption     := PRG_PRINT.sAdsPrintUnit[ePr_PU_UNIT_1].sI_JobInkConsumption;
-iI_Res_Ph                := PRG_PRINT.iL_ResolutionPhPx [ePr_PU_UNIT_1];
-iI_Res_SubPix            := PRG_PRINT.iL_ResolutionSubPx[ePr_PU_UNIT_1];
 bI_PrintUnitStart        := PRG_PRINT.sAdsPrintUnit[ePr_PU_UNIT_1].sI_Start.bI_Command;
 bI_PrintUnitStop         := PRG_PRINT.sAdsPrintUnit[ePr_PU_UNIT_1].sI_Stop.bI_Command;
 lI_PrintedCopies         := PRG_PRINT.sAdsPrintUnit[ePr_PU_UNIT_1].lO_PrintedCopies;
@@ -443,37 +434,9 @@ bO_ErrorMsgActive        := sADS_Machine[1].bI_ErrorMsgActive;
 bO_WarningMsgActive      := sADS_Machine[1].bI_WarningMsgActive;
 
 FOR iL_Counter := 1 TO iCPr_NB_PM DO
-  bI_DriftContrSupErr    [iL_Counter] := PRG_PRINT.fB_DriftControl[iL_Counter].bO_SupervisionContrErr;
-  bI_DriftContrError     [iL_Counter] := PRG_PRINT.fB_DriftControl[iL_Counter].bO_ContrErr;
   bI_CommandPrintlineExec[iL_Counter] := PRG_INK.bO_CommandPrintlineExec[iL_Counter];
   bO_CleanPumpRequest    [iL_Counter] := fb_CleaningValvePump[iL_Counter].bO_CleanerPump;
 END_FOR
-
-
-(*-------------------------------------------------------------------------------------------------------------------*)
-(* Check max print speed                                                                                             *)
-(*-------------------------------------------------------------------------------------------------------------------*)
-(*Search minimum of all PG*)
-lL_MaxPrintSpeedMin := 0;
-FOR iL_Counter := 1 TO iCPr_NB_PG DO
-  IF     PRG_PRINT.sAdsPrintGroup[iL_Counter].bI_Enable
-     AND PRG_PRINT.sAdsPrintModule[iCPr_MAP_PG_PM[iL_Counter]].bI_Enable
-     AND IbEAP_Engaged[iCPr_MAP_PG_PM[iL_Counter]]
-  THEN
-    IF lL_MaxPrintSpeedMin = 0 THEN lL_MaxPrintSpeedMin := PRG_PRINT.sAdsPrintGroup[iL_Counter].sI_MaxPrintSpeed.lI_Val; END_IF  (*Init with first enabled PG*)
-
-    lL_MaxPrintSpeedMin := MIN( lL_MaxPrintSpeedMin    (*Max. speed [m/min]*)
-                              , PRG_PRINT.sAdsPrintGroup[iL_Counter].sI_MaxPrintSpeed.lI_Val);
-  END_IF
-END_FOR
-(*check overspeed*)
-(*Filter on Master_Speed to straighten variation*)
-fb_MavMasterSpeed(fI_Input := PRG_PRINT.Fb_Ref_Master[1].fO_Master_Speed, iI_NbInputs := 32);  (*max iI_NbInputs = 32!*)
-IF lL_MaxPrintSpeedMin > 0 THEN
-  bL_MaxPrintSpeedExceeded := ((DINT_TO_LREAL(lL_MaxPrintSpeedMin) + fR_MaxPrintSpeedMinTolerance) / 60) < fb_MavMasterSpeed.fO_OutputMav;
-ELSE
-  bL_MaxPrintSpeedExceeded := FALSE;
-END_IF
     
 (*-------------------------------------------------------------------------------------------------------------------*)
 (*System command: sleep/wake up, emergency stop                                                                      *)
@@ -594,11 +557,11 @@ FOR iL_Counter := 1 TO iCPr_NB_PM DO
   ObEAP_PrintReady      [iL_Counter] := bO_WEUReady[iL_Counter];
   OnEAP_VarnishQuantity [iL_Counter] := PRG_PRINT.sAdsPrintGroup[iCPr_MAP_PM_PG[iL_Counter]].sI_InkQuantity.lI_Val;
   IF IbEAP_PrintMarksExist[iL_Counter] THEN
-    OnEAP_PrintMarkPosBits[iL_Counter] := PRG_PRINT.Fb_PaperPosDetect[iL_Counter].nO_PrintMarkPosBits;
+    OnEAP_PrintMarkPosBits[iL_Counter] := fbMachineComm.sModuleMachineFeedback[iL_Counter].nPrintMarkPosBits;
   ELSE
     OnEAP_PrintMarkPosBits[iL_Counter] := 1; (*mark missing*) 
   END_IF
-  OnEAP_MasterSpeed     [iL_Counter] := PRG_PRINT.Fb_Ref_Master[iL_Counter].fO_Master_Speed;
+  OnEAP_MasterSpeed     [iL_Counter] := fbMachineComm.sModuleMachineFeedback[iL_Counter].fSpeed;
   (*TEST!!! use OnEAP_MasterSpeed to transmit PU position to Motronic*)
   OnEAP_MasterSpeed     [iL_Counter] := sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].sO_AxisPosition.fO_Val;
 END_FOR
@@ -609,7 +572,7 @@ fb_TonSleepToMachine( IN :=     fb_CleaningCU[1].pInPosCappingClean AND fb_Clean
 ObEAP_ShutdownReady  := fb_TonSleepToMachine.Q;
 ObEAP_StandbyReady   := sO_SystemCmd.bSleep AND ObEAP_ShutdownReady;
 ObEAP_MismatchLength := bL_MismatchLength;
-OnEAP_MaxWebSpeed    := lL_MaxPrintSpeedMin;
+OnEAP_MaxWebSpeed    := fbMachineComm.nMaxSpeedMpMin;
 ObEAP_WarnungActive  := sADS_Machine[1].bI_WarningMsgActive;
 ObEAP_ErrorActive    := sADS_Machine[1].bI_ErrorMsgActive;
 ObEAP_EStop          :=    bIKp_SafetyCoverOK[1]
@@ -625,9 +588,9 @@ END_FOR
 (* Check if image depth is different than format length                                                              *)
 (*-------------------------------------------------------------------------------------------------------------------*)
 lL_SubstrateLenPx := (F_MeterToSubPixel( fPosMeter  := DINT_TO_REAL(InEAP_FormatLength) * 0.000_001  (*[µm] => [m]*)
-                                       , fResoSubPx := PRG_PRINT.iL_ResolutionPhPx[ePr_PU_UNIT_1] * 1 (*Result should be in pixels*) ));
+                                       , fResoSubPx := nC_PrintResolution * 1 (*Result should be in pixels*) ));
 lL_ImageDepthPx   := (F_MeterToSubPixel( fPosMeter  := UDINT_TO_REAL(PRG_PRINT.sAdsPrintUnit[ePr_PU_UNIT_1].sI_JobSettings.lI_ImageDepth) * 0.000_001  (*[µm] => [m]*)
-                                       , fResoSubPx := PRG_PRINT.iL_ResolutionPhPx[ePr_PU_UNIT_1] * 1 (*Result should be in pixels*) ));
+                                       , fResoSubPx := nC_PrintResolution * 1 (*Result should be in pixels*) ));
 bL_MismatchLength :=    (lL_ImageDepthPx > (lL_SubstrateLenPx + lL_ToleranceLenPx))
                      OR (lL_ImageDepthPx < (lL_SubstrateLenPx - lL_ToleranceLenPx));
 (*Reset error if*)
@@ -652,7 +615,7 @@ FOR iL_Counter := 1 TO iCPr_NB_PM DO
   END_IF
   IF     bL_IO_Engaged[iL_Counter]
      AND NOT iSystemStatus.bEmergency
-     AND NOT PRG_PRINT.bL_MachineStopped[ePr_PU_UNIT_1]
+     AND fbMachineComm.bMachineMoving
   THEN
     bL_ProductionMode[iL_Counter] := TRUE;
   END_IF
@@ -719,10 +682,8 @@ fb_TofPrintSystemOk(IN := PRG_PRINT.bO_PrintSystemOk, PT := T#10S); (*Delay for 
 FOR iL_Counter := 1 TO iCPr_NB_PM DO
   bO_WEUReady[iL_Counter] :=     PRG_PRINT.bO_PrintSystemOk  (*timer not needed here: fb_TofPrintSystemOk.Q*)
                              AND PRG_INK.bO_InkSystemOk
-                             AND NOT bL_MaxPrintSpeedExceeded
+                             AND NOT fbMachineComm.sModuleMachineFeedback[iL_Counter].bSpeedExeeded
                              AND NOT bL_MismatchLength
-                             AND NOT bI_DriftContrSupErr[iL_Counter]
-                             AND NOT bI_DriftContrError[iL_Counter]
              // not existing AND fb_ExhaustSystem[iL_Counter].bO_FUReady
                              AND NOT fb_ExhaustSystem[iL_Counter].bO_VacuumErrorLevel
                              AND NOT sO_SystemCmd.bSleep;
@@ -1023,6 +984,9 @@ END_FOR
 
 
 (*-------------------------------------------------------------------------------------------------------------------*)
+(* Handle new machine communication *)
+fbMachineComm();
+
 
 (*Fault Reset Generation*)
 bL_ResetAxis    :=  rfTrig_Estop.FT OR ((InEAP_OperatingMode >= cC_HOMING) AND NOT bL_MemMachineOn); 
@@ -1063,7 +1027,7 @@ fb_MachineMsg[1,21](bI_Status := FALSE);  (*bO_CleanAborted*)
 fb_MachineMsg[1,22](bI_Status := bL_RecipeValuesLoadedMachine OR bI_RecipeValuesLoadedInk OR bI_RecipeValuesLoadedPrint);
 fb_MachineMsg[1,23](bI_Status := FALSE);
 fb_MachineMsg[1,24](bI_Status := FALSE);
-fb_MachineMsg[1,25](bI_Status := bL_MaxPrintSpeedExceeded);
+fb_MachineMsg[1,25](bI_Status := fbMachineComm.bSpeedExeeded);
 fb_MachineMsg[1,26](bI_Status := bL_MismatchLength);
 fb_MachineMsg[1,27](bI_Status := FALSE);
 fb_MachineMsg[1,28](bI_Status := FALSE);
@@ -1111,7 +1075,8 @@ pModuleDef := ISystemBase.regModule(pAdsInfo:=ADR(sC_Ads_Info), pMapInfo:=ADR(sM
 IF pModuleDef = 0 THEN RETURN; END_IF
 
 // Command / Status interface
-PRG_SYSTEMBASE.getSystemCmdStatusInterface(iSystemCmd=>iSystemCmd, iSystemStatus=>iSystemStatus);
+PRG_SYSTEMBASE.getSystemStatusInterface(iSystemStatus=>iSystemStatus);
+PRG_SYSTEMBASE.getSystemCmdInterface(iSystemCmd=>iSystemCmd);
 
 // Let the sleep be handled by the library
 iSystemCmd.registerPucSleepInterface(pCmd_Sleep:=ADR(sADS_Machine[1].sI_Sleep),
@@ -1441,11 +1406,11 @@ fb_CleaningPU[2].fI_PositionPrint   := 1;
       <LineId Id="85880" Count="0" />
       <LineId Id="83883" Count="2" />
       <LineId Id="88468" Count="0" />
-      <LineId Id="83887" Count="16" />
+      <LineId Id="83887" Count="3" />
+      <LineId Id="83893" Count="8" />
       <LineId Id="86318" Count="0" />
-      <LineId Id="83904" Count="20" />
-      <LineId Id="85862" Count="5" />
-      <LineId Id="83930" Count="4" />
+      <LineId Id="83904" Count="1" />
+      <LineId Id="83931" Count="3" />
       <LineId Id="88855" Count="0" />
       <LineId Id="87986" Count="1" />
       <LineId Id="88087" Count="0" />
@@ -1472,7 +1437,8 @@ fb_CleaningPU[2].fI_PositionPrint   := 1;
       <LineId Id="87210" Count="1" />
       <LineId Id="84083" Count="14" />
       <LineId Id="85873" Count="2" />
-      <LineId Id="84098" Count="143" />
+      <LineId Id="84098" Count="100" />
+      <LineId Id="84201" Count="40" />
       <LineId Id="84245" Count="4" />
       <LineId Id="84251" Count="9" />
       <LineId Id="85424" Count="0" />
@@ -1484,14 +1450,20 @@ fb_CleaningPU[2].fI_PositionPrint   := 1;
       <LineId Id="86324" Count="0" />
       <LineId Id="86766" Count="2" />
       <LineId Id="86773" Count="0" />
-      <LineId Id="84321" Count="174" />
+      <LineId Id="84321" Count="171" />
+      <LineId Id="89265" Count="0" />
+      <LineId Id="89263" Count="1" />
+      <LineId Id="84493" Count="2" />
       <LineId Id="84498" Count="60" />
       <LineId Id="87600" Count="1" />
       <LineId Id="84559" Count="5" />
       <LineId Id="75881" Count="0" />
     </LineIds>
     <LineIds Name="PRG_MACHINE.Init">
-      <LineId Id="6" Count="173" />
+      <LineId Id="6" Count="10" />
+      <LineId Id="181" Count="0" />
+      <LineId Id="180" Count="0" />
+      <LineId Id="18" Count="161" />
       <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="PRG_MACHINE.initMsg">

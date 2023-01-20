@@ -1,0 +1,578 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <POU Name="FB_PrintModule_Base" Id="{cb9319db-6969-4a30-812e-4f2d714eb08a}" SpecialFunc="None">
+    <Declaration><![CDATA[(*
+  A DVT PrintModule (DEU, DSU, WEU).
+*)
+FUNCTION_BLOCK FB_PrintModule_Base EXTENDS T_NamedBase
+VAR_INPUT
+  // encoder input --> directly mapped into FB_PrintPosition 
+  // machine state by pointer in init()
+  // external start pos interface by pointer in init()
+  fPrintOffsetX  : ARRAY[1..GVL_WEU.nC_WorkerPrintPerPm] OF LREAL;   // external configurative offsets to PM (PU / PM /PG) 
+  fPrintOffsetY  : ARRAY[1..GVL_WEU.nC_WorkerPrintPerPm] OF LREAL;   // external configurative offsets to PM (PU / PM / PG / Machine) 
+END_VAR
+
+VAR
+  //config
+  _nIdx                   : UDINT;        // for visu selection only (remove later)
+  _pAdsPm                 : POINTER TO ST_ADS_PM; //ads config/status interface
+  _pAdsSa                 : POINTER TO ST_ADS_DVTSHEETALIGNMENT; // sheet alignemnt ads
+  
+  _fResolutionPrint       : LREAL;
+  _fResolutionSubPx       : LREAL;
+  _fDistToMasterPm        : LREAL;        // distance to master reference module (mech.), does not include DetectToPu
+  _nYShift_PcRamCenter    : UDINT;        // y-shift for centered image in CB RAM [px]
+  
+  // - references
+  _iModuleMaster          : I_ModuleMaster;       // master module (setting, position, global stuff, ...)
+  _iPrintPosition         : I_PrintPosition;      // module's position (0 if not used)
+  _iStartPos              : I_StartPosDetect;     // modlue's start position detect (0 if not used)
+  _pModuleMachineState    : POINTER TO ST_ModuleMachineInterface_IN;   // machine interface-print states
+  _pModuleMachineFeedback : POINTER TO ST_ModuleMachineInterface_OUT;  // machine interface-print feedback
+  _pCTManager             : POINTER TO FB_CTManagerDefGrid;   // Container manager (handling internal workers)
+  
+  // status
+  bInit                   : BOOL;   // initialized
+  bReadyForPrinting       : BOOL;   // Module ready for printing
+  bHardwareHold           : BOOL;   // hw hold
+  
+  // instances
+  //fbDropSpeedComp         : FB_DropSpeedComp;           // compensation drop ToF in X direction
+  fbWorkerCamera          : FB_WorkerDefGrid_Camera;
+  fbWorkerPrint           : ARRAY[1..GVL_WEU.nC_WorkerPrintPerPm] OF FB_WorkerDefGrid_Print_WEU;
+  
+  // hw ------
+  // - pc
+  _pPc                    : ARRAY[1..GVL_WEU.nC_MaxPcPerPm] OF POINTER TO FB_PC;
+  _nPc                    : UDINT;  // number of PC in module
+  _nPcToWorker_Mapping    : ARRAY[1..GVL_WEU.nC_MaxPcPerPm] OF UDINT;  // Mapping of PC to worker
+  // - ph
+  _pPh                    : ARRAY[1..GVL_WEU.nC_MaxPhPerPm] OF POINTER TO FB_PH_Grid;
+  _nPh                    : UDINT;  // number of PH in module
+  _nPhToWorker_Mapping    : ARRAY[1..GVL_WEU.nC_MaxPhPerPm] OF UDINT;  // Mapping of PH to worker
+  _nPhToPc_Mapping        : ARRAY[1..GVL_WEU.nC_MaxPhPerPm] OF UDINT;  // Mapping of PH to PC
+  _nPhToPcCh_Mapping      : ARRAY[1..GVL_WEU.nC_MaxPhPerPm] OF UDINT;  // Mapping of PH to PC channel
+  
+  // helper
+  nCtr : UDINT;
+  fSpeed, fSpeedMpMin : LREAL;
+  bProductionSpeedReached : BOOL;
+  fPuElevation            : LREAL;
+  nPos_SubPx, nPos_Px     : DINT;
+  fPos_um                 : LREAL;
+  rT_ReadForPrinting      : R_TRIG;
+  tSyncDelay              : TON;
+  bHwSyncCmd              : BOOL;
+ 
+  // messaging
+  fb_MsgQueue             : FB_MSG_QUEUE;                 (*Message queue*)
+  fb_MsgHandler           : FB_MSG_HANDLER;               (*Message handler*)
+  sL_MsgConfig            : ST_MSG_CONFIG;                (*Message config*)
+  fb_Msg                  : ARRAY [1..nC_NumMsg] OF FB_MESSAGE;  (*Messages*)
+  
+  // view
+  
+  // testing
+  _bSim : BOOL;
+END_VAR
+VAR PERSISTENT
+  _fEncoderCylinderDiameter : LREAL := 100.0;      // Encoder cylinder diameter [mm]
+  _fPrintModuleAdjustY      : LREAL; // Module adjust Y [µm]*)
+END_VAR
+VAR CONSTANT
+  fC_EncoderImpU          : LREAL := 10_000 * 4;   // Impulses * 4 times sampling [Imp/U]
+  fC_HeadOffsetPlate      : LREAL := 0.000_2;      // Head offset to base plate [m]
+  fC_ProductionSpeedMin   : LREAL := 5.0;          // [m/min]
+  nC_NumMsg               : INT := 8;              // number of internal messages
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF NOT bInit THEN RETURN; END_IF
+
+bReadyForPrinting := _pModuleMachineState^.bEngaged AND _pModuleMachineState^.bPrintEnabled AND _pModuleMachineState^.bUnitInPrintPosition;
+rT_ReadForPrinting(CLK:=bReadyForPrinting);
+
+// sync trigger generation
+IF rT_ReadForPrinting.Q THEN  // OR rT_JobActive.Q 
+  tSyncDelay(IN:=TRUE, PT:=T#2MS);   // a Sync delay to workaround a sync sent to CB while a Start or Prepare Command
+END_IF
+tSyncDelay(Q=>bHwSyncCmd); 
+IF tSyncDelay.Q THEN
+  tSyncDelay(IN:=FALSE);
+END_IF
+
+// positioning 
+// - calculate encoder resolution (fL_SubstrateThickness with factor is added to the radius because of the neutral fiber of the substrate)
+//   update encoder position based on machine parameter
+_iPrintPosition.fEnoderResolution := ((_fEncoderCylinderDiameter / 1000 / 2) + (_pModuleMachineState^.fSubstrateThickness * (_pModuleMachineState^.fNeutralFibreFactor) / 100)) * 2 * PI * 1_000_000 / fC_EncoderImpU;
+{warning 'TODO: hide encoder signals while : NOT bReadForPrinting'}
+fSpeed := _iPrintPosition.getSpeed(fSpeedMpMin=>fSpeedMpMin);
+nPos_SubPx := _iPrintPosition.getPosition(nPosition_px=>nPos_Px, fPosition_um=>fPos_um);
+bProductionSpeedReached := (fSpeed >= fC_ProductionSpeedMin);
+{warning 'TODO: set HardwareHold'}
+bHardwareHold := NOT bProductionSpeedReached OR NOT _pModuleMachineState^.bPrintEnabled;    //before: machine stopped/NOT upper5MpMin, module enabled, driftControl OK
+
+// Drop speed compensation
+fPuElevation := (_pAdsSa^.sI_HeadGap.fI_Val / 1000) + fC_HeadOffsetPlate - _pModuleMachineState^.fSubstrateThickness;
+//now in Worker, maybe move here: fbDropSpeedComp(fMasterSpeed:=fMasterSpeed, fDropTravelDistance:=fPuElevation);
+//fbDropSpeedComp.fDropPlacementError
+
+
+
+// Worker
+// - fill I_SubSystem correctly from all workers
+FOR nCtr := 1 TO GVL_WEU.nC_WorkerPrintPerPm DO
+  fbWorkerPrint[nCtr].fPosition :=  fPrintOffsetX[nCtr]
+                                  + (fbWorkerPrint[nCtr].fStartShiftOffset + fbWorkerPrint[nCtr].fStartShiftFactor * fSpeed)   // pre-start (attach position)
+                                  + _fDistToMasterPm;
+                                  //+ master detect offset,
+  fbWorkerPrint[nCtr].bWorkerEnable := _pModuleMachineState^.bEngaged AND _pAdsPm^.bI_Enable;
+  fbWorkerPrint[nCtr](
+    nEncoderPos           := nPos_SubPx,
+    bHardwareSync         := bHwSyncCmd,
+    bHardwareHold         := bHardwareHold,
+    fPrintStartOffset     :=  fPrintOffsetX[nCtr],      // NOTE: dynamic corrections done in Worker (dropSpeedComp / global grid dx))
+                            //+ module detect offset,   // modules detect distance or the Master if in simulation mode
+                            {warning 'TODO: Vorzeichen von lateral offset & LateralOffser +/-?: Vorher war -'}
+                            {warning 'TODO: why not using PM Y-Shift for Manual PM offset? and why will we need an offset in um in PLC?'}
+    fPrintYOffset         := LIMIT(
+                            0,
+                              _nYShift_PcRamCenter
+                              + fPrintOffsetY[nCtr]      // calc with CB Shift, PU y-Shift, PG y-shift
+                              //in CT? + F_MeterToSubPixel(fbStartPosDetect.fLateralOffset, nC_PrintResolution)    // Y from mark detection
+                              + _pModuleMachineState^.fLateralRegister,    // lateral register from machine
+                              //+ Manual PM Offset (manaul lateral offset per pm (VISU) 
+                            2*_nYShift_PcRamCenter),
+    fMasterSpeed          := fSpeed,
+    fPUElevation          := fPuElevation,  // for internal dropSpeedCorrection
+    fPUPlate1_Temperature := 0, // for banana correction
+    fPUPlate2_Temperature := 0, // for banana correction
+//    bError                => ,
+//    nError                => ,
+  );
+END_FOR
+
+
+
+// messaging
+Messaging();
+]]></ST>
+    </Implementation>
+    <Folder Name="Position" Id="{12a320fc-93c2-445f-a96d-a4cd86407a32}" />
+    <Folder Name="Sim" Id="{6de8d664-1ecd-4e7c-9e04-bad56ccd972b}" />
+    <Folder Name="Status" Id="{0e451606-8ae6-4dab-a358-fd42b219dee8}" />
+    <Property Name="bEngaged" Id="{a171e1bc-3b76-4b6d-9e1d-d5d08b596c61}" FolderPath="Status\">
+      <Declaration><![CDATA[PROPERTY bEngaged : BOOL]]></Declaration>
+      <Get Name="Get" Id="{96eabca3-d7cb-45a6-a85f-fa83e749869b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bEngaged := _pModuleMachineState^.bEngaged;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="bMoving" Id="{eda3f871-87e3-46aa-b28f-2fbe8d09d6f1}" FolderPath="Position\">
+      <Declaration><![CDATA[PROPERTY bMoving : BOOL]]></Declaration>
+      <Get Name="Get" Id="{76f0abe9-c1ec-4dc9-918f-26ce0a4812d5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bMoving := _iPrintPosition.bMoving;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="bSim" Id="{0f604c0e-9e5d-44dd-b620-672fedba6798}" FolderPath="Sim\">
+      <Declaration><![CDATA[PROPERTY bSim : BOOL]]></Declaration>
+      <Get Name="Get" Id="{eed6e031-ccb0-4834-afd4-be86a2055e6a}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSim := _bSim;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{0514b0f1-83fc-4960-94d7-be479b9c0ddd}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[_bSim := bSim;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="bSyncCmd" Id="{8c9b7208-05bb-4de2-9fc3-012291795493}" FolderPath="Position\">
+      <Declaration><![CDATA[(* 
+  Hardware sync request.
+*)
+PROPERTY bSyncCmd : BOOL]]></Declaration>
+      <Get Name="Get" Id="{1d5bc1c8-adae-45fe-ab06-7bb1731fc239}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncCmd := bHwSyncCmd;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="fDistToMasterPm" Id="{455cd95b-6303-4ebf-9e88-dadf5560910b}" FolderPath="Position\">
+      <Declaration><![CDATA[PROPERTY fDistToMasterPm : LREAL]]></Declaration>
+      <Get Name="Get" Id="{46f7fea5-d578-4bd4-83a8-86c060ec2c6c}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[fDistToMasterPm := _fDistToMasterPm;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{f074952a-7751-4515-a0a8-a9ec10297272}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[_fDistToMasterPm := fDistToMasterPm;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Method Name="Init" Id="{4338a7a6-6293-49ad-a96d-3660b8a91900}">
+      <Declaration><![CDATA[METHOD Init : BOOL
+VAR_INPUT
+  nIdx                  : UDINT;                                // Module id
+  pAdsPm                : POINTER TO ST_ADS_PM;                 // ADS module
+  pAdsSa                : POINTER TO ST_ADS_DVTSHEETALIGNMENT;  // ADS sheet alignement
+  pAdsCam               : POINTER TO ST_ADS_CAMERA;             // ADS camera
+  pAdsPg                : ARRAY[1..GVL_WEU.nC_WorkerPrintPerPm] OF POINTER TO ST_ADS_PG;  // PG -> worker ads 
+  
+  // config print
+  fPrintResolution      : LREAL := 600;         // print(head) resolution in [dpi]
+  fSubPxResolution      : LREAL := 32;          // SubPixel resolution [SubPx], resolution factor (fI_PrintResolution*fI_SubPxResolution=>Output resolution)
+  fCycleTime            : LREAL;                // task cycle time in [s]
+  fPrintUnitWidth       : LREAL;                // PrintUnit width mechanical [m]
+  nYShiftPcCenter       : UDINT;                // Y shift for centered image data in RAM [px]
+  // references
+  iModuleMaster         : I_ModuleMaster;       // interface for module to master (main) communication
+  iPosition             : I_PrintPosition;      // interface for print position
+  iStartPos             : I_StartPosDetect;     // interface for start position detect
+  pMachineInputs        : POINTER TO ST_ModuleMachineInterface_IN;
+  pMachineOutputs       : POINTER TO ST_ModuleMachineInterface_OUT;
+  pCTManager            : POINTER TO FB_CTManagerDefGrid;       // used for internal worker (registerPosition, get
+  iParamMediator        : I_ParamMediator;
+END_VAR
+VAR
+  nCtr : UDINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF  pAdsPm = 0 OR pAdsSa = 0 OR pAdsCam = 0 OR 
+    pMachineInputs = 0 OR pMachineOutputs = 0 OR
+    pCTManager = 0 OR iParamMediator = 0 OR 
+    iModuleMaster = 0 OR iPosition = 0 OR iStartPos = 0 THEN
+  LogError('init(): Invalid parameter');
+  RETURN;
+END_IF
+
+// save config
+_nIdx := nIdx;
+_pAdsPm := pAdsPm;
+_pAdsSa := pAdsSa;
+_fResolutionPrint := fPrintResolution;
+_fResolutionSubPx := fSubPxResolution;
+_nYShift_PcRamCenter := nYShiftPcCenter;
+_iModuleMaster := iModuleMaster;
+_iPrintPosition := iPosition;
+_iStartPos := iStartPos;
+_pModuleMachineState := pMachineInputs;
+_pModuleMachineFeedback := pMachineOutputs;
+_pCTManager := pCTManager;
+
+
+SetupHw();
+
+// Worker
+// -- Worker camera
+fbWorkerCamera.InitAds(pAdsIf:=ADR(pAdsCam));
+fbWorkerCamera.Init(pCtManager:=pCTManager, iParamMediator:=iParamMediator, pMsgConfig:=ADR(sL_MsgConfig), fPrintResolution:=fPrintResolution, fSubPxResolution:=fSubPxResolution);
+fbWorkerCamera.reg();
+iModuleMaster.registerPuStatusClient(sClient:=fbWorkerCamera);
+
+// -- Worker print
+FOR nCtr := 1 TO GVL_WEU.nC_WorkerPrintPerPm DO
+  
+  fbWorkerPrint[nCtr].Init(
+    fPrintResolution:=fPrintResolution,
+    fSubPxResolution:=fSubPxResolution,
+    pCtManager:=pCTManager,
+    iParamMediator:=iParamMediator,
+    pMsgConfig:=ADR(sL_MsgConfig)
+  );
+  fbWorkerPrint[nCtr].InitMsg(pMsgInterface:=ADR(pAdsPm^.sO_Message));
+  fbWorkerPrint[nCtr].InitWorkerPrint(
+    pAdsPg:=pAdsPg[nCtr],
+    pAdsIfCam:=pAdsCam,
+    fPrintUnitWidth:=fPrintUnitWidth,
+    fLimitCorrectionX:=1000,
+    fLimitCorrectionY:=nYShiftPcCenter-1
+  );
+  fbWorkerPrint[nCtr].reg();
+  iModuleMaster.registerPuSubystem(iSubSys:=fbWorkerPrint[nCtr]);
+END_FOR 
+
+(*Messaging*)
+sL_MsgConfig.bI_Enable       := TRUE;
+sL_MsgConfig.pI_FbMsgHandler := ADR(fb_MsgHandler);
+fb_MsgHandler.pI_MsgQueue    := ADR(fb_MsgQueue);
+fb_MsgQueue.pI_MsgInterface  := ADR(_pAdsPm^.sO_Message);
+fb_MsgQueue.cI_MaxElement    := 6;
+
+(*Messages*)
+fb_Msg[1].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[1].iI_MsgLocation     := ePr_BLK_PM;
+fb_Msg[1].iI_MsgNumber       := eCMa_COVER_INLET;
+
+fb_Msg[2].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[2].iI_MsgLocation     := ePr_BLK_PM;
+fb_Msg[2].iI_MsgNumber       := eCMa_SECURITY_DOOR_MONITORING;
+
+fb_Msg[3].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[3].iI_MsgLocation     := ePr_BLK_PM;
+fb_Msg[3].iI_MsgNumber       := eCMa_EXHAUST_SYSTEM_WARNING;
+
+fb_Msg[4].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[4].iI_MsgLocation     := ePr_BLK_PM;
+fb_Msg[4].iI_MsgNumber       := eCMa_EXHAUST_SYSTEM_ERROR;
+
+fb_Msg[5].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[5].iI_MsgLocation     := ePr_BLK_PM;
+fb_Msg[5].iI_MsgNumber       := eCMa_EXHAUST_SYSTEM_MALFUNCTION;
+
+fb_Msg[6].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[6].iI_MsgLocation     := ePr_BLK_PM;
+fb_Msg[6].iI_MsgNumber       := eCMa_DRIFT_CONTR_ERROR;
+
+fb_Msg[7].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[7].iI_MsgLocation     := ePr_BLK_PM;
+fb_Msg[7].iI_MsgNumber       := eCMa_AXIS_SAFETY_ACCEPTANCE;
+
+fb_Msg[8].pI_MsgConfig       := ADR(sL_MsgConfig);
+fb_Msg[8].iI_MsgLocation     := ePr_BLK_PM;
+fb_Msg[8].iI_MsgNumber       := eCPr_SHEET_MARK_DETECTION;
+
+bInit := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="iPrintPosition" Id="{7503f7f7-c1d1-4c91-8938-4f40ccd203ae}">
+      <Declaration><![CDATA[PROPERTY iPrintPosition : I_PrintPosition]]></Declaration>
+      <Get Name="Get" Id="{27e0e6a7-92ab-470d-8500-59f5029f2250}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[iPrintPosition := _iPrintPosition;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="iStartPos" Id="{14a7f634-a964-4bca-b50d-15e3ccdb3d58}">
+      <Declaration><![CDATA[PROPERTY iStartPos : I_StartPosDetect]]></Declaration>
+      <Get Name="Get" Id="{5e23431d-97b4-427e-9527-fb980da407e2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[iStartPos := _iStartPos;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="Messaging" Id="{643d2082-2a1e-46ab-80d2-9108069a18fe}">
+      <Declaration><![CDATA[METHOD PRIVATE Messaging
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(*Messaging*)
+fb_MsgHandler();
+
+fB_Msg[1](bI_Status := NOT _pModuleMachineState^.bSafetyCoverOk);
+fB_Msg[2](bI_Status := NOT _pModuleMachineState^.bServiceDoorsOk);
+fB_Msg[3](bI_Status := _pModuleMachineState^.bExhaustVacuumWarning);
+fB_Msg[4](bI_Status := _pModuleMachineState^.bExhaustVacuumError);
+fB_Msg[5](bI_Status := _pModuleMachineState^.bExhaustFUError);
+fB_Msg[6](bI_Status := _pModuleMachineState^.bDriftControlError);
+fB_Msg[7](bI_Status := NOT _pModuleMachineState^.bSafetyOk);
+fB_Msg[8](bI_Status := _pModuleMachineState^.bDriftControlMissMarks);
+
+fb_MsgQueue();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="RegisterHw" Id="{613b6eac-99d1-4880-a957-310da4062a77}">
+      <Declaration><![CDATA[(*
+  NOTE: Only needed because the Hw instances are outside of the Module.
+        Please call the register HW prior initializing the Module itself!
+*)
+METHOD RegisterHw : BOOL
+VAR_INPUT
+  pPh : POINTER TO FB_PH_Grid;
+  pPc : POINTER TO FB_PC;
+  pMapDef : POINTER TO ST_MappingDefinition;
+END_VAR
+VAR
+  i : UDINT;
+  bFound : BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF pPh = 0 OR pPc = 0 OR pMapDef = 0 THEN LogError('registerHw invalid parameter'); RETURN; END_IF
+IF _nPc >= GVL_WEU.nC_MaxPcPerPm THEN LogError('register hw: too many PCs registered'); RETURN; END_IF
+IF _nPh >= GVL_WEU.nC_MaxPhPerPm THEN LogError('register hw: too many PHs registered'); RETURN; END_IF
+
+// PC 
+bFound := FALSE;
+FOR i:=1 TO _nPc DO   // search for existing pc
+  IF _pPc[i] = pPc THEN bFound := TRUE; EXIT; END_IF
+END_FOR
+IF NOT bFound THEN    // add if unknown
+  _nPc := _nPc + 1;
+  _pPc[_nPc] := pPc;
+  _nPcToWorker_Mapping[_nPc] := pMapDef^.nPg;  // save mapping
+ELSE
+  ; // ignore new pc
+END_IF
+
+// PH
+bFound := FALSE;
+FOR i:=1 TO _nPh DO   // search for existing ph
+  IF _pPh[i] = pPh THEN bFound := TRUE; EXIT; END_IF
+END_FOR
+IF NOT bFound THEN    // add if unknown
+  _nPh := _nPh + 1;
+  _pPh[_nPh] := pPh;
+  _nPhToPc_Mapping[_nPh] := pMapDef^.nPc;
+  _nPhToPcCh_Mapping[_nPh] := pMapDef^.nPcCh;
+ELSE
+  LogWarning(F_Concat3('FB_PH=', pPh^.sName, ', already registered, ignore'));
+END_IF
+
+RegisterHw := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetupHw" Id="{8cc133c8-5191-46b0-92d7-7bc2085efd5f}">
+      <Declaration><![CDATA[(*
+  Links hw to mapped handlers.
+  NOTE: override this method if it does not match the default mapping.
+*)
+METHOD PRIVATE SetupHw
+VAR
+  i : UDINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF _iModuleMaster.iHardwarePool = 0 THEN LogError('SetupHw: invalid hw pool reference, do not setup'); RETURN; END_IF
+// PC
+FOR i := 1 TO _nPc DO
+  IF _pPc[i] = 0 THEN LogError(F_Concat4('SetupHw: invalid pc mapping','_pPc[',TO_STRING(i),']=0'));
+    CONTINUE;
+	END_IF
+
+  // register to worker
+  fbWorkerPrint[_nPcToWorker_Mapping[i]].registerPc(iNewPC:=_pPc[i]^);
+  
+  // register to hw pool
+   _iModuleMaster.iHardwarePool.registerPc(pNewPc:=_pPc[i]);
+END_FOR
+
+// PH
+FOR i := 1 TO _nPh DO
+  IF _pPh[i] = 0 OR _pPc[_nPhToPc_Mapping[i]] = 0 THEN LogError(F_Concat4('SetupHw: invalid ph mapping','_pPh[',TO_STRING(i),']=0'));
+    CONTINUE;
+	END_IF
+  
+  // register to worker
+  fbWorkerPrint[_nPhToWorker_Mapping[i]].registerPh(iPH:=_pPh[i]^, iNewCG:=_pPh[i]^);
+  
+  // register to hw pool
+  _iModuleMaster.iHardwarePool.registerPh(pNewPh:=_pPh[i]);
+  
+  // link ph <-> pc if not done externally
+  _pPc[_nPhToPc_Mapping[i]]^.registerPH(iPH :=_pPh[i]^, nCh := TO_UINT(_nPhToPcCh_Mapping[i]));
+
+END_FOR
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_PrintModule_Base">
+      <LineId Id="3066" Count="68" />
+      <LineId Id="770" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.bEngaged.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.bMoving.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.bSim.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.bSim.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.bSyncCmd.Get">
+      <LineId Id="18" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.fDistToMasterPm.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.fDistToMasterPm.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.Init">
+      <LineId Id="1273" Count="94" />
+      <LineId Id="14" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.iPrintPosition.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.iStartPos.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.Messaging">
+      <LineId Id="48" Count="12" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.RegisterHw">
+      <LineId Id="184" Count="10" />
+      <LineId Id="215" Count="0" />
+      <LineId Id="214" Count="0" />
+      <LineId Id="195" Count="10" />
+      <LineId Id="216" Count="2" />
+      <LineId Id="206" Count="2" />
+      <LineId Id="212" Count="0" />
+      <LineId Id="14" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.SetupHw">
+      <LineId Id="56" Count="0" />
+      <LineId Id="46" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="65" Count="0" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="14" Count="1" />
+      <LineId Id="47" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="84" Count="1" />
+      <LineId Id="69" Count="0" />
+      <LineId Id="86" Count="0" />
+      <LineId Id="70" Count="7" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

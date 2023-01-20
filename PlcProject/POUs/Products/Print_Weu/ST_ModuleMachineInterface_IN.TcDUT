@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <DUT Name="ST_ModuleMachineInterface_IN" Id="{88c2e62a-a764-452f-a984-142cc11cfd23}">
+    <Declaration><![CDATA[TYPE ST_ModuleMachineInterface_IN :
+STRUCT
+  // Inputs (from machine)
+  bEStop                  : BOOL;             // EStop active
+  bSleep                  : BOOL;             // Sleep active
+  bSafetyCoverOk          : BOOL;             // Safety cover OK
+  bServiceDoorsOk         : BOOL;             // Safety Doors OK
+  bExhaustVacuumWarning   : BOOL;             // Vacuum warning level reached
+  bExhaustVacuumError     : BOOL;             // Vacuum error level reached
+  bExhaustFUError         : BOOL;             // ??? (obsolete?)
+  bDriftControlError      : BOOL;             // (obsolete) remove?
+  bDriftControlMissMarks  : BOOL;             // (obsolete) remove?
+  bSafetyOk               : BOOL;              // generic safty ok
+  
+  // new
+  bUnitInPrintPosition    : BOOL;             // Print module in print position
+  bEngaged                : BOOL;             // Print module engaged
+  bPrintEnabled           : BOOL;             // Printing enabled
+  
+  // other
+  fSubstrateThickness     : LREAL := 0.000_1; // Substrate thickness [m]
+  fSubstrateLen           : LREAL;            // Substrate length [m]
+  fWebStretchCalculated   : LREAL;            // Web strech factor converted
+  fLateralRegister        : LREAL;            // Lateral regster [m]
+  fModule2ToModule3       : LREAL;            // Distance between Module 2 and 3 [m]
+  bTargetSpeedReached     : BOOL;             // Target speed reached
+  fNeutralFibreFactor     : LREAL;            // Neutral fibre factor [%]
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

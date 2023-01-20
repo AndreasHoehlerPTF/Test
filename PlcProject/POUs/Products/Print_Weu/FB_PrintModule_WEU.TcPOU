@@ -1,0 +1,195 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <POU Name="FB_PrintModule_WEU" Id="{cd3841ec-9e5a-4fa8-a024-0646cabe904a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_PrintModule_WEU EXTENDS FB_PrintModule_Base
+VAR
+
+  // module specific sub-modules
+  fbPrintPosition    : FB_PrintPositionDmax;   // a position per pm (external encoder wheel)
+  fbMarkDefinition   : FB_MarkDefinition;
+  fbMarkDetection    : FB_MarkDetection;       // StartPosTrigger, CameraTrigger and MarkDetection (Mark handler for MarkCamera)
+  fbMarkCameraWeu    : FB_MarkCamera_WEU;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+fbMarkDetection();
+fbMarkCameraWeu();
+
+// machine interface outputs
+_pModuleMachineFeedback^.nPrintMarkPosBits := fbMarkDetection.nPrintMarkPosBits;
+_pModuleMachineFeedback^.bSpeedExeeded := checkSpeed(fSpeed:=fSpeed, fMaxSpeed => _pModuleMachineFeedback^.fMaxSpeed);
+]]></ST>
+    </Implementation>
+    <Method Name="checkSpeed" Id="{0a2a08db-f4e0-47b5-8c93-7e3e0d0ba7dd}">
+      <Declaration><![CDATA[(*
+  Checks if current speed is higher than max. speed.
+  :return: TRUE if speed exeeds maximum
+*)
+METHOD PRIVATE checkSpeed : BOOL
+VAR_INPUT
+  fSpeed : LREAL;       // current speed
+END_VAR
+VAR_OUTPUT
+  fMaxSpeed : LREAL;    // modules max. printing speed
+END_VAR
+VAR
+  f : LREAL;
+  i : UDINT;
+END_VAR
+VAR_INST
+  fbSpeedFilterMav : FB_FILTER_MAV;           // Moving average filter
+  fMaxSpeedTolerence : LREAL := 1.0/60;       // Allow max. speed to exeed limit + this tolerance 
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// disabled
+IF NOT _pAdsPm^.bI_Enable OR NOT _pModuleMachineState^.bEngaged THEN 
+  checkSpeed := FALSE;
+  fMaxSpeed := 0;
+  RETURN;
+END_IF 
+
+
+// filter current speed
+fbSpeedFilterMav(fI_Input := fSpeed, iI_NbInputs := 32);  (*max iI_NbInputs = 32!*)
+
+// find slowest max. speed
+f := 0;
+FOR i:=1 TO GVL_WEU.nC_WorkerPrintPerPm DO
+  IF fbWorkerPrint[i].bWorkerEnable THEN
+    IF fbWorkerPrint[i].fMaxSpeed = 0 THEN
+      ; // ignored speed
+    ELSIF f = 0 OR f > fbWorkerPrint[i].fMaxSpeed THEN 
+      f := fbWorkerPrint[i].fMaxSpeed;
+		END_IF
+	END_IF
+END_FOR
+
+fMaxSpeed := f;   // return max. possible speed
+
+// check if too fast
+IF f > 0 AND fbSpeedFilterMav.fO_OutputMav > f THEN 
+  checkSpeed := TRUE; // speed exceeded
+ELSE
+  checkSpeed := FALSE;
+END_IF
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Init" Id="{6b1e49f2-001d-47d0-9cb8-63846cddbdc5}">
+      <Declaration><![CDATA[METHOD Init : BOOL
+VAR_INPUT
+  nIdx                  : UDINT;                                // Module id
+  pAdsPm                : POINTER TO ST_ADS_PM;                 // ADS module
+  pAdsSa                : POINTER TO ST_ADS_DVTSHEETALIGNMENT;  // ADS sheet alignement
+  pAdsCam               : POINTER TO ST_ADS_CAMERA;             // ADS camera
+  pAdsPg                : ARRAY[1..GVL_WEU.nC_WorkerPrintPerPm] OF POINTER TO ST_ADS_PG;  // PG -> worker ads 
+  
+  // config print
+  fPrintResolution      : LREAL := 600;         // print(head) resolution in [dpi]
+  fSubPxResolution      : LREAL := 32;          // SubPixel resolution [SubPx], resolution factor (fI_PrintResolution*fI_SubPxResolution=>Output resolution)
+  fCycleTime            : LREAL;                // task cycle time in [s]
+  fPrintUnitWidth       : LREAL;                // PrintUnit width mechanical [m]
+  nYShiftPcCenter       : UDINT;                // Y shift for centered image data in RAM [px]
+  // references
+  iModuleMaster         : I_ModuleMaster;       // interface for module to master (main) communication
+  iPosition             : I_PrintPosition;      // interface for print position
+  iStartPos             : I_StartPosDetect;     // interface for start position detect
+  pMachineInputs        : POINTER TO ST_ModuleMachineInterface_IN;
+  pMachineOutputs       : POINTER TO ST_ModuleMachineInterface_OUT;
+  pCTManager            : POINTER TO FB_CTManagerDefGrid;       // used for internal worker (registerPosition, get
+  iParamMediator        : I_ParamMediator;
+END_VAR
+VAR
+  nCtr : UDINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[fbPrintPosition.Init(fPrintResolution:=fPrintResolution, fSubPxResolution:=fSubPxResolution, fTaskCycleTime:=fCycleTime);
+// -- Mark definition handler
+fbMarkDefinition.Init();
+// -- Sheet/Camera trigger & mark detection
+fbMarkDetection.Init(fPrintResolution:=fPrintResolution, fSubPxResolution:=fSubPxResolution, pFbMarkDefinition:=ADR(fbMarkDefinition));
+
+// -- Mark camera
+fbMarkCameraWeu.InitMarkCamera(nPrintUnitResolution:=nC_PrintResolution,nPrintUnitSubPx:=nC_SubPixelResolution, iCameraTrigger:=fbMarkDetection, iMarkDefinition:=fbMarkDefinition);
+fbMarkCameraWeu.sVisuName := 'VISU_MarkCameraWEU';
+fbWorkerCamera.RegisterCamera(fbMarkCameraWeu);
+
+
+SUPER^.Init(
+  nIdx              := nIdx,
+  pAdsPm            := pAdsPm,
+  pAdsSa            := pAdsSa,
+  pAdsCam           := pAdsCam,
+  pAdsPg            := pAdsPg,
+  // config print
+  fPrintResolution  := fPrintResolution,
+  fSubPxResolution  := fSubPxResolution,
+  fCycleTime        := fCycleTime,
+  fPrintUnitWidth   := fPrintUnitWidth,
+  nYShiftPcCenter   := nYShiftPcCenter,
+  // references     
+  iModuleMaster     := iModuleMaster,     // internal subm
+  iPosition         := fbPrintPosition,   // internal subm
+  iStartPos         := fbMarkDetection,   // internal subm
+  pMachineInputs    := pMachineInputs,
+  pMachineOutputs   := pMachineOutputs,
+  pCTManager        := pCTManager,
+  iParamMediator    := iParamMediator
+);]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_PrintModule_WEU">
+      <LineId Id="46" Count="7" />
+      <LineId Id="19" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_WEU.checkSpeed">
+      <LineId Id="30" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="37" Count="1" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="56" Count="1" />
+      <LineId Id="46" Count="0" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_WEU.Init">
+      <LineId Id="54" Count="0" />
+      <LineId Id="59" Count="8" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="31" Count="4" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="52" Count="1" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="40" Count="8" />
+      <LineId Id="29" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <Visu Name="VISU_EAP_MACHINE" Id="{24a16f96-388e-425e-afbb-8aa4100e25d0}">
     <XmlArchive>
       <Data>
@@ -13482,8 +13482,8 @@
           <o n="GeneratedLMMDescriptions" t="GeneratedLanguageModelEntriesData">
             <o n="GeneratedVisuFbDescription" t="GenericFbDescription">
               <d n="FbMethods" t="CaseInsensitiveHashtable" ckt="String" cvt="Guid">
-                <v>HasVisibilityAccess</v>
-                <v>6a3806a7-4a18-4036-b710-e504dd9a0bc9</v>
+                <v>GetUpdateRects</v>
+                <v>b3ac738b-01e2-48d9-bbde-a899d9aa9155</v>
                 <v>ContainsPoint</v>
                 <v>8832b850-bab3-402c-8182-1c8befe8bd22</v>
                 <v>SetStaticState</v>
@@ -13492,8 +13492,6 @@
                 <v>da070abc-0707-5b2d-b48f-0a9f3b4393b9</v>
                 <v>GetTooltip</v>
                 <v>bc2abff1-2c5d-430b-9d12-2a91499a7376</v>
-                <v>GetUpdateRects</v>
-                <v>b3ac738b-01e2-48d9-bbde-a899d9aa9155</v>
                 <v>GetNamespace</v>
                 <v>664e3d11-eada-444e-aada-db8942a8bdd2</v>
                 <v>GetTranslator</v>
@@ -13504,10 +13502,10 @@
                 <v>de3d3e22-d537-49ec-9f52-d94286a97e10</v>
                 <v>GetClientData</v>
                 <v>9476f981-32a6-46c6-90b1-19bc64200d71</v>
-                <v>Destruct</v>
-                <v>8a4f2297-7664-414c-8ae0-102c5f55cbf2</v>
                 <v>Paint</v>
                 <v>5a5c0d49-4619-4dc9-a225-11bc0e335a02</v>
+                <v>HasVisibilityAccess</v>
+                <v>6a3806a7-4a18-4036-b710-e504dd9a0bc9</v>
                 <v>GetElementArray</v>
                 <v>f78eacd8-12c8-43ab-8b5b-df55863195a9</v>
                 <v>SetVisuFlagsInternal</v>
@@ -13524,6 +13522,8 @@
                 <v>7fa25393-c4f0-5abe-b85e-293c8c2636ab</v>
                 <v>GetSurroundingRect</v>
                 <v>eb98ce0c-56ab-4f10-84cf-da77d136c6f5</v>
+                <v>ElementInfo</v>
+                <v>50e39c98-5cb9-443e-af51-adf974cb3852</v>
                 <v>GetLocalUsergroup</v>
                 <v>cc1764e3-bd27-4522-82eb-be713a71fb79</v>
                 <v>GetName</v>
@@ -13540,8 +13540,8 @@
                 <v>d3469cdf-d677-40cf-ae12-a7f915afe458</v>
                 <v>HandleInput</v>
                 <v>fdff7504-2652-43ea-8bff-b61c65fbfaf3</v>
-                <v>ElementInfo</v>
-                <v>50e39c98-5cb9-443e-af51-adf974cb3852</v>
+                <v>Destruct</v>
+                <v>8a4f2297-7664-414c-8ae0-102c5f55cbf2</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{24a16f96-388e-425e-afbb-8aa4100e25d0}</v>
@@ -13601,7 +13601,7 @@
             </o>
             <v n="DialogDut">{4df3cf2e-5d98-462e-9498-db5b47fe088f}</v>
           </o>
-          <v n="LastUsedIdForIdentifier">234</v>
+          <v n="LastUsedIdForIdentifier">237</v>
           <o n="TextDocument" t="TextDocument">
             <a n="TextLines" cet="TextLine">
               <o>

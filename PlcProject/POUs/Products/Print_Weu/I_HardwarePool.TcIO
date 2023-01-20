@@ -6,7 +6,7 @@
     <Method Name="registerPc" Id="{2a3c4c0e-2ebc-446e-bd59-919efea24de5}">
       <Declaration><![CDATA[METHOD registerPc : BOOL
 VAR_INPUT
-  sNewPc : POINTER TO FB_PC;
+  pNewPc : POINTER TO FB_PC;
   //pAdsConfig  : POINTER TO FB_ADS_Config;
 END_VAR
 ]]></Declaration>

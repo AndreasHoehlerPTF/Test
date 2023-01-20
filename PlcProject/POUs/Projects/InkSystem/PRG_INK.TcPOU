@@ -1451,7 +1451,7 @@ ELSE (*Else when init Ok*)
 
   (*Circulation ink controller*)
   FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK DO
-    fb_CirculationInk[iL_Counter]( IbAxisMovement := PRG_PRINT.bAxisMovement
+    fb_CirculationInk[iL_Counter]( IbAxisMovement := PRG_MACHINE.fbMachineComm.bMachineMoving
                                  , IbHeadertankOk :=     sAdsIkHeaderTank[iL_Counter].bI_EnableFillInk                        (*Fill ink is enabled*)
                                                      AND NOT sAdsIkHeaderTank[iL_Counter].sI_CommandChange.bO_CommandExec     (*Execution not active*)
                                                      AND NOT sAdsIkHeaderTank[iL_Counter].sI_CommandEmpty.bO_CommandExec      (*Execution not active*)
@@ -1720,6 +1720,8 @@ bO_InkSystemOk :=     bO_VacuumOk
                   AND (NOT bO_CommandPrintlineExec[1] OR NOT bL_Engaged[1])
                   AND (NOT bO_CommandPrintlineExec[2] OR NOT bL_Engaged[2]);
 
+PRG_PRINT.bI_PuStopByInk := (bO_CommandPrintlineExec[1] AND bL_Engaged[1]) OR (bO_CommandPrintlineExec[2] AND bL_Engaged[2]);
+
 IF sL_SystemCmd.bSleep THEN
   bO_InkStorageTankOk := TRUE;
 ELSE
@@ -1888,7 +1890,8 @@ CASE cL_State OF
                 IF ISystemBase.bBooting THEN RETURN; END_IF
                 
                 // Command / Status interface
-                PRG_SYSTEMBASE.getSystemCmdStatusInterface(iSystemCmd=>iSystemCmd, iSystemStatus=>iSystemStatus);
+                PRG_SYSTEMBASE.getSystemStatusInterface(iSystemStatus=>iSystemStatus);
+                PRG_SYSTEMBASE.getSystemCmdInterface(iSystemCmd=>iSystemCmd);
                 
                 // Build mapping information for ADS
                 Mapping();
@@ -2311,7 +2314,7 @@ FOR iL_CounterDgas := 1 TO iCIk_NB_DGAS DO
   fb_DgasMencContr[iL_CounterDgas].pConf                   := sC_Config_I.cC_CONF_DGAS_CONTR;
   fb_DgasMencContr[iL_CounterDgas].mInit( pAdsIf         := ADR(sAdsIkDgas [iL_CounterDgas])        (*> ads reference*)
                                         , pMap           := ADR(sL_BLK_DGAS[iL_CounterDgas]));        (*> mapping definition reference*)
-  fb_DgasPumpMinus[iL_CounterDgas].mInit( aI_Name        := 'Dgas pump');
+  fb_DgasPumpMinus[iL_CounterDgas].Init( sName := 'Dgas pump');
 
   (*MainValve K111*)
   iSystemCmd.registerForSleepUpdate(iObserver:=fb_DgasMainValve[iL_CounterDgas]);
@@ -2330,7 +2333,7 @@ FOR iL_CounterMenc := 1 TO iCIk_NB_MENC DO
   fb_MeniscusMencContr[iL_CounterMenc].mInit( pAdsIf         := ADR(sAdsIkMenc [iL_CounterMenc])        (*> ads reference*)
                                             , pMap           := ADR(sL_BLK_MENC[iL_CounterMenc]));      (*> mapping definition reference*)
 END_FOR;
-fb_MeniscusPump.mInit(aI_Name := 'Main meniscus pump');
+fb_MeniscusPump.Init(sName := 'Main meniscus pump');
 
 (*SUB MENISCUS*)
 (*************************************************************************************************)
@@ -3218,7 +3221,11 @@ fb_VisuMeniscusMencController(sI_Ary_Fb := fb_MeniscusMencContr, sI_Ary_Ads := s
       <LineId Id="81494" Count="19" />
       <LineId Id="80082" Count="249" />
       <LineId Id="95663" Count="0" />
-      <LineId Id="80332" Count="20" />
+      <LineId Id="80332" Count="0" />
+      <LineId Id="97467" Count="0" />
+      <LineId Id="80333" Count="0" />
+      <LineId Id="97469" Count="0" />
+      <LineId Id="80334" Count="18" />
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="PRG_INK.AutoFlushingDevice">
@@ -3316,6 +3323,7 @@ fb_VisuMeniscusMencController(sI_Ary_Fb := fb_MeniscusMencContr, sI_Ary_Ads := s
       <LineId Id="507" Count="6" />
       <LineId Id="1307" Count="5" />
       <LineId Id="1735" Count="1" />
+      <LineId Id="1745" Count="0" />
       <LineId Id="1734" Count="0" />
       <LineId Id="1313" Count="9" />
       <LineId Id="514" Count="1" />

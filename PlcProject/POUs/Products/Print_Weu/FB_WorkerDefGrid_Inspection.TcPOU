@@ -1,0 +1,127 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <POU Name="FB_WorkerDefGrid_Inspection" Id="{37a97a00-485c-4f31-b7d7-7fb45a0dff8b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_WorkerDefGrid_Inspection EXTENDS FB_WorkerDefGrid
+VAR PERSISTENT
+  _fWorkerToMasterRef  : LREAL := 3;    (*Distance between Master reference first PM and this worker, mechanisch*)
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+{warning 'TODO: implement inspection trigger'}]]></ST>
+    </Implementation>
+    <Folder Name="I_PrintStatusClient" Id="{f1eb16b3-4bb7-4cf8-afe5-945958c7b424}" />
+    <Method Name="Attach" Id="{dd02a3c2-da79-4b50-92d0-e58ec36803fd}">
+      <Declaration><![CDATA[METHOD PROTECTED  Attach : BOOL
+VAR_INPUT
+  iCT              : I_CT;                         (*container at triggered event position*)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF SUPER^.Attach(iCT:=iCT) THEN
+  ;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="fWorkerToMasterRef" Id="{d58f24b0-0176-4ca2-917c-0b196b6c3f32}">
+      <Declaration><![CDATA[PROPERTY fWorkerToMasterRef : LREAL]]></Declaration>
+      <Get Name="Get" Id="{1eaedd67-6f89-4513-9eb9-7f355cc38bbe}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[fWorkerToMasterRef := _fWorkerToMasterRef;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="mJobStart" Id="{3edbf743-26ae-401c-b89d-f5fce7aeb73d}" FolderPath="I_PrintStatusClient\">
+      <Declaration><![CDATA[METHOD   mJobStart
+VAR_INPUT
+	sJobDef	: CalmarCompPrint.I_JobDefinition;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="mJobStop" Id="{2fd18750-e428-4c8f-8165-dc217acd925e}" FolderPath="I_PrintStatusClient\">
+      <Declaration><![CDATA[METHOD  mJobStop
+VAR_INPUT
+	sStatus	: CalmarCompPrint.I_JobStatus;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Release" Id="{e32eff20-e77d-40b3-9c81-5ebcb6e13ebd}">
+      <Declaration><![CDATA[METHOD Release : BOOL
+VAR_INPUT
+  iCT              : I_CT;                         (*container at triggered event position*)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF SUPER^.Release(iCT := iCT) THEN
+  
+  // it's the last worker so distroy attached CT
+  IF _pCtManager <> 0 THEN
+    LogLvl(Lvl:=E_LogSeverity.Debug, Msg:=F_Concat2('DestroyCT: ', TO_STRING(iCT.pCT^.iId)));
+    _pCtManager^.DestroyCT(iCT:=iCT);
+  END_IF
+  
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="work" Id="{d1975cf7-7637-4f43-beac-caa62ff485b7}">
+      <Declaration><![CDATA[METHOD  work]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.work();
+
+//Worker position update
+IF _iParamMediator <> 0 AND _pAttachedCt = 0 THEN     // Update only without attached container
+  // WorkerPosition =  Worker<-Master<-CAM<-SheetDetect
+  fPosition := _fWorkerToMasterRef + _iParamMediator.fMasterDetectToRefPos;
+END_IF
+
+IF _pAttachedCt <> 0 THEN
+  Release(iCT:=_pAttachedCt^);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_WorkerDefGrid_Inspection">
+      <LineId Id="64" Count="0" />
+      <LineId Id="57" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerDefGrid_Inspection.Attach">
+      <LineId Id="6" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerDefGrid_Inspection.fWorkerToMasterRef.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerDefGrid_Inspection.mJobStart">
+      <LineId Id="81" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerDefGrid_Inspection.mJobStop">
+      <LineId Id="11" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerDefGrid_Inspection.Release">
+      <LineId Id="6" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="15" Count="2" />
+    </LineIds>
+    <LineIds Name="FB_WorkerDefGrid_Inspection.work">
+      <LineId Id="10" Count="0" />
+      <LineId Id="47" Count="4" />
+      <LineId Id="46" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="45" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

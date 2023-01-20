@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <Itf Name="I_MarkDefinition" Id="{961e3342-2c28-4702-a1e0-dacac6afe5f8}">
+    <Declaration><![CDATA[INTERFACE I_MarkDefinition
+]]></Declaration>
+    <Method Name="getMark" Id="{6dcce5ab-646c-4060-81c3-0eea54c1a7d3}">
+      <Declaration><![CDATA[(*
+  Get a mark definition.
+  
+  nIdx=0 - selects last mark 
+*)
+METHOD getMark : POINTER TO ST_MarkDefinition
+VAR_INPUT
+  nIdx : UDINT; // mark index: 1.._nMarks, 0 = last (endMark) 
+END_VAR
+]]></Declaration>
+    </Method>
+    <Property Name="nMarks" Id="{f474363f-e035-45ba-8c0d-d254c1952798}">
+      <Declaration><![CDATA[(*Number of registered marks*)
+PROPERTY nMarks : UDINT]]></Declaration>
+      <Get Name="Get" Id="{de13454a-17e8-4b5c-b134-a5f1999f8846}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="nMarksDetected" Id="{885555d1-3ee1-4fa8-9437-dc3e560f4a49}">
+      <Declaration><![CDATA[(*Number of detected marks*)
+PROPERTY nMarksDetected : UDINT]]></Declaration>
+      <Get Name="Get" Id="{a6f0de8a-1ba3-4716-b602-4d6e217d2773}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Method Name="RegisterMark" Id="{9eb8c8e0-d3b0-445a-b94d-730dc7ec70d1}">
+      <Declaration><![CDATA[(*
+  Register a mark to camera (teach)
+*)
+METHOD RegisterMark : BOOL
+VAR_INPUT
+  sMark : ST_MarkDefinition;
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="ResetMarks" Id="{8f025160-d4e0-46ad-879f-d784c19efaeb}">
+      <Declaration><![CDATA[(*
+  Reset all registered marks
+*)
+METHOD ResetMarks]]></Declaration>
+    </Method>
+  </Itf>
+</TcPlcObject>

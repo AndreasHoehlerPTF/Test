@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <DUT Name="ST_ModuleMachineInterface_OUT" Id="{8f4391a5-1d4b-423b-9f64-5e04cc795bed}">
+    <Declaration><![CDATA[TYPE ST_ModuleMachineInterface_OUT :
+STRUCT
+  // Outputs (to Machine)
+  fSpeed                : LREAL;            // Current module speed
+  bMoving               : BOOL;             // substrate/module is moving
+  nPrintMarkPosBits     : WORD;             // Print mark position (bit coded)
+  fMaxSpeed             : LREAL;            // Max. possible print module speed
+  bSpeedExeeded         : BOOL;             // Module speed exeeded;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

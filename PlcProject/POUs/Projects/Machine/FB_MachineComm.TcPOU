@@ -1,0 +1,192 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <POU Name="FB_MachineComm" Id="{e9f9c26e-ed32-48ca-8d5f-6b876637e0b4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_MachineComm
+VAR_INPUT
+  // from prg internals to machine
+  sModuleMachineFeedback : ARRAY[1..iCPr_NB_PM] OF ST_ModuleMachineInterface_OUT;
+END_VAR
+VAR_OUTPUT
+  // from machine -> prg internals
+  sModuleMachineState : ARRAY[1..iCPr_NB_PM] OF ST_ModuleMachineInterface_IN;
+END_VAR
+VAR
+  nCtr : UDINT;
+  _bSimOk : BOOL;
+  _bSimRand : BOOL;
+  _fMaxSpeed : LREAL;       // max. speed over all modules
+  _bSpeedExeeded : BOOL;    // one module exceeded speed
+  _bMachineMoving : BOOL;   // one module is moving
+  
+END_VAR
+VAR PERSISTENT
+  bMarksInverted : BOOL;  //inverted marks in case of wrong mirrored prints
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// TODO: move all EAP or handling structure to this fb
+
+FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PM) DO 
+  {warning 'TODO: SubstrateLength from Job or Machine? Check somewhere'}  
+  sModuleMachineState[nCtr].bEStop                 := getValueBool ( PRG_MACHINE.iSystemStatus.bEmergency, FALSE);
+  sModuleMachineState[nCtr].bSleep                 := getValueBool ( PRG_MACHINE.iSystemStatus.bSleep, FALSE);
+  sModuleMachineState[nCtr].bSafetyCoverOk         := getValueBool ( PRG_MACHINE.bIKp_SafetyCoverOK[nCtr], TRUE);
+  sModuleMachineState[nCtr].bServiceDoorsOk        := getValueBool ( PRG_MACHINE.bIKp_SafetyDoorsOK[nCtr], TRUE);
+  sModuleMachineState[nCtr].bExhaustVacuumWarning  := getValueBool ( PRG_MACHINE.fb_ExhaustSystem[nCtr].bO_VacuumWarningLevel, FALSE);
+  sModuleMachineState[nCtr].bExhaustVacuumError    := getValueBool ( PRG_MACHINE.fb_ExhaustSystem[nCtr].bO_VacuumErrorLevel, FALSE);
+  sModuleMachineState[nCtr].bExhaustFUError        := getValueBool ( FALSE, FALSE); // NOT fb_ExhaustSystem[1].bO_FURead
+  sModuleMachineState[nCtr].bDriftControlError     := getValueBool ( FALSE, FALSE); // fB_DriftControl[nCtr].bO_SupervisionContrErr OR fB_DriftControl[nCtr].bO_ContrErr
+  sModuleMachineState[nCtr].bDriftControlMissMarks := getValueBool ( FALSE, FALSE); // fB_DriftControl[nCtr].bO_SupervisionMissMarks
+  sModuleMachineState[nCtr].bSafetyOk              := getValueBool ( PRG_MACHINE.bL_SafetyOk[nCtr], TRUE);
+  sModuleMachineState[nCtr].bUnitInPrintPosition   := getValueBool ( PRG_MACHINE.fb_CleaningPU[nCtr].pInPosPrint, TRUE);
+  sModuleMachineState[nCtr].bEngaged               := getValueBool ( PRG_MACHINE.bL_IO_Engaged[nCtr] OR PRG_MACHINE.bL_SimMachineReady, TRUE);
+  sModuleMachineState[nCtr].bPrintEnabled          := getValueBool ( (PRG_MACHINE.IbEAP_PrintEnabled[nCtr] AND PRG_MACHINE.fb_CleaningPU[nCtr].pInPosPrint) OR PRG_MACHINE.bL_SimMachineReady, TRUE);
+  sModuleMachineState[nCtr].fSubstrateThickness    := getValueLreal( TO_LREAL(PRG_MACHINE.InEAP_SubstrateThickness) / 1_000_000, 0.003);    (*[µm] => [m]*)
+  sModuleMachineState[nCtr].fSubstrateLen          := getValueLreal( TO_LREAL(PRG_MACHINE.InEAP_FormatLength) / 1_000_000, 0.55);    (*[µm] => [m]*) 
+  sModuleMachineState[nCtr].fWebStretchCalculated  := getValueLreal( (1.0 - (DINT_TO_LREAL(PRG_MACHINE.InEAP_WebStretchFactor) / 1_000_000)), 0.99);
+  sModuleMachineState[nCtr].fLateralRegister       := getValueLreal( TO_LREAL(PRG_MACHINE.InEAP_LateralRegister) / 1_000_000, 0);
+  sModuleMachineState[nCtr].fModule2ToModule3      := getValueLreal( TO_LREAL(PRG_MACHINE.InEAP_Module2ToModule3) / 1_000_000, 4.5);
+  sModuleMachineState[nCtr].bTargetSpeedReached    := getValueBool (  PRG_MACHINE.IbEAP_TargetSpeedReached, TRUE);
+  sModuleMachineState[nCtr].fNeutralFibreFactor    := getValueLreal( TO_LREAL(PRG_MACHINE.InEAP_NeutralFibreFactor), 98);
+END_FOR
+
+
+// get global values over all modules
+_fMaxSpeed := getMaxSpeed();
+_bSpeedExeeded := _bMachineMoving := FALSE;
+FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PM) DO
+  _bSpeedExeeded := _bSpeedExeeded OR sModuleMachineFeedback[nCtr].bSpeedExeeded;
+  _bMachineMoving := _bMachineMoving OR sModuleMachineFeedback[nCtr].bMoving;
+END_FOR
+]]></ST>
+    </Implementation>
+    <Property Name="bMachineMoving" Id="{173515c6-a5fa-45dc-babe-0afd24e261f6}">
+      <Declaration><![CDATA[PROPERTY bMachineMoving : BOOL]]></Declaration>
+      <Get Name="Get" Id="{e39a45ac-0f5c-4051-b435-8e855b77bbc0}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bMachineMoving := _bMachineMoving;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="bSpeedExeeded" Id="{46eac1fb-828c-4030-a65f-0e348961e833}">
+      <Declaration><![CDATA[PROPERTY bSpeedExeeded : BOOL]]></Declaration>
+      <Get Name="Get" Id="{f8649824-c296-4592-b3f9-01b5fecc74d8}">
+        <Declaration><![CDATA[VAR
+  i : UDINT;
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSpeedExeeded := _bSpeedExeeded;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="getMaxSpeed" Id="{ad9cd8fe-14d4-4aef-8f8c-bd29e70cf065}">
+      <Declaration><![CDATA[METHOD PRIVATE getMaxSpeed : LREAL
+VAR
+  f : LREAL;
+  i : UDINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[f := 0;
+FOR i:=1 TO TO_UDINT(iCPr_NB_PM) DO
+  IF sModuleMachineFeedback[i].fMaxSpeed = 0 THEN
+    ; // invalid speed
+  ELSIF f = 0 OR f > sModuleMachineFeedback[i].fMaxSpeed THEN
+    f := sModuleMachineFeedback[i].fMaxSpeed;
+	END_IF
+END_FOR
+
+getMaxSpeed := f;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getValueBool" Id="{3c11801a-ca08-4a02-861e-1079423ae6e2}">
+      <Declaration><![CDATA[METHOD PRIVATE getValueBool : BOOL
+VAR_INPUT
+  in   : BOOL;   // input value
+  sim  : BOOL;   // default simulation value - ok state
+END_VAR
+VAR_INST
+  rand : DRAND := (Seed:=14);
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[rand();
+IF    _bSimOk   THEN getValueBool := sim;
+ELSIF _bSimRand THEN getValueBool := SEL(rand.Num > 0.5, FALSE, TRUE);
+ELSE                 getValueBool := in;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getValueLreal" Id="{e443311e-4931-4fa0-bda2-bb30e89e79f1}">
+      <Declaration><![CDATA[METHOD PRIVATE getValueLreal : LREAL
+VAR_INPUT
+  in   : LREAL;   // input value
+  sim  : LREAL;   // default simulation value - ok state
+END_VAR
+VAR_INST
+  rand : DRAND := (Seed:=14);
+  randFactor : LREAL := 10;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[rand();
+IF    _bSimOk   THEN getValueLreal := sim;
+ELSIF _bSimRand THEN getValueLreal := rand.Num * randFactor;
+ELSE                 getValueLreal := in;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="nMaxSpeedMpMin" Id="{69a12bb9-8167-4f03-922f-c54d8911c5fc}">
+      <Declaration><![CDATA[(*Max. possible speed [m/min]*)
+PROPERTY nMaxSpeedMpMin : DINT]]></Declaration>
+      <Get Name="Get" Id="{4479af69-dbf5-4777-81fd-beef0747613a}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[nMaxSpeedMpMin := TO_DINT(_fMaxSpeed * 60);]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <LineIds Name="FB_MachineComm">
+      <LineId Id="124" Count="2" />
+      <LineId Id="187" Count="0" />
+      <LineId Id="226" Count="19" />
+      <LineId Id="152" Count="4" />
+      <LineId Id="158" Count="0" />
+      <LineId Id="160" Count="3" />
+      <LineId Id="64" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MachineComm.bMachineMoving.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MachineComm.bSpeedExeeded.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MachineComm.getMaxSpeed">
+      <LineId Id="6" Count="2" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="12" Count="1" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MachineComm.getValueBool">
+      <LineId Id="13" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MachineComm.getValueLreal">
+      <LineId Id="13" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MachineComm.nMaxSpeedMpMin.Get">
+      <LineId Id="16" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

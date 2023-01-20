@@ -1,0 +1,241 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <POU Name="FB_MarkCamera_WEU" Id="{022ae170-1450-4de8-9411-2fff24170cee}" SpecialFunc="None">
+    <Declaration><![CDATA[(*
+  Mark camera system on WEU machine
+  1 mark sensor (optional: reverse mode - roll printed in reversed direction, sensor moved to other side)
+*)
+FUNCTION_BLOCK FB_MarkCamera_WEU EXTENDS FB_CameraBase 
+VAR_INPUT
+END_VAR
+VAR
+  // config
+  _iMarkDefinition          : I_MarkDefinition;
+  // helper
+  pMark                     : POINTER TO ST_MarkDefinition;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF NOT _bInitialized THEN RETURN; END_IF
+
+// The detection work is done in FB_CameraDetection
+// This FB just uses(receives) the marks from the external implementation
+// - Receives events CamTrigger & CamTriggerDone from MarkDetection
+// - Get current marks and send them to the iCameraSink
+
+WHILE _iMarkDefinition.nMarksDetected > _nRxCamPoints DO
+  
+  pMark := _iMarkDefinition.getMark(nIdx:=_nRxCamPoints+1);
+  IF pMark <> 0 THEN
+    // Send Mark (CamPoint) to CameraSink
+    stCamPoint.x_ref := F_MeterToSubPixelReal(  fPosMeter:=pMark^.fPosX                                 (*[m]*)
+                                              , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
+    stCamPoint.y_ref := F_MeterToSubPixelReal( fPosMeter:=pMark^.fPosX                                  (*[m]*)
+                                              , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
+    stCamPoint.dx    := F_MeterToSubPixelReal( fPosMeter:=pMark^.sState.dx                              (*[m]*)
+                                              , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
+    stCamPoint.dy    := F_MeterToSubPixelReal( fPosMeter:=pMark^.sState.dy                              (*[m]*)
+                                              , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
+    stCamPoint.valid := pMark^.sState.bSet;
+  
+    IF _iCameraSink <> 0 THEN
+      _iCameraSink.AddCamPoint(sDeformationPoint:=stCamPoint);
+    END_IF
+    
+    _nRxCamPoints := _nRxCamPoints + 1;   // next mark
+  END_IF
+END_WHILE]]></ST>
+    </Implementation>
+    <Folder Name="I_CameraTriggerDevice" Id="{e2dec33a-897c-4e22-aee9-eb47423f04d4}" />
+    <Method Name="CamTrigger" Id="{81474d5d-5e6e-4c16-a459-3afa624802bf}" FolderPath="I_CameraTriggerDevice\">
+      <Declaration><![CDATA[METHOD CamTrigger
+VAR_INPUT
+  bOk             : BOOL;     // trigger is ok
+	nPos            : DINT;     // camera triggered position
+  nPosDeviation   : DINT;     // camera started deviation
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT _bInitialized THEN RETURN; END_IF
+
+SUPER^.CamTrigger(bOk:=bOk, nPos:=nPos, nPosDeviation:=nPosDeviation);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CamTriggerDone" Id="{1b47eb14-3697-493b-9422-5ad8294365cf}" FolderPath="I_CameraTriggerDevice\">
+      <Declaration><![CDATA[METHOD CamTriggerDone
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT _bInitialized THEN RETURN; END_IF
+
+{warning 'Finalize mark handling'}
+
+_iMarkDefinition.ResetMarks();
+SUPER^.CamTriggerDone();]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="eCameraMode" Id="{139b08ce-f2ab-437d-89d4-90989524dcb9}">
+      <Declaration><![CDATA[{attribute 'monitoring':='call'}
+PROPERTY eCameraMode : E_CameraMode
+]]></Declaration>
+      <Get Name="Get" Id="{dcc67e1c-1172-4dc0-8760-a7217421172f}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[eCameraMode := _eCameraMode;
+IF _eCameraMode = E_CameraMode.Auto THEN
+  eCameraMode := E_CameraMode.XYR;
+END_IF]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="eDeviceType" Id="{4cff99ca-d815-47ed-86bc-fb84d5e4b780}">
+      <Declaration><![CDATA[PROPERTY eDeviceType : E_CameraDevice]]></Declaration>
+      <Get Name="Get" Id="{8d2ae920-228a-44ba-8a46-8bca4ae49bf1}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[eDeviceType := E_CameraDevice.PrintMark;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="GetCamStatus" Id="{7171f1e1-2bc1-4049-86ae-30de97569022}">
+      <Declaration><![CDATA[METHOD GetCamStatus : BOOL
+VAR_OUTPUT
+  bConnectionOK  : BOOL;    // Camera connected
+  bTeachOk       : BOOL;    // Teach successful
+  nTeachedPoints : UDINT;   // Teached points for this job
+  nScannedPoints : UDINT;   // Scanned points on current sheet
+  bCamStarted    : BOOL;    // Camera trigger is active, cam started
+  bCamDone       : BOOL;    // Camera finished on last CT
+  bErrors        : ARRAY[1..GVL_Camera.nC_NbCamErrors] OF BOOL;  // generic error flag list
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF _iMarkDefinition = 0 THEN RETURN; END_IF
+
+bConnectionOK  := TRUE;
+bTeachOk       := (_iMarkDefinition.nMarks > 0);
+nTeachedPoints := _iMarkDefinition.nMarks;  // teach marks
+nScannedPoints := _nRxCamPoints;
+bCamStarted    := _bCamTriggerStarted;
+bCamDone       := _bCamTriggerDone;
+
+GetCamStatus := bConnectionOK AND bTeachOk;   // camera ready]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="InitMarkCamera" Id="{0c1aea82-d580-47e9-b922-45dcb8adc4f9}">
+      <Declaration><![CDATA[METHOD InitMarkCamera
+VAR_INPUT
+  nPrintUnitResolution         : UDINT;    (*printhead pixel resolution [dpi]*)
+  nPrintUnitSubPx              : UDINT;    (*print unit subPixel resolution [SubPx]*)
+  iCameraTrigger               : I_CameraTrigger;
+  iMarkDefinition              : I_MarkDefinition;  // mark detection fb
+END_VAR
+VAR
+  bOK : BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Init( nPrintUnitResolution      := nPrintUnitResolution
+           , nPrintUnitSubPx           := nPrintUnitSubPx
+           , iCameraTrigger            := iCameraTrigger
+           , bUseCameraTrigger         := FALSE
+           , bUseCameraTriggerFeedback := FALSE);
+
+IF NOT _bInitialized OR iMarkDefinition = 0 THEN LogError('Init: invalid parameter'); RETURN; END_IF
+
+_iMarkDefinition := iMarkDefinition;
+
+_bInitialized := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setCameraMode" Id="{b544e398-6fa9-48f7-9517-2291b5b5ae0e}">
+      <Declaration><![CDATA[(*
+  Set mode to camera.
+  :return: TRUE if success
+*)
+METHOD setCameraMode : BOOL
+VAR_INPUT
+  eCameraMode : E_CameraMode;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF eCameraMode = E_CameraMode.NoCorrection OR  // supported modi
+   eCameraMode = E_CameraMode.XYR THEN
+   
+  _eCameraMode := eCameraMode;  // set desired mode
+  setCameraMode := TRUE;
+ELSE
+  LogError(F_Concat3('Camera mode=', TO_STRING(eCameraMode), ' not supported by camera'));
+  _eCameraMode := E_CameraMode.NoCorrection;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="sName" Id="{19c5cb89-f3d7-4de6-8450-7cd468806f5b}">
+      <Declaration><![CDATA[{attribute 'monitoring':='variable'}
+PROPERTY sName : STRING
+]]></Declaration>
+      <Get Name="Get" Id="{73270a0c-f7e1-4ad6-9e4c-06f03f404132}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[sName := 'Printmarks';]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <LineIds Name="FB_MarkCamera_WEU">
+      <LineId Id="885" Count="27" />
+      <LineId Id="850" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkCamera_WEU.CamTrigger">
+      <LineId Id="68" Count="1" />
+      <LineId Id="32" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkCamera_WEU.CamTriggerDone">
+      <LineId Id="22" Count="4" />
+      <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkCamera_WEU.eCameraMode.Get">
+      <LineId Id="13" Count="2" />
+      <LineId Id="6" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkCamera_WEU.eDeviceType.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkCamera_WEU.GetCamStatus">
+      <LineId Id="49" Count="1" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="11" Count="1" />
+      <LineId Id="4" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="28" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkCamera_WEU.InitMarkCamera">
+      <LineId Id="79" Count="4" />
+      <LineId Id="78" Count="0" />
+      <LineId Id="75" Count="0" />
+      <LineId Id="96" Count="0" />
+      <LineId Id="95" Count="0" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="38" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkCamera_WEU.setCameraMode">
+      <LineId Id="24" Count="1" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="22" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkCamera_WEU.sName.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

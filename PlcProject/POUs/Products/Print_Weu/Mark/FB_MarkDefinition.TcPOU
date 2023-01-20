@@ -1,0 +1,194 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <POU Name="FB_MarkDefinition" Id="{6e7a8d5d-62b5-4788-a589-5b2aa5bdfe8a}" SpecialFunc="None">
+    <Declaration><![CDATA[(*
+  Holds Marks definition & current state.
+*)
+{attribute 'no_explicit_call' := 'do not call this POU directly'} 
+FUNCTION_BLOCK FB_MarkDefinition EXTENDS T_NamedBase IMPLEMENTS I_MarkDefinition
+VAR
+  _nMarks : UDINT;          // number of registered marks
+  _nMarksDetected : UDINT;  // number of detected marks
+  sMarkDef : ARRAY[1..10] OF ST_MarkDefinition;
+  
+  // internals
+  nMaxMarks : UDINT;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Folder Name="I_MarkDefinition" Id="{16b91438-f803-4348-8fb7-10427a0559c7}" />
+    <Method Name="getMark" Id="{f29eb549-d305-4b12-aef3-17f1ca168c27}" FolderPath="I_MarkDefinition\">
+      <Declaration><![CDATA[(*
+  Get a mark definition.
+  
+  nIdx=0 - selects last mark 
+*)
+METHOD getMark : POINTER TO ST_MarkDefinition
+VAR_INPUT
+  nIdx : UDINT; // mark index: 1.._nMarks, 0 = last (endMark) 
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF    nIdx = 0        THEN getMark := ADR(sMarkDef[_nMarks]);
+ELSIF nIdx <= _nMarks THEN getMark := ADR(sMarkDef[nIdx]);
+ELSE                       getMark := ADR(sMarkDef[_nMarks]);  LogError(F_Concat2('Invalid mark requested, Idx=', TO_STRING(nIdx)));
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Init" Id="{c20f7e1a-764c-46a0-893a-db27e9de0985}">
+      <Declaration><![CDATA[METHOD Init : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[nMaxMarks := SIZEOF(sMarkDef) / SIZEOF(sMarkDef[1]);
+Reset();]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="nMarks" Id="{92120eb8-4bf0-4904-95cc-6a6ba8d23ff4}" FolderPath="I_MarkDefinition\">
+      <Declaration><![CDATA[(*Number of registered marks*)
+PROPERTY nMarks : UDINT]]></Declaration>
+      <Get Name="Get" Id="{7eb15e29-897b-4a06-a6bd-f18ba5406d05}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[nMarks := _nMarks;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="nMarksDetected" Id="{582f7c32-2eae-4b7f-bda7-4a884804f2ab}" FolderPath="I_MarkDefinition\">
+      <Declaration><![CDATA[(*Number of detected marks*)
+PROPERTY nMarksDetected : UDINT]]></Declaration>
+      <Get Name="Get" Id="{40bb2dbf-cb04-4ac7-b848-2727fd7b35e1}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[nMarksDetected := _nMarksDetected;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="RegisterMark" Id="{fb7b9469-75c3-49cc-8ce1-a384ac9c5291}" FolderPath="I_MarkDefinition\">
+      <Declaration><![CDATA[(*
+  Register a mark to camera (teach)
+*)
+METHOD RegisterMark : BOOL
+VAR_INPUT
+  sMark : ST_MarkDefinition;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF _nMarks >= nMaxMarks THEN LogError('Number of marks exeeded, ignore'); RETURN; END_IF
+
+// we assume first mark is start mark, last mark is end mark.
+// TODO: otherwise sorted add marks to list
+_nMarks := _nMarks + 1;
+sMarkDef[_nMarks] := sMark;
+
+// set id if not given
+IF sMarkDef[_nMarks].nId = 0 THEN sMarkDef[_nMarks].nId := _nMarks; END_IF
+// clear eventual mark state
+MEMSET(destAddr:=ADR(sMarkDef[_nMarks].sState), 0, SIZEOF(ST_MarkState));
+
+RegisterMark := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{4875f2f3-b9db-40c2-9f72-920f74fab8f1}">
+      <Declaration><![CDATA[METHOD Reset
+VAR
+  i : UDINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_nMarks := 0;
+MEMSET(destAddr:=ADR(sMarkDef), fillByte:=0, SIZEOF(sMarkDef));
+//FOR i:=1 TO nMaxMarks DO sMarkDef[i].nId := i; END_FOR]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ResetMarks" Id="{227543d6-3613-4076-8bf0-3ecac98acbd2}" FolderPath="I_MarkDefinition\">
+      <Declaration><![CDATA[(*
+  Reset all registered marks
+*)
+METHOD ResetMarks
+VAR
+  i : UDINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_nMarksDetected := 0;
+FOR i:=1 TO _nMarks DO
+  MEMSET(destAddr:=ADR(sMarkDef[i].sState), 0, SIZEOF(ST_MarkState));
+END_FOR]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="saveMark" Id="{a599fd59-b013-4c00-ac0a-60c8cf813a40}">
+      <Declaration><![CDATA[METHOD saveMark : BOOL
+VAR_INPUT
+  pMark : POINTER TO ST_MarkDefinition;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF pMark = 0 THEN RETURN; END_IF
+
+{warning 'TODO: save mark'}
+// sMarkDef[pMark^.nId]. := 
+
+_nMarksDetected := _nMarksDetected + 1;
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_MarkDefinition">
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkDefinition.getMark">
+      <LineId Id="5" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="7" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_MarkDefinition.Init">
+      <LineId Id="9" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkDefinition.nMarks.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkDefinition.nMarksDetected.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkDefinition.RegisterMark">
+      <LineId Id="5" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="13" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkDefinition.Reset">
+      <LineId Id="9" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="13" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkDefinition.ResetMarks">
+      <LineId Id="5" Count="1" />
+      <LineId Id="8" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_MarkDefinition.saveMark">
+      <LineId Id="14" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="13" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -55,7 +55,7 @@
 	<Project ProjectGUID="{8A6C9239-8845-48A0-A810-8F0CEB941B60}" Target64Bit="true" BootFileEncryption="1" ShowHideConfigurations="#x1c7">
 		<UserDB FileIdentifier="16eda78d86ea665ee8f95c418d91dab6912c30eb" Name="Steinemann_UserDB"/>
 		<System>
-			<Settings MaxCpus="4" NonWinCpus="1"/>
+			<Settings MaxCpus="20" NonWinCpus="1"/>
 			<Licenses IgnoreProjectLicenses="true">
 				<Target BkhfOrder="00173632" CustomOrder="700.004">
 					<CustomComment><![CDATA[DP-ST-1026-WEU2  / Labelexpo]]></CustomComment>
@@ -81,7 +81,7 @@
 		<Plc>
 			<Project File="PlcProject.xti"/>
 			<Project GUID="{D0E4D2E1-36F2-47AF-A080-6F211B803C3B}" Name="CalmarProdDmax" PrjFilePath="..\..\DPST-1005 Steinemann 4 Portrait 305.704\CalmarProdDmax\CalmarProdDmax.plcproj" TmcFilePath="..\..\DPST-1005 Steinemann 4 Portrait 305.704\CalmarProdDmax\CalmarProdDmax.tmc" ReloadTmc="true" AmsPort="852" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x08502040" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="..\..\DPST-1005 Steinemann 4 Portrait 305.704\CalmarProdDmax\CalmarProdDmax.tmc" TmcHash="{A585C371-6B7E-21AE-15ED-39FE93460A0A}">
+				<Instance Id="#x08502040" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="..\..\DPST-1005 Steinemann 4 Portrait 305.704\CalmarProdDmax\CalmarProdDmax.tmc" TmcHash="{9B873C27-E9D1-D2FA-5DF2-F0DCF29D595C}">
 					<Name>CalmarProdDmax Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Contexts>
