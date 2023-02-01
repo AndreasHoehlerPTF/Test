@@ -19,8 +19,6 @@ VAR
   _pAdsPm                 : POINTER TO ST_ADS_PM; //ads config/status interface
   _pAdsSa                 : POINTER TO ST_ADS_DVTSHEETALIGNMENT; // sheet alignemnt ads
   
-  _fResolutionPrint       : LREAL;
-  _fResolutionSubPx       : LREAL;
   _fDistToMasterPm        : LREAL;        // distance to master reference module (mech.), does not include DetectToPu
   _nYShift_PcRamCenter    : UDINT;        // y-shift for centered image in CB RAM [px]
   
@@ -38,11 +36,10 @@ VAR
   bHardwareHold           : BOOL;   // hw hold
   
   // instances
-  //fbDropSpeedComp         : FB_DropSpeedComp;           // compensation drop ToF in X direction
   fbWorkerCamera          : FB_WorkerDefGrid_Camera;
   fbWorkerPrint           : ARRAY[1..GVL_WEU.nC_WorkerPrintPerPm] OF FB_WorkerDefGrid_Print_WEU;
   
-  // hw ------
+  // hw (references only for now) ------
   // - pc
   _pPc                    : ARRAY[1..GVL_WEU.nC_MaxPcPerPm] OF POINTER TO FB_PC;
   _nPc                    : UDINT;  // number of PC in module
@@ -71,19 +68,15 @@ VAR
   sL_MsgConfig            : ST_MSG_CONFIG;                (*Message config*)
   fb_Msg                  : ARRAY [1..nC_NumMsg] OF FB_MESSAGE;  (*Messages*)
   
-  // view
-  
   // testing
   _bSim : BOOL;
 END_VAR
 VAR PERSISTENT
-  _fEncoderCylinderDiameter : LREAL := 100.0;      // Encoder cylinder diameter [mm]
   _fPrintModuleAdjustY      : LREAL; // Module adjust Y [µm]*)
 END_VAR
 VAR CONSTANT
-  fC_EncoderImpU          : LREAL := 10_000 * 4;   // Impulses * 4 times sampling [Imp/U]
   fC_HeadOffsetPlate      : LREAL := 0.000_2;      // Head offset to base plate [m]
-  fC_ProductionSpeedMin   : LREAL := 5.0;          // [m/min]
+  fC_ProductionSpeedMpMin_Level   : LREAL := 5.0;          // [m/min]
   nC_NumMsg               : INT := 8;              // number of internal messages
 END_VAR]]></Declaration>
     <Implementation>
@@ -102,13 +95,10 @@ IF tSyncDelay.Q THEN
 END_IF
 
 // positioning 
-// - calculate encoder resolution (fL_SubstrateThickness with factor is added to the radius because of the neutral fiber of the substrate)
-//   update encoder position based on machine parameter
-_iPrintPosition.fEnoderResolution := ((_fEncoderCylinderDiameter / 1000 / 2) + (_pModuleMachineState^.fSubstrateThickness * (_pModuleMachineState^.fNeutralFibreFactor) / 100)) * 2 * PI * 1_000_000 / fC_EncoderImpU;
 {warning 'TODO: hide encoder signals while : NOT bReadForPrinting'}
 fSpeed := _iPrintPosition.getSpeed(fSpeedMpMin=>fSpeedMpMin);
 nPos_SubPx := _iPrintPosition.getPosition(nPosition_px=>nPos_Px, fPosition_um=>fPos_um);
-bProductionSpeedReached := (fSpeed >= fC_ProductionSpeedMin);
+bProductionSpeedReached := (fSpeedMpMin >= fC_ProductionSpeedMpMin_Level);
 {warning 'TODO: set HardwareHold'}
 bHardwareHold := NOT bProductionSpeedReached OR NOT _pModuleMachineState^.bPrintEnabled;    //before: machine stopped/NOT upper5MpMin, module enabled, driftControl OK
 
@@ -128,7 +118,7 @@ FOR nCtr := 1 TO GVL_WEU.nC_WorkerPrintPerPm DO
                                   //+ master detect offset,
   fbWorkerPrint[nCtr].bWorkerEnable := _pModuleMachineState^.bEngaged AND _pAdsPm^.bI_Enable;
   fbWorkerPrint[nCtr](
-    nEncoderPos           := nPos_SubPx,
+    nPrintPos           := nPos_SubPx,
     bHardwareSync         := bHwSyncCmd,
     bHardwareHold         := bHardwareHold,
     fPrintStartOffset     :=  fPrintOffsetX[nCtr],      // NOTE: dynamic corrections done in Worker (dropSpeedComp / global grid dx))
@@ -173,7 +163,8 @@ END_VAR
       </Get>
     </Property>
     <Property Name="bMoving" Id="{eda3f871-87e3-46aa-b28f-2fbe8d09d6f1}" FolderPath="Position\">
-      <Declaration><![CDATA[PROPERTY bMoving : BOOL]]></Declaration>
+      <Declaration><![CDATA[{attribute 'monitoring':='call'}
+PROPERTY bMoving : BOOL]]></Declaration>
       <Get Name="Get" Id="{76f0abe9-c1ec-4dc9-918f-26ce0a4812d5}">
         <Declaration><![CDATA[VAR
 END_VAR
@@ -275,8 +266,6 @@ END_IF
 _nIdx := nIdx;
 _pAdsPm := pAdsPm;
 _pAdsSa := pAdsSa;
-_fResolutionPrint := fPrintResolution;
-_fResolutionSubPx := fSubPxResolution;
 _nYShift_PcRamCenter := nYShiftPcCenter;
 _iModuleMaster := iModuleMaster;
 _iPrintPosition := iPosition;
@@ -501,7 +490,7 @@ END_FOR
       </Implementation>
     </Method>
     <LineIds Name="FB_PrintModule_Base">
-      <LineId Id="3066" Count="68" />
+      <LineId Id="3374" Count="65" />
       <LineId Id="770" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule_Base.bEngaged.Get">
@@ -526,7 +515,8 @@ END_FOR
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule_Base.Init">
-      <LineId Id="1273" Count="94" />
+      <LineId Id="1273" Count="11" />
+      <LineId Id="1287" Count="80" />
       <LineId Id="14" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule_Base.iPrintPosition.Get">

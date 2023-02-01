@@ -2599,10 +2599,6 @@ sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eIk_BLK_INKPUMP),          aAds
 sMappingInfo.addBlkAry( iAdsBlockType := TO_UINT(eIk_BLK_HEATER),           aAdsBlockName := 'sAdsIkHeater',          iAdsBlockVersion:= INT_TO_UINT(sAdsIkHeater[1].iO_Version),          iNbrBlocks := SIZEOF(sL_BLK_HEATER)          / SIZEOF(sL_BLK_HEATER[1]),          pBlockArray := ADR(sL_BLK_HEATER));
 sMappingInfo.bReady := TRUE;
 
-// Register module
-ISystemBase.regModule( pAdsInfo := ADR(sC_Ads_Info)
-                     , pMapInfo := ADR(sMappingInfo) );
-
 (********************************* END OF ACTION *************************************************)]]></ST>
       </Implementation>
     </Action>
@@ -3482,8 +3478,7 @@ fb_VisuMeniscusMencController(sI_Ary_Fb := fb_MeniscusMencContr, sI_Ary_Ads := s
       <LineId Id="327" Count="0" />
       <LineId Id="221" Count="3" />
       <LineId Id="229" Count="0" />
-      <LineId Id="240" Count="0" />
-      <LineId Id="265" Count="3" />
+      <LineId Id="268" Count="0" />
       <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="PRG_INK.RemVar">

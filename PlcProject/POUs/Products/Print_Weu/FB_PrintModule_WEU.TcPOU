@@ -11,15 +11,37 @@ VAR
   fbPrintPosition    : FB_PrintPositionDmax;   // a position per pm (external encoder wheel)
   fbMarkDefinition   : FB_MarkDefinition;      // mark definition instance (used by MarkDetection and camera)
   fbMarkDetection    : FB_MarkDetection;       // StartPosTrigger, CameraTrigger and MarkDetection (Mark handler for MarkCamera)
-  fbMarkCameraWeu    : FB_MarkCamera_WEU;
-  fbNoCamera         : FB_CameraDummy;
+  fbMarkCameraWeu    : FB_MarkCamera_WEU;      // Mark detection camera
+  fbNoCamera         : FB_CameraDummy;         // dummy sheet detect camera (not actively used)
+  // view
+  fbView             : FB_PrintModule_View;    //
 END_VAR
-]]></Declaration>
+VAR PERSISTENT
+  _fEncoderCylinderDiameter : LREAL := 100.0;      // Encoder cylinder diameter [mm]
+END_VAR
+VAR CONSTANT
+  fC_EncoderImpU          : LREAL := 10_000 * 4;   // Impulses * 4 times sampling [Imp/U]
+END_VAR]]></Declaration>
     <Implementation>
-      <ST><![CDATA[SUPER^();
+      <ST><![CDATA[// - calculate encoder resolution (fL_SubstrateThickness with factor is added to the radius because of the neutral fiber of the substrate)
+//   update encoder position based on machine parameter
+_iPrintPosition.fEnoderResolution := ((_fEncoderCylinderDiameter / 1000 / 2) + (_pModuleMachineState^.fSubstrateThickness * (_pModuleMachineState^.fNeutralFibreFactor) / 100)) * 2 * PI * 1_000_000 / fC_EncoderImpU;
+fbPrintPosition();
 
-fbMarkDetection();
+//fbMarkDefinition();   // no call to body 
+fbMarkDetection(
+  bEnable:=bReadyForPrinting,
+  bAutomaticMode:=TRUE,
+  nCurrentPos:=_iPrintPosition.getPosition(),
+  fCurrentSpeed:=_iPrintPosition.getSpeed()
+);
+
 fbMarkCameraWeu();
+fbNoCamera();
+fbView();
+
+// call module base
+SUPER^();
 
 // machine interface outputs
 _pModuleMachineFeedback^.nPrintMarkPosBits := fbMarkDetection.nPrintMarkPosBits;
@@ -118,7 +140,7 @@ fbMarkDetection.Init(fPrintResolution:=fPrintResolution, fSubPxResolution:=fSubP
 
 // -- Mark camera
 fbMarkCameraWeu.InitMarkCamera(nPrintUnitResolution:=nC_PrintResolution,nPrintUnitSubPx:=nC_SubPixelResolution, iCameraTrigger:=fbMarkDetection, iMarkDefinition:=fbMarkDefinition);
-fbMarkCameraWeu.sVisuName := 'VISU_MarkCameraWEU';
+fbMarkCameraWeu.sVisuName := 'VISU_MarkCamera_WEU';
 fbWorkerCamera.RegisterCamera(fbMarkCameraWeu);
 
 // -- Camera if Mark is not selected
@@ -146,11 +168,27 @@ SUPER^.Init(
   pMachineOutputs   := pMachineOutputs,
   pCTManager        := pCTManager,
   iParamMediator    := iParamMediator
-);]]></ST>
+);
+
+fbView.init(pModule:=THIS, pPositioning:=ADR(fbPrintPosition));]]></ST>
       </Implementation>
     </Method>
     <LineIds Name="FB_PrintModule_WEU">
-      <LineId Id="46" Count="7" />
+      <LineId Id="86" Count="2" />
+      <LineId Id="76" Count="0" />
+      <LineId Id="96" Count="0" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="48" Count="0" />
+      <LineId Id="68" Count="3" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="49" Count="1" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="95" Count="0" />
+      <LineId Id="94" Count="0" />
+      <LineId Id="80" Count="0" />
+      <LineId Id="51" Count="2" />
       <LineId Id="19" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule_WEU.checkSpeed">
@@ -200,6 +238,8 @@ SUPER^.Init(
       <LineId Id="56" Count="0" />
       <LineId Id="40" Count="8" />
       <LineId Id="29" Count="1" />
+      <LineId Id="123" Count="0" />
+      <LineId Id="122" Count="0" />
     </LineIds>
   </POU>
 </TcPlcObject>

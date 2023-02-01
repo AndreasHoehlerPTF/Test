@@ -228,12 +228,12 @@
                               <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
                                 <v>Visible</v>
                                 <v>False</v>
-                                <v>ieccodeconversion_array</v>
-                                <v></v>
-                                <v>VisibleChildren</v>
-                                <v>True</v>
                                 <v>DefaultArraySize</v>
                                 <v>5</v>
+                                <v>VisibleChildren</v>
+                                <v>True</v>
+                                <v>ieccodeconversion_array</v>
+                                <v></v>
                                 <v>''NORMAL__COMMENT</v>
                                 <v> We hide this node to prevent having two References nodes
  Nevertheless we want to make sure that the children are displayed</v>
@@ -289,8 +289,8 @@
                         <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
                           <v n="AttrFlags">81920UL</v>
                           <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
-                            <v>conditionalshow</v>
-                            <v>visu_elemdev</v>
+                            <v>DisplayFrameReferencesConfiguration</v>
+                            <v></v>
                             <v>DescriptionTextId</v>
                             <v>TL_ElementProperties.Desc_ReferencedVisus</v>
                             <v>SortFlag</v>
@@ -301,14 +301,14 @@
                             <v>Simple|Standard</v>
                             <v>DynamicArray</v>
                             <v></v>
-                            <v>DisplayFrameReferencesConfiguration</v>
-                            <v></v>
+                            <v>conditionalshow</v>
+                            <v>visu_elemdev</v>
                             <v>FrameReferences</v>
                             <v></v>
-                            <v>Storable</v>
-                            <v>True</v>
                             <v>DisplayTextId</v>
                             <v>TL_ElementProperties.References</v>
+                            <v>Storable</v>
+                            <v>True</v>
                           </d>
                           <v n="ConvDone">true</v>
                         </o>
@@ -853,8 +853,8 @@
                 <v>3b695cc2-acce-48da-87f1-42499b2f269a</v>
                 <v>ContainsPoint</v>
                 <v>c6836d4c-23fa-41e1-a519-8d9d1efc6f4b</v>
-                <v>HasInputAccess</v>
-                <v>e49b427f-82c1-4f33-93fd-219e4bff5681</v>
+                <v>SetStaticState</v>
+                <v>a2797b80-4adc-4986-b8ae-4be1d42420a0</v>
                 <v>HasInputAccessIntern</v>
                 <v>41988b71-3554-4823-a6fe-4f456659e746</v>
                 <v>GetTooltip</v>
@@ -871,6 +871,8 @@
                 <v>969214ca-0f38-4ed9-b236-1b3c970d730c</v>
                 <v>GetClientData</v>
                 <v>0ee6a45c-5992-40da-b6d6-6ee91aaa2fb4</v>
+                <v>Destruct</v>
+                <v>d090d63b-6144-4c13-80c4-2f10e13a18ea</v>
                 <v>Paint</v>
                 <v>bb8438b9-9093-46a5-989f-24e91ae3a530</v>
                 <v>GetElementArray</v>
@@ -885,14 +887,12 @@
                 <v>bf2dc1e5-c8d5-446d-aedb-2721f7a0f961</v>
                 <v>Initialize</v>
                 <v>872e4ed2-3db2-4de1-b3a8-8d4aa6da77d6</v>
+                <v>HasInputAccess</v>
+                <v>e49b427f-82c1-4f33-93fd-219e4bff5681</v>
                 <v>HasVisibilityAccessIntern</v>
                 <v>5c47aaaf-6e66-45d7-957e-34587f36d45b</v>
                 <v>GetSurroundingRect</v>
                 <v>a895f177-3926-4d0e-a00d-7a5e1bd32a19</v>
-                <v>ElementInfo</v>
-                <v>9999a4c3-0043-4720-9375-ca492b2d57fa</v>
-                <v>SetStaticState</v>
-                <v>a2797b80-4adc-4986-b8ae-4be1d42420a0</v>
                 <v>GetLocalUsergroup</v>
                 <v>d0ebaa75-eb29-44b0-b32c-91d0557da380</v>
                 <v>GetName</v>
@@ -909,8 +909,8 @@
                 <v>9753c000-049e-46ec-adea-573c7ce4415c</v>
                 <v>HandleInput</v>
                 <v>bfc00978-21b8-4aec-9a44-8891d6c2bf2c</v>
-                <v>Destruct</v>
-                <v>d090d63b-6144-4c13-80c4-2f10e13a18ea</v>
+                <v>ElementInfo</v>
+                <v>9999a4c3-0043-4720-9375-ca492b2d57fa</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{35356e6c-d44b-4d0e-b2f7-2e0dcd99e062}</v>
@@ -923,10 +923,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable_1" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>496d1bfb-45b9-470c-ad36-5aac43dd081b</v>
-                <v>FB_Exit</v>
-                <v>e432a36e-981e-439d-b8a1-7b8dab450a1f</v>
                 <v>FB_Reinit</v>
                 <v>9fdfadd8-2057-42cb-bd21-6093729dcbd9</v>
+                <v>FB_Exit</v>
+                <v>e432a36e-981e-439d-b8a1-7b8dab450a1f</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{a2600e05-40bd-44ca-b2ac-66170373944f}</v>

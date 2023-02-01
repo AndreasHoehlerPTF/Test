@@ -32,7 +32,7 @@ VAR_INPUT
 
   // configuration
   bEnable                         : BOOL;            (*Enable start pos detection sensor*)
-  bAutomaticMode                  : BOOL;            // machine is in automatic mode
+  bAutomaticMode                  : BOOL;            (*machine is in automatic mode *)
   nCurrentPos                     : DINT;            (*current position in Pulses/Subpixels*)
   fCurrentSpeed                   : LREAL;           (*actual speed of conveyor in [m/s]*)
   
@@ -84,7 +84,7 @@ VAR
   // simulation & debug
   _bSimEnable                     : BOOL;           // simulation mode enabled
   // view 
-  nMarkXMoveScale                 : UDINT := 1;
+  nMarkXMoveScale                 : UDINT := 140;
 END_VAR
 VAR PERSISTENT
   nR_AreaMarkSensorOk             : INT := 10;      (*Area with the correct arrangement of the mark sensor [%]*)

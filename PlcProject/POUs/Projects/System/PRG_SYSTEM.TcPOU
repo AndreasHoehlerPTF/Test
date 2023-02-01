@@ -93,11 +93,11 @@ stProgramVersion := F_GetVersion();
 stProgramVersion.sVersion := F_BuildVersionString(F_GetVersion());
 PRG_SYSTEMBASE.SetVersion(aI_Name:='PlcProject', stProgramVersion);
 
-{IF defined (variable: stLibVersion_CalmarLibConfig)}
-  PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarLibConfig', stLibVersion_CalmarLibConfig);
-{END_IF}
 {IF defined (variable: stLibVersion_CalmarCommons)}
   PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarCommons', stLibVersion_CalmarCommons);
+{END_IF}
+{IF defined (variable: stLibVersion_CalmarCompDevices)}
+  PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarCompDevices', stLibVersion_CalmarCompDevices);
 {END_IF}
 {IF defined (variable: stLibVersion_CalmarCompSystem)}
   PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarCompSystem', stLibVersion_CalmarCompSystem);
@@ -110,6 +110,12 @@ PRG_SYSTEMBASE.SetVersion(aI_Name:='PlcProject', stProgramVersion);
 {END_IF}
 {IF defined (variable: stLibVersion_CalmarCompInkSystem)}
   PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarCompInk', stLibVersion_CalmarCompInkSystem);
+{END_IF}
+{IF defined (variable: stLibVersion_CalmarCompTcpIp)}
+  PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarCompTcpIp', stLibVersion_CalmarCompTcpIp);
+{END_IF}
+{IF defined (variable: stLibVersion_CalmarProdDmax)}
+  PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarProdDmax', stLibVersion_CalmarProdDmax);
 {END_IF}
 
 (*--- done*)
@@ -144,7 +150,16 @@ bL_InitOK := TRUE;]]></ST>
       <LineId Id="986" Count="0" />
       <LineId Id="952" Count="4" />
       <LineId Id="987" Count="2" />
-      <LineId Id="957" Count="28" />
+      <LineId Id="957" Count="7" />
+      <LineId Id="968" Count="3" />
+      <LineId Id="991" Count="1" />
+      <LineId Id="990" Count="0" />
+      <LineId Id="972" Count="11" />
+      <LineId Id="994" Count="1" />
+      <LineId Id="993" Count="0" />
+      <LineId Id="997" Count="1" />
+      <LineId Id="996" Count="0" />
+      <LineId Id="984" Count="1" />
       <LineId Id="1" Count="0" />
     </LineIds>
   </POU>

@@ -3,7 +3,7 @@
   <POU Name="FB_WorkerDefGrid_Print_WEU" Id="{a51f391c-3039-4bd9-921c-4da39276f1e6}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_WorkerDefGrid_Print_WEU EXTENDS FB_WorkerDefGrid IMPLEMENTS I_PrintSubsystem
 VAR_INPUT
-  nEncoderPos           : DINT;   // Absolute virtual encoder
+  nPrintPos             : DINT;   // Absolute printing position [SubPx]
   bHardwareSync         : BOOL;
   bHardwareHold         : BOOL;
   fPrintStartOffset     : LREAL;  // Offset from Module reference (configurative PU/PM/PG/PA ADS offset)
@@ -210,7 +210,7 @@ IF SUPER^.Attach(iCT:=iCT) THEN
   fB_PcAdapter.setPrintYShift(nYShift:=FC_LREAL_TO_DINT(_fPosY));
 
   // check
-  IF _nPosXS < nEncoderPos THEN
+  IF _nPosXS < nPrintPos THEN
     LogWarning(Msg:='Print start position < Encoder position');
 	END_IF
   
@@ -757,7 +757,7 @@ IF GVL_Deformation.bC_UsePUDeformation THEN
 END_IF
 
 (*Update virtual encoder on all controller boards*)
-fB_PcAdapter.setEncoderPos(nEncoderPos);
+fB_PcAdapter.setEncoderPos(nPrintPos);
 fB_PcAdapter();
 
 (*Call print aggregate*)

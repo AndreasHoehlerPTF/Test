@@ -42,15 +42,11 @@ Fribourg/Switzerland (2017)</Description>
     <Folder Include="POUs\Products\Machine\CleaningStation" />
     <Folder Include="POUs\Products\Ink" />
     <Folder Include="POUs\Products\Print_Weu\_VISU_Templates" />
-    <Folder Include="POUs\Products\todo" />
     <Folder Include="POUs\Products\obsolete">
       <ExcludeFromBuild>true</ExcludeFromBuild>
     </Folder>
     <Folder Include="POUs\Products\Print_Weu" />
     <Folder Include="POUs\Products\Print_Weu\Mark" />
-    <Folder Include="POUs\Products\Print_Weu\SRS">
-      <ExcludeFromBuild>true</ExcludeFromBuild>
-    </Folder>
     <Folder Include="POUs\Products\Print_Weu\UV_LED_Modul" />
     <Folder Include="POUs\Projects" />
     <Folder Include="POUs\Projects\InkSystem" />
@@ -216,10 +212,9 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Products\Print_Weu\FB_PrintModule_WEU.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_PrintOverview.TcPOU">
+    <Compile Include="POUs\Products\Print_Weu\FB_PrintModule_View.TcPOU">
       <SubType>Code</SubType>
-      <LinkAlways>true</LinkAlways>
-      <ExcludeFromBuild>true</ExcludeFromBuild>
+      <ExcludeFromBuild>false</ExcludeFromBuild>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\FB_WorkerDefGrid_Inspection.TcPOU">
       <SubType>Code</SubType>
@@ -297,16 +292,6 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\SRS\FB_SRS.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\Print_Weu\SRS\ST_SRS.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Products\Print_Weu\SRS\_VISU_SRS.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
     <Compile Include="POUs\Products\Print_Weu\ST_MappingDefinition.TcDUT">
       <SubType>Code</SubType>
     </Compile>
@@ -324,6 +309,10 @@ Fribourg/Switzerland (2017)</Description>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\VISU_PAPER_POS_DETECT.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\VISU_DropSpeedComp_Setup.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -355,11 +344,7 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_Worker_Pm.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
-    <Compile Include="POUs\Products\todo\VISU_DropSpeedComp_Setup.TcVIS">
+    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_Pm_Worker.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -703,7 +688,22 @@ Fribourg/Switzerland (2017)</Description>
     <Content Include="TODO.md">
       <SubType>Content</SubType>
     </Content>
+    <Content Include="_ImagePool\calmar_bg.jpg">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="_ImagePool\error_icon.png">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="_ImagePool\estop_icon.png">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="_ImagePool\MachineOverview.PNG">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="_ImagePool\sleep_icon.png">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="_ImagePool\warning_icon.png">
       <SubType>Content</SubType>
     </Content>
   </ItemGroup>

@@ -209,6 +209,7 @@ VAR
   bL_MemMachineOn                           : BOOL := FALSE;
 
   (*Inputs from VISU*)
+  (*
   nPrintModuleIdx                           : INT := 1;   (*PrintModule actual selection*)      
   fL_CuCappPurgPosition                     : REAL;  (*CU: capping/purge position [mm]*)
   fL_CuCleanRowPosition1                    : REAL;  (*CU: clean position 1 [mm]*)
@@ -233,7 +234,8 @@ VAR
   fL_PuWorkSpeed                            : REAL;  (*PU: speed for work mouvement [mm/s]*)
   fL_PuServiceSpeed                         : REAL;  (*PU: speed for maintenance operations [mm/s]*)
   wIDp_CleanerPumpLeadTime                  : WORD;  (*CH: lead time cleaner pump [ms]*)
-
+  *)
+  
   (*Initiation*)
   bL_RemVar_Init                            : BOOL;
   bL_DummyReadInput                         : BOOL;

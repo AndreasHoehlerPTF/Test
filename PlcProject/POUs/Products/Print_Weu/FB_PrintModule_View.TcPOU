@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <POU Name="FB_PrintModule_View" Id="{57a6df33-c5fc-4b78-b796-858abcecd4f4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_PrintModule_View
+VAR
+  // helper
+  bInit   : BOOL;
+  
+  // config
+  _pModule : POINTER TO FB_PrintModule_WEU;
+  _pPositioning : POINTER TO FB_PrintPositionDmax;
+  
+  // view selections
+  nSelWorkerPrint : UDINT := 1;
+  bShowDropSpeedSetup : BOOL;
+  
+  // motion and position
+  bShowPositionDetail : BOOL;
+  bMovingInd : BOOL;
+  fSpeed  : LREAL;
+  fbBlink : FB_BLINK;
+  t : TIME;
+  zPos_PM : UDINT;
+  
+END_VAR
+
+VAR CONSTANT
+  nC_MAX_WORKER_VIEWS : UINT := 10;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF NOT checkConfig() THEN RETURN; END_IF    // check config
+
+// -- show moving -----------------------
+fSpeed := _pPositioning^.getSpeed();
+IF LrealIsNaN(x:=fSpeed) THEN
+  fSpeed := 0;
+END_IF
+t := LREAL_TO_TIME(1000-fSpeed*900);
+fbBlink(bI_Enable:=SEL(fSpeed > 0, FALSE, TRUE), tI_Time:=t, bO_Out=>bMovingInd);
+
+// -- show pm module position
+zPos_PM := SEL(_pModule^._pModuleMachineState^.bUnitInPrintPosition, 0, 40);
+]]></ST>
+    </Implementation>
+    <Method Name="checkConfig" Id="{edfe75ad-63c4-4ec1-9d31-8e206962e7b0}">
+      <Declaration><![CDATA[METHOD checkConfig : BOOL
+VAR_INPUT
+END_VAR
+VAR_INST
+  _fX_m, _fY_m   : LREAL;
+  _nX_px, _nY_px : DINT; 
+END_VAR
+VAR
+  bOK : BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT bInit THEN RETURN; END_IF
+
+checkConfig := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="init" Id="{bd002f50-5fd9-48d9-b817-a794ac96eb55}">
+      <Declaration><![CDATA[METHOD init : BOOL
+VAR_INPUT
+  pModule : POINTER TO FB_PrintModule_WEU;
+  pPositioning : POINTER TO FB_PrintPositionDmax;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF pPositioning = 0 OR pModule = 0 THEN RETURN; END_IF
+
+_pModule := pModule;
+_pPositioning := pPositioning;
+
+bInit := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_PrintModule_View">
+      <LineId Id="295" Count="0" />
+      <LineId Id="297" Count="0" />
+      <LineId Id="498" Count="6" />
+      <LineId Id="511" Count="0" />
+      <LineId Id="509" Count="1" />
+      <LineId Id="424" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_View.checkConfig">
+      <LineId Id="26" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_View.init">
+      <LineId Id="5" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="11" Count="1" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="14" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
