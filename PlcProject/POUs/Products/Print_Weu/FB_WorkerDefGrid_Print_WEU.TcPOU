@@ -59,7 +59,7 @@ VAR
   fb_MsgQueue        : FB_MSG_QUEUE;                        (*Message queue*)
   fb_MsgHandler      : FB_MSG_HANDLER;                      (*Message handler*)
   sL_MsgConfig       : ST_MSG_CONFIG;                       (*Message config*)
-  fb_Msg             : ARRAY [1..iC_NUM_MSG] OF FB_MESSAGE; (*Messages*)
+  //fb_Msg             : ARRAY [1..iC_NUM_MSG] OF FB_MESSAGE; (*Messages*)
 END_VAR
 
 VAR_STAT
@@ -459,7 +459,7 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[nSpeedMpMin := SEL(bWorkerEnable AND _pAdsPg <> 0, 0, _pAdsPg^.sI_MaxPrintSpeed.lI_Val);
-fMasterSpeed := TO_LREAL(nSpeedMpMin)/60;]]></ST>
+fMaxSpeed := TO_LREAL(nSpeedMpMin)/60;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -609,8 +609,8 @@ fb_MsgQueue.cI_MaxElement    := 6;
 
 (*Messages*)
 FOR nCtr := 1 TO iC_NUM_MSG DO
-  fb_Msg[nCtr].pI_MsgConfig       := ADR(sL_MsgConfig);
-  fb_Msg[nCtr].iI_MsgLocation     := 0;
+  //fb_Msg[nCtr].pI_MsgConfig       := ADR(sL_MsgConfig);
+  //fb_Msg[nCtr].iI_MsgLocation     := 0;
 END_FOR
 //fb_Msg[1].iI_MsgNumber       := ;
 // ...

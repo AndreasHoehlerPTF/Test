@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <Visu Name="VISU_RECIPE" Id="{5b58c71d-3edb-41d6-9d71-490dd4a04d15}">
     <XmlArchive>
       <Data>
@@ -224,12 +224,12 @@
                               <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
                                 <v>Visible</v>
                                 <v>False</v>
-                                <v>DefaultArraySize</v>
-                                <v>5</v>
-                                <v>VisibleChildren</v>
-                                <v>True</v>
                                 <v>ieccodeconversion_array</v>
                                 <v></v>
+                                <v>VisibleChildren</v>
+                                <v>True</v>
+                                <v>DefaultArraySize</v>
+                                <v>5</v>
                                 <v>''NORMAL__COMMENT</v>
                                 <v> We hide this node to prevent having two References nodes
  Nevertheless we want to make sure that the children are displayed</v>
@@ -285,8 +285,8 @@
                         <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
                           <v n="AttrFlags">81920UL</v>
                           <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
-                            <v>DisplayFrameReferencesConfiguration</v>
-                            <v></v>
+                            <v>conditionalshow</v>
+                            <v>visu_elemdev</v>
                             <v>DescriptionTextId</v>
                             <v>TL_ElementProperties.Desc_ReferencedVisus</v>
                             <v>SortFlag</v>
@@ -297,14 +297,14 @@
                             <v>Simple|Standard</v>
                             <v>DynamicArray</v>
                             <v></v>
-                            <v>conditionalshow</v>
-                            <v>visu_elemdev</v>
+                            <v>DisplayFrameReferencesConfiguration</v>
+                            <v></v>
                             <v>FrameReferences</v>
                             <v></v>
-                            <v>DisplayTextId</v>
-                            <v>TL_ElementProperties.References</v>
                             <v>Storable</v>
                             <v>True</v>
+                            <v>DisplayTextId</v>
+                            <v>TL_ElementProperties.References</v>
                           </d>
                           <v n="ConvDone">true</v>
                         </o>
@@ -438,10 +438,10 @@
                 <v>6784b364-157e-45f3-87fb-7491e4cadd8f</v>
                 <v>ContainsPoint</v>
                 <v>34e669dd-dfc0-491b-80ad-bc528426f7a9</v>
-                <v>SetStaticState</v>
-                <v>1b32e864-ffea-43fe-b37e-38faa8ce4693</v>
-                <v>Update</v>
-                <v>f7fbb645-c0ac-419a-86bd-2162f73f37bd</v>
+                <v>HasInputAccess</v>
+                <v>2e7d8405-d8b6-4eb2-95ca-9323c0d98c52</v>
+                <v>HasInputAccessIntern</v>
+                <v>bea8adf3-f07b-46fd-b652-ee542777454b</v>
                 <v>GetTooltip</v>
                 <v>81ee68e8-0400-4749-9e25-3cdd87ab8be8</v>
                 <v>GetUpdateRects</v>
@@ -450,6 +450,8 @@
                 <v>70fd567a-29a7-44f6-9006-242ffd965bfe</v>
                 <v>GetTranslator</v>
                 <v>6f25e43d-54a5-48e5-88fd-3cbf4ff7e3c8</v>
+                <v>Update</v>
+                <v>f7fbb645-c0ac-419a-86bd-2162f73f37bd</v>
                 <v>SetClientData</v>
                 <v>ae6a530b-d2ff-4319-9113-4017123ad1fa</v>
                 <v>GetClientData</v>
@@ -468,12 +470,14 @@
                 <v>668e0f3a-5467-403b-8211-ad553f39a5c0</v>
                 <v>Initialize</v>
                 <v>5ae6e99c-303b-4cc7-be0c-56b26d74779a</v>
-                <v>HasInputAccess</v>
-                <v>2e7d8405-d8b6-4eb2-95ca-9323c0d98c52</v>
+                <v>HasVisibilityAccessIntern</v>
+                <v>9a0576e7-f887-44a8-98d7-52f010e9c5a9</v>
                 <v>GetSurroundingRect</v>
                 <v>499068e7-37b6-439a-9948-db75606541bb</v>
                 <v>ElementInfo</v>
                 <v>d91530bf-f723-4fb1-b6b3-22c793a89f39</v>
+                <v>SetStaticState</v>
+                <v>1b32e864-ffea-43fe-b37e-38faa8ce4693</v>
                 <v>GetLocalUsergroup</v>
                 <v>4926bcc4-bb4d-4581-a1d5-2b8d1650d54d</v>
                 <v>GetName</v>
@@ -504,10 +508,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable_1" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>91b6a7b9-6886-4a6c-8f17-d6df6b19a1af</v>
-                <v>FB_Reinit</v>
-                <v>f674d8dc-c40d-4137-ba04-4123506dcd8d</v>
                 <v>FB_Exit</v>
                 <v>dbd66449-9f4b-46e6-813b-fefb7e85357e</v>
+                <v>FB_Reinit</v>
+                <v>f674d8dc-c40d-4137-ba04-4123506dcd8d</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{f59906c7-152b-42e1-949e-c6fc0cf63939}</v>
@@ -584,7 +588,21 @@
             <v n="IdStep">1048576L</v>
             <l2 n="Inputs" />
           </o>
-          <n n="VisuSizeManager" />
+          <o n="VisuSizeManager" t="VisualObjectSizeManager">
+            <d2 n="Size" ckt="Int32" cvt="VisualObjectSize">
+              <v>0</v>
+              <o>
+                <v n="Width">848</v>
+                <v n="Height">604</v>
+              </o>
+              <v>1</v>
+              <o>
+                <v n="Width">848</v>
+                <v n="Height">604</v>
+              </o>
+            </d2>
+            <v n="Version">0</v>
+          </o>
         </o>
       </Data>
       <TypeList>
@@ -626,7 +644,31 @@
         <Type n="VisualFrameInfo">{7fd6515d-f891-4717-b53f-b14197c6706c}</Type>
         <Type n="VisualizationNode">{f8db32ff-bdd5-49e9-9014-6d9a6dea5d8c}</Type>
         <Type n="VisualObject">{f18bec89-9fef-401d-9953-2f11739a6808}</Type>
+        <Type n="VisualObjectSize">{6ad3e88f-aee2-4766-a7ea-a8790037ef51}</Type>
+        <Type n="VisualObjectSizeManager">{5f612b0e-b404-455f-8177-27864e9f5332}</Type>
       </TypeList>
     </XmlArchive>
+    <ObjectProperties>
+      <XmlArchive>
+        <Data>
+          <o xml:space="preserve" t="VisualProperty">
+            <v n="VisuUsageType">0</v>
+            <v n="SizeX">1024</v>
+            <v n="SizeY">768</v>
+            <v n="IsStartVisu">false</v>
+            <v n="VisuSizeMode" t="VisualVisuSizeMode">AutoDetect</v>
+            <v n="Internal">false</v>
+            <v n="DialogIsOpaque">false</v>
+            <v n="DialogIsOpaqueIsSet">false</v>
+          </o>
+        </Data>
+        <TypeList>
+          <Type n="Boolean">System.Boolean</Type>
+          <Type n="Int32">System.Int32</Type>
+          <Type n="VisualProperty">{477d844b-9b2a-407e-90a4-d36fd6dde2fc}</Type>
+          <Type n="VisualVisuSizeMode">{34718b76-91f6-43de-8c65-b77e0b1ee621}</Type>
+        </TypeList>
+      </XmlArchive>
+    </ObjectProperties>
   </Visu>
 </TcPlcObject>

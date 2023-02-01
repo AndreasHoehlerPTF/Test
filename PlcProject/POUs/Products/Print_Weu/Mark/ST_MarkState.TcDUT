@@ -10,6 +10,9 @@ STRUCT
   dy          : LREAL;    // y displacement [m]
   fLengthReal : LREAL;    // real detected mark length [m]
   nPosXReal   : DINT;     // detected position X absolute [SubPx]
+  //view
+  bShow : BOOL;
+  nMove : DINT;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

@@ -3,12 +3,16 @@
   <POU Name="FB_PrintModule_WEU" Id="{cd3841ec-9e5a-4fa8-a024-0646cabe904a}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_PrintModule_WEU EXTENDS FB_PrintModule_Base
 VAR
-
-  // module specific sub-modules
+  (* Module specific sub-modules - WEU module contains a 
+    - print position (encoder input to print domain translation)
+    - Mark sensor with a mark detection module which provices a camera trigger and start position detection
+    - Mark definition (used by the detection and camera)
+  *)
   fbPrintPosition    : FB_PrintPositionDmax;   // a position per pm (external encoder wheel)
-  fbMarkDefinition   : FB_MarkDefinition;
+  fbMarkDefinition   : FB_MarkDefinition;      // mark definition instance (used by MarkDetection and camera)
   fbMarkDetection    : FB_MarkDetection;       // StartPosTrigger, CameraTrigger and MarkDetection (Mark handler for MarkCamera)
   fbMarkCameraWeu    : FB_MarkCamera_WEU;
+  fbNoCamera         : FB_CameraDummy;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -117,6 +121,10 @@ fbMarkCameraWeu.InitMarkCamera(nPrintUnitResolution:=nC_PrintResolution,nPrintUn
 fbMarkCameraWeu.sVisuName := 'VISU_MarkCameraWEU';
 fbWorkerCamera.RegisterCamera(fbMarkCameraWeu);
 
+// -- Camera if Mark is not selected
+fbNoCamera.Init(nPrintUnitResolution:=nC_PrintResolution, nPrintUnitSubPx:=nC_SubPixelResolution, iCameraTrigger:=fbMarkDetection, bUseCameraTrigger:=FALSE, bUseCameraTriggerFeedback:=FALSE);
+fbWorkerCamera.RegisterCamera(fbNoCamera);
+
 
 SUPER^.Init(
   nIdx              := nIdx,
@@ -181,6 +189,8 @@ SUPER^.Init(
     <LineIds Name="FB_PrintModule_WEU.Init">
       <LineId Id="54" Count="0" />
       <LineId Id="59" Count="8" />
+      <LineId Id="96" Count="0" />
+      <LineId Id="93" Count="2" />
       <LineId Id="58" Count="0" />
       <LineId Id="28" Count="0" />
       <LineId Id="26" Count="0" />

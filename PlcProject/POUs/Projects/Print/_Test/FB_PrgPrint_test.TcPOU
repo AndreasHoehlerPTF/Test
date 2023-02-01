@@ -10,6 +10,8 @@ VAR
   
   // config
   _pAdsPu : POINTER TO ST_ADS_PU;
+  _pAdsCamera : POINTER TO ST_ADS_CAMERA;
+  _pAdsSub : POINTER TO ST_ADS_SUBSTRATE;
   
  (*test fb&data instances*)
   fb_JobManagement      : FB_JobManagement;  (*for VISU_JOB_MANAGENT*)
@@ -123,15 +125,19 @@ END_VAR
       <Declaration><![CDATA[METHOD Init : BOOL
 VAR_INPUT
   pAdsPu  : POINTER TO ST_ADS_PU;
+  pAdsCamera : POINTER TO ST_ADS_CAMERA;
+  pAdsSub : POINTER TO ST_ADS_SUBSTRATE;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF pAdsPu = 0 THEN
+        <ST><![CDATA[IF pAdsPu = 0 OR pAdsCamera = 0 OR pAdsSub = 0 THEN
   LogError('Invalid init parameter');
   RETURN;
 END_IF
 
 _pAdsPu := pAdsPu;
+_pAdsCamera := pAdsCamera;
+_pAdsSub := pAdsSub;
 
 (*init JobManager*)
 JobSetup();
@@ -161,7 +167,16 @@ END_VAR]]></Declaration>
   fb_JobManagement.LoadJob(aI_AmsNetId_Io:=sC_AMSNETID_IO, pI_JobSettings:=ADR(sJobConfig));
   
   // - setup PU job
-  _pAdsPu^.sI_JobSettings := sJobConfig;  
+  _pAdsPu^.sI_JobSettings := sJobConfig;
+  
+  // - setup Camera 
+  _pAdsCamera^.eI_CameraDevice := E_CameraDevice.PrintMark;
+  _pAdsCamera^.eI_CameraMode   := E_CameraMode.Auto;
+  _pAdsSub^.aI_SubstrateName := 'A TestSubtrate equal to image dimension';
+  _pAdsSub^.sI_SizeX.fI_Val := TO_REAL(_pAdsPu^.sI_JobSettings.lI_ImageDepth) / 1_000;  // [um] -> [mm]
+  _pAdsSub^.sI_SizeY.fI_Val := TO_REAL(_pAdsPu^.sI_JobSettings.lI_ImageWidth) / 1_000;  // [um] -> [mm]
+  _pAdsSub^.sI_SizeZ.fI_Val := 0;
+  
   
   bBusy := TRUE;
 ELSE
@@ -276,6 +291,8 @@ WritePUSettings := FALSE;]]></ST>
       <LineId Id="30" Count="0" />
       <LineId Id="33" Count="0" />
       <LineId Id="32" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="41" Count="0" />
       <LineId Id="6" Count="1" />
       <LineId Id="21" Count="0" />
       <LineId Id="23" Count="1" />
@@ -284,7 +301,13 @@ WritePUSettings := FALSE;]]></ST>
       <LineId Id="25" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrgPrint_test.JobLoad">
-      <LineId Id="87" Count="15" />
+      <LineId Id="87" Count="9" />
+      <LineId Id="110" Count="4" />
+      <LineId Id="97" Count="0" />
+      <LineId Id="119" Count="0" />
+      <LineId Id="117" Count="1" />
+      <LineId Id="115" Count="0" />
+      <LineId Id="98" Count="4" />
       <LineId Id="35" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrgPrint_test.JobSetup">

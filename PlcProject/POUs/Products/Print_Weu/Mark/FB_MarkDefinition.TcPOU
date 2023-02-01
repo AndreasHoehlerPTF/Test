@@ -30,9 +30,9 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF    nIdx = 0        THEN getMark := ADR(sMarkDef[_nMarks]);
+        <ST><![CDATA[IF    nIdx = 0        THEN getMark := ADR(sMarkDef[_nMarks]); // last mark (end or last)
 ELSIF nIdx <= _nMarks THEN getMark := ADR(sMarkDef[nIdx]);
-ELSE                       getMark := ADR(sMarkDef[_nMarks]);  LogError(F_Concat2('Invalid mark requested, Idx=', TO_STRING(nIdx)));
+ELSE                       getMark := ADR(sMarkDef[_nMarks]);  LogError(F_Concat4('Invalid mark requested, Idx=', TO_STRING(nIdx), ' returned=', TO_STRING(_nMarks)));
 END_IF]]></ST>
       </Implementation>
     </Method>
@@ -43,7 +43,7 @@ END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[nMaxMarks := SIZEOF(sMarkDef) / SIZEOF(sMarkDef[1]);
-Reset();]]></ST>
+ResetDefinition();]]></ST>
       </Implementation>
     </Method>
     <Property Name="nMarks" Id="{92120eb8-4bf0-4904-95cc-6a6ba8d23ff4}" FolderPath="I_MarkDefinition\">
@@ -78,33 +78,43 @@ METHOD RegisterMark : BOOL
 VAR_INPUT
   sMark : ST_MarkDefinition;
 END_VAR
-]]></Declaration>
+VAR
+  pMark : POINTER TO ST_MarkDefinition;
+END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF _nMarks >= nMaxMarks THEN LogError('Number of marks exeeded, ignore'); RETURN; END_IF
 
-// we assume first mark is start mark, last mark is end mark.
-// TODO: otherwise sorted add marks to list
+// we assume first mark is start mark, last mark is end mark (marks need to be registered in sorted order)
+// (TODO) otherwise add marks in a sorted way to list
 _nMarks := _nMarks + 1;
-sMarkDef[_nMarks] := sMark;
+pMark := ADR(sMarkDef[_nMarks]);
 
+// copy mark data
+pMark^ := sMark;
 // set id if not given
-IF sMarkDef[_nMarks].nId = 0 THEN sMarkDef[_nMarks].nId := _nMarks; END_IF
+IF pMark^.nId = 0 THEN pMark^.nId := _nMarks; END_IF
 // clear eventual mark state
-MEMSET(destAddr:=ADR(sMarkDef[_nMarks].sState), 0, SIZEOF(ST_MarkState));
+MEMSET(destAddr:=ADR(pMark^.sState), 0, SIZEOF(ST_MarkState));
+// view
+pMark^.sState.bShow := TRUE;
+pMark^.sState.nMove := TO_DINT(pMark^.nId-1);
+
 
 RegisterMark := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Reset" Id="{4875f2f3-b9db-40c2-9f72-920f74fab8f1}">
-      <Declaration><![CDATA[METHOD Reset
+    <Method Name="ResetDefinition" Id="{4875f2f3-b9db-40c2-9f72-920f74fab8f1}" FolderPath="I_MarkDefinition\">
+      <Declaration><![CDATA[METHOD ResetDefinition
 VAR
   i : UDINT;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[_nMarks := 0;
+        <ST><![CDATA[ResetMarks();
+
+_nMarks := 0;
 MEMSET(destAddr:=ADR(sMarkDef), fillByte:=0, SIZEOF(sMarkDef));
-//FOR i:=1 TO nMaxMarks DO sMarkDef[i].nId := i; END_FOR]]></ST>
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="ResetMarks" Id="{227543d6-3613-4076-8bf0-3ecac98acbd2}" FolderPath="I_MarkDefinition\">
@@ -117,7 +127,9 @@ VAR
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[_nMarksDetected := 0;
+        <ST><![CDATA[// reset detected marks
+_nMarksDetected := 0;
+// reset mark state only
 FOR i:=1 TO _nMarks DO
   MEMSET(destAddr:=ADR(sMarkDef[i].sState), 0, SIZEOF(ST_MarkState));
 END_FOR]]></ST>
@@ -148,7 +160,7 @@ _nMarksDetected := _nMarksDetected + 1;
       <LineId Id="7" Count="1" />
     </LineIds>
     <LineIds Name="FB_MarkDefinition.Init">
-      <LineId Id="9" Count="0" />
+      <LineId Id="13" Count="0" />
       <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDefinition.nMarks.Get">
@@ -163,22 +175,31 @@ _nMarksDetected := _nMarksDetected + 1;
       <LineId Id="7" Count="0" />
       <LineId Id="10" Count="0" />
       <LineId Id="6" Count="0" />
-      <LineId Id="11" Count="0" />
-      <LineId Id="30" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="44" Count="1" />
+      <LineId Id="43" Count="0" />
       <LineId Id="28" Count="0" />
       <LineId Id="31" Count="0" />
       <LineId Id="29" Count="0" />
       <LineId Id="27" Count="0" />
       <LineId Id="14" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="46" Count="0" />
+      <LineId Id="48" Count="0" />
+      <LineId Id="47" Count="0" />
       <LineId Id="13" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MarkDefinition.Reset">
+    <LineIds Name="FB_MarkDefinition.ResetDefinition">
+      <LineId Id="19" Count="1" />
       <LineId Id="9" Count="0" />
       <LineId Id="5" Count="0" />
-      <LineId Id="13" Count="0" />
+      <LineId Id="18" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDefinition.ResetMarks">
-      <LineId Id="5" Count="1" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="6" Count="0" />
       <LineId Id="8" Count="1" />
     </LineIds>
     <LineIds Name="FB_MarkDefinition.saveMark">

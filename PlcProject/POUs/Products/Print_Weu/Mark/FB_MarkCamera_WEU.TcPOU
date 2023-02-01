@@ -47,6 +47,7 @@ WHILE _iMarkDefinition.nMarksDetected > _nRxCamPoints DO
 END_WHILE]]></ST>
     </Implementation>
     <Folder Name="I_CameraTriggerDevice" Id="{e2dec33a-897c-4e22-aee9-eb47423f04d4}" />
+    <Folder Name="Teaching" Id="{9779439f-9901-4ac8-a24c-59c2e2c44f9c}" />
     <Method Name="CamTrigger" Id="{81474d5d-5e6e-4c16-a459-3afa624802bf}" FolderPath="I_CameraTriggerDevice\">
       <Declaration><![CDATA[METHOD CamTrigger
 VAR_INPUT
@@ -84,7 +85,7 @@ END_VAR
         <Implementation>
           <ST><![CDATA[eCameraMode := _eCameraMode;
 IF _eCameraMode = E_CameraMode.Auto THEN
-  eCameraMode := E_CameraMode.XYR;
+  eCameraMode := E_CameraMode.Live;
 END_IF]]></ST>
         </Implementation>
       </Get>
@@ -149,6 +150,13 @@ _iMarkDefinition := iMarkDefinition;
 _bInitialized := TRUE;]]></ST>
       </Implementation>
     </Method>
+    <Method Name="mJobStart" Id="{98df1aac-712b-40bf-ae2a-5c3a55b04142}">
+      <Declaration><![CDATA[METHOD mJobStart : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF eCameraMode <> E_CameraMode.NoCorrection THEN TeachMarks(); END_IF]]></ST>
+      </Implementation>
+    </Method>
     <Method Name="setCameraMode" Id="{b544e398-6fa9-48f7-9517-2291b5b5ae0e}">
       <Declaration><![CDATA[(*
   Set mode to camera.
@@ -160,8 +168,11 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF eCameraMode = E_CameraMode.NoCorrection OR  // supported modi
-   eCameraMode = E_CameraMode.XYR THEN
+        <ST><![CDATA[IF eCameraMode = E_CameraMode.Auto OR
+   eCameraMode = E_CameraMode.NoCorrection OR
+   eCameraMode = E_CameraMode.Live
+   //eCameraMode = E_CameraMode.Trend 
+THEN
    
   _eCameraMode := eCameraMode;  // set desired mode
   setCameraMode := TRUE;
@@ -185,6 +196,50 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
+    <Method Name="TeachMarks" Id="{bda865f2-b959-47c0-bd1d-61d48f369350}" FolderPath="Teaching\">
+      <Declaration><![CDATA[(*
+  Calculate marks (position, shape) and register to mark definition. 
+*)
+METHOD PUBLIC TeachMarks : BOOL
+VAR_INPUT
+END_VAR
+VAR
+  i : UDINT;
+  spacing : LREAL := 0.08;  // mark spacing
+  asq : LREAL := 0.002;     // sqare a length
+  atr : LREAL := 0.008;     // triangle length (same h / l)
+  numMarks : UDINT;
+  xOfs : LREAL := 0.0023;
+  yOfs : LREAL := 0.0023;
+  
+  sNewMark : ST_MarkDefinition;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+
+// TODO: this is only a reference caluclation for simulation, please adpat after definition by STAG
+//       ...
+IF _iMarkDefinition = 0 THEN RETURN; END_IF
+
+_iMarkDefinition.ResetDefinition();
+
+numMarks := TO_UDINT((_fSubstrateLength-2*xOfs) / spacing); //  // TO_UDINT(FLOOR(_fSubstrateLength / spacing);)
+IF numMarks = 0 THEN numMarks := 1; END_IF   // at least one mark
+
+// calculate position
+FOR i:=1 TO numMarks DO
+  sNewMark.fHeight := atr;
+  sNewMark.fTrLength := atr;
+  sNewMark.fSqLength := SEL(i>1, asq+1.5*atr, asq);
+  sNewMark.fPosX := xOfs+(i-1)*spacing;
+  sNewMark.fPosY := yOfs;
+  sNewMark.bInvertedX := FALSE;
+  
+  _iMarkDefinition.RegisterMark(sMark:=sNewMark);
+END_FOR]]></ST>
+      </Implementation>
+    </Method>
     <LineIds Name="FB_MarkCamera_WEU">
       <LineId Id="885" Count="27" />
       <LineId Id="850" Count="0" />
@@ -223,8 +278,13 @@ END_VAR
       <LineId Id="85" Count="0" />
       <LineId Id="38" Count="0" />
     </LineIds>
+    <LineIds Name="FB_MarkCamera_WEU.mJobStart">
+      <LineId Id="4" Count="0" />
+    </LineIds>
     <LineIds Name="FB_MarkCamera_WEU.setCameraMode">
-      <LineId Id="24" Count="1" />
+      <LineId Id="53" Count="2" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="56" Count="0" />
       <LineId Id="44" Count="0" />
       <LineId Id="26" Count="0" />
       <LineId Id="42" Count="0" />
@@ -236,6 +296,22 @@ END_VAR
     </LineIds>
     <LineIds Name="FB_MarkCamera_WEU.sName.Get">
       <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkCamera_WEU.TeachMarks">
+      <LineId Id="9" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="38" Count="2" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="29" Count="5" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="37" Count="0" />
     </LineIds>
   </POU>
 </TcPlcObject>

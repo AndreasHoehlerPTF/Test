@@ -32,6 +32,7 @@ Fribourg/Switzerland (2017)</Description>
     <Folder Include="DUTs\Projects\Structures" />
     <Folder Include="GVLs" />
     <Folder Include="GVLs\Configuration" />
+    <Folder Include="_ImagePool" />
     <Folder Include="POUs">
       <ObjectProtection>00000000-0000-0000-0000-000000000000</ObjectProtection>
     </Folder>
@@ -40,13 +41,16 @@ Fribourg/Switzerland (2017)</Description>
     <Folder Include="POUs\Products\Machine" />
     <Folder Include="POUs\Products\Machine\CleaningStation" />
     <Folder Include="POUs\Products\Ink" />
+    <Folder Include="POUs\Products\Print_Weu\_VISU_Templates" />
     <Folder Include="POUs\Products\todo" />
     <Folder Include="POUs\Products\obsolete">
       <ExcludeFromBuild>true</ExcludeFromBuild>
     </Folder>
     <Folder Include="POUs\Products\Print_Weu" />
     <Folder Include="POUs\Products\Print_Weu\Mark" />
-    <Folder Include="POUs\Products\Print_Weu\SRS" />
+    <Folder Include="POUs\Products\Print_Weu\SRS">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </Folder>
     <Folder Include="POUs\Products\Print_Weu\UV_LED_Modul" />
     <Folder Include="POUs\Projects" />
     <Folder Include="POUs\Projects\InkSystem" />
@@ -273,11 +277,23 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\_VISU_MarkDefinition_View.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\_VISU_MarkDefinition_View_Backup.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
     <Compile Include="POUs\Products\Print_Weu\Mark\_VISU_MarkDetection.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\Mark\_VISU_MarkTriangle.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\Mark\_VISU_MarkTriangle_Detail.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -307,35 +323,39 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\_VISU_Hardware.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
     <Compile Include="POUs\Products\Print_Weu\VISU_PAPER_POS_DETECT.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\_VISU_ModuleMaster.TcVIS">
+    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_Hardware.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\_VISU_PcMiniVertical.TcVIS">
+    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_ModuleMaster.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\_VISU_PhEnable.TcVIS">
+    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_PcMiniVertical.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\_VISU_PrintModule_main.TcVIS">
+    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_PmEnable.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\_VISU_WorkerWeu.TcVIS">
+    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_Pm_WEU_mini.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\_VISU_WorkerWeu_Print.TcVIS">
+    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_Pm_WEU.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_WorkerWeu_Print.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_Worker_Pm.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -361,6 +381,10 @@ Fribourg/Switzerland (2017)</Description>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="POUs\Projects\Machine\_VISU_MachineIn.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="POUs\Projects\Machine\_VISU_MachineOut.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -498,10 +522,6 @@ Fribourg/Switzerland (2017)</Description>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="VISUs\Projects\Print\VISU_Base_Header.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
-    <Compile Include="VISUs\Projects\Print\_VISU_edit.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -681,6 +701,9 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Content</SubType>
     </Content>
     <Content Include="TODO.md">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="_ImagePool\MachineOverview.PNG">
       <SubType>Content</SubType>
     </Content>
   </ItemGroup>

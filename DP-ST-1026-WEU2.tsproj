@@ -59,8 +59,8 @@
 			<Licenses IgnoreProjectLicenses="true">
 				<Target BkhfOrder="00173632" CustomOrder="700.004">
 					<CustomComment><![CDATA[DP-ST-1026-WEU2  / Labelexpo]]></CustomComment>
-					<ManualSelect>{BDCC0070-42D5-49AE-ABF1-1D4434813D60}</ManualSelect>
 					<ManualSelect>{66689887-CCBD-452C-AC9A-039D997C6E66}</ManualSelect>
+					<ManualSelect>{BDCC0070-42D5-49AE-ABF1-1D4434813D60}</ManualSelect>
 				</Target>
 			</Licenses>
 			<Tasks>
@@ -81,7 +81,7 @@
 		<Plc>
 			<Project File="PlcProject.xti"/>
 			<Project GUID="{D0E4D2E1-36F2-47AF-A080-6F211B803C3B}" Name="CalmarProdDmax" PrjFilePath="..\..\DPST-1005 Steinemann 4 Portrait 305.704\CalmarProdDmax\CalmarProdDmax.plcproj" TmcFilePath="..\..\DPST-1005 Steinemann 4 Portrait 305.704\CalmarProdDmax\CalmarProdDmax.tmc" ReloadTmc="true" AmsPort="852" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x08502040" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="..\..\DPST-1005 Steinemann 4 Portrait 305.704\CalmarProdDmax\CalmarProdDmax.tmc" TmcHash="{9B873C27-E9D1-D2FA-5DF2-F0DCF29D595C}">
+				<Instance Id="#x08502040" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="..\..\DPST-1005 Steinemann 4 Portrait 305.704\CalmarProdDmax\CalmarProdDmax.tmc" TmcHash="{CE0CF1FD-0071-AD37-A6AF-047BF49F8214}">
 					<Name>CalmarProdDmax Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Contexts>

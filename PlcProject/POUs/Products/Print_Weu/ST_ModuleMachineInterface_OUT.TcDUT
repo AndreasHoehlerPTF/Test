@@ -4,10 +4,10 @@
     <Declaration><![CDATA[TYPE ST_ModuleMachineInterface_OUT :
 STRUCT
   // Outputs (to Machine)
-  fSpeed                : LREAL;            // Current module speed
+  fSpeed                : LREAL;            // Current module speed [m/s]
   bMoving               : BOOL;             // substrate/module is moving
   nPrintMarkPosBits     : WORD;             // Print mark position (bit coded)
-  fMaxSpeed             : LREAL;            // Max. possible print module speed
+  fMaxSpeed             : LREAL;            // Max. possible print module speed [m/s]
   bSpeedExeeded         : BOOL;             // Module speed exeeded;
 END_STRUCT
 END_TYPE

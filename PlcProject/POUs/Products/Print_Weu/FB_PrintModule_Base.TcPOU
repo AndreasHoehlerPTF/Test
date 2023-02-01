@@ -290,7 +290,7 @@ SetupHw();
 
 // Worker
 // -- Worker camera
-fbWorkerCamera.InitAds(pAdsIf:=ADR(pAdsCam));
+fbWorkerCamera.InitAds(pAdsIf:=pAdsCam);
 fbWorkerCamera.Init(pCtManager:=pCTManager, iParamMediator:=iParamMediator, pMsgConfig:=ADR(sL_MsgConfig), fPrintResolution:=fPrintResolution, fSubPxResolution:=fSubPxResolution);
 fbWorkerCamera.reg();
 iModuleMaster.registerPuStatusClient(sClient:=fbWorkerCamera);

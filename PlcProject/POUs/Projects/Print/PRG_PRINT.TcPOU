@@ -577,7 +577,7 @@ FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PM) DO
   fbPrintModule[nCtr].Init( nIdx     := TO_UDINT(nCtr)
                           , pAdsPm   := ADR(sAdsPrintModule[nCtr])
                           , pAdsSa   := ADR(sAdsSheetAlignment[ePr_PU_UNIT_1])
-                          , pAdsCam  := ADR(sAdsCamera)
+                          , pAdsCam  := ADR(sAdsCamera[1])
                           , pAdsPg   := pAdsPg
                           , fPrintResolution := nC_PrintResolution
                           , fSubPxResolution := nC_SubPixelResolution
@@ -751,6 +751,10 @@ fb_Msg[iC_MSG_3_FOE_CBFW_ERR].iI_MsgNumber       := eCPr_FOE_CBFW_DL_ERR;
 fb_Msg[iC_MSG_4_FOE_HIBFW_ERR].pI_MsgConfig      := FB_PU[1].pO_MsgConfig;
 fb_Msg[iC_MSG_4_FOE_HIBFW_ERR].iI_MsgLocation    := ePr_BLK_PU;
 fb_Msg[iC_MSG_4_FOE_HIBFW_ERR].iI_MsgNumber      := eCPr_FOE_HIBFW_DL_ERR;
+
+fb_Msg[iC_MSG_5_PC_SUPPLY_OFF].pI_MsgConfig      := FB_PU[1].pO_MsgConfig;
+fb_Msg[iC_MSG_5_PC_SUPPLY_OFF].iI_MsgLocation    := ePr_BLK_PU;
+fb_Msg[iC_MSG_5_PC_SUPPLY_OFF].iI_MsgNumber      := eCPr_PC_SUPPLY_OFF;
 
 
 // Inspection system
@@ -1211,7 +1215,12 @@ VAR
   nCt, nRun : DINT;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF NOT fbPrgPrintTest.bInitialized THEN fbPrgPrintTest.Init(pAdsPu := ADR(sAdsPrintUnit[1])); END_IF
+        <ST><![CDATA[IF NOT fbPrgPrintTest.bInitialized THEN 
+  fbPrgPrintTest.Init(pAdsPu := ADR(sAdsPrintUnit[1]), 
+                      pAdsCamera:=ADR(sAdsCamera[1]),
+                      pAdsSub:=ADR(sAdsSubstrate[1])
+  ); 
+END_IF
 fbPrgPrintTest();
 
 // testing 
@@ -1387,7 +1396,10 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
       <LineId Id="2052" Count="1" />
       <LineId Id="2154" Count="0" />
       <LineId Id="2156" Count="0" />
-      <LineId Id="2179" Count="3" />
+      <LineId Id="2317" Count="0" />
+      <LineId Id="2180" Count="0" />
+      <LineId Id="2316" Count="0" />
+      <LineId Id="2182" Count="0" />
       <LineId Id="2209" Count="2" />
       <LineId Id="2155" Count="0" />
       <LineId Id="1665" Count="4" />
@@ -1400,7 +1412,9 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
       <LineId Id="1679" Count="0" />
       <LineId Id="2250" Count="1" />
       <LineId Id="1680" Count="2" />
-      <LineId Id="1684" Count="87" />
+      <LineId Id="1684" Count="85" />
+      <LineId Id="2324" Count="3" />
+      <LineId Id="1770" Count="1" />
       <LineId Id="1863" Count="0" />
       <LineId Id="1862" Count="0" />
       <LineId Id="1772" Count="0" />
@@ -1475,6 +1489,11 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
     </LineIds>
     <LineIds Name="PRG_PRINT.Testing">
       <LineId Id="22" Count="0" />
+      <LineId Id="57" Count="0" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="58" Count="0" />
       <LineId Id="18" Count="0" />
       <LineId Id="50" Count="0" />
       <LineId Id="45" Count="0" />

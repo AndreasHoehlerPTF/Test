@@ -54,21 +54,22 @@ VAR
   _fSubstrateLength               : LREAL;          // Substrate length in [m]
   _fTriggerDistance               : LREAL;          // Distance between Sensor and Trigger [m]
   _fTriggerLength                 : LREAL := 10;    // Length of trigger signal in ms, min. 3 bus cycles
-  iActiveCam                      : I_CameraTriggerDevice;  // active camera interface (set by Enable() on I_CameraTrigger)
+  _iActiveCam                     : I_CameraTriggerDevice;  // active camera interface (set by Enable() on I_CameraTrigger)
   
   // instances
   fbStartPosSim                   : FB_StartPositionDummy;  // StartPosition simulation
   
   // sensor
-  eState                          : BYTE;           (*State*)
+  eState                          : BYTE;           (*Marks detection state*)
   bSpeedValid                     : BOOL;           (*speed is valid*)
   bTriggerArmed                   : BOOL;           (*trigger is armed*)
   bCamValid                       : BOOL;           (*camera is valid*)
-  pMark                           : POINTER TO ST_MarkDefinition;
-  nMarkSelection                  : UDINT := 1;     (*Current selected mask*)
-  bResetMethods                   : BOOL;           (*Reset request for checkForMark() internals*)
   
+  // helper
   rfT_Enable                      : RF_TRIG;        // edge detection enable
+  bResetMethods                   : BOOL;           (*Reset request for checkForMark() internals*)
+  nMarkSelection                  : UDINT := 1;     (*Current selected mask*)
+  pMark                           : POINTER TO ST_MarkDefinition;
 
   // time calculations
   tNowDc                          : T_DCTIME64;     (* Get Current Timestamp (now)*)
@@ -78,12 +79,12 @@ VAR
   _bStartTrig                     : BOOL;           // Start Trigger Edge
   _nX0                            : DINT;           // X0 Position [SubPx]
   _bValid                         : BOOL;           //
-  _fSubstrateLengthEffective      : LREAL;           // detected substrate length
+  _fSubstrateLengthEffective      : LREAL;          // detected substrate length
   
   // simulation & debug
   _bSimEnable                     : BOOL;           // simulation mode enabled
-  bTestRegisterMark : BOOL;
-  sNewTestMark : ST_MarkDefinition;
+  // view 
+  nMarkXMoveScale                 : UDINT := 1;
 END_VAR
 VAR PERSISTENT
   nR_AreaMarkSensorOk             : INT := 10;      (*Area with the correct arrangement of the mark sensor [%]*)
@@ -107,18 +108,19 @@ IF NOT bInitOk THEN RETURN; END_IF
 
 // General calculations
 bSpeedValid   := fCurrentSpeed > fC_MinimalSpeed;                // speed valid (ignore trigger if not moving)
-bCamValid     := SEL(iActiveCam<>0, FALSE, TRUE);                // camera valid (ignore trigger otherwise)
+bCamValid     := SEL(_iActiveCam<>0, FALSE, TRUE);                // camera valid (ignore trigger otherwise)
 tNowDc        := F_GetCurDcTaskTime64();                         // current dc time (most accurate time stamp we have)
 fCycleTime    := calcCycleTime(tCurrent:=tNowDc);                // calculate cycle time of this fb
 bTriggerArmed :=  bSpeedValid AND bEnable AND (bAutomaticMode OR _bCamManualTeachMode OR _bSimEnable);   // trigger
 
 IF bCamValid THEN    // (not yet used) save dynamic changable settings
-  _fTriggerDistance := iActiveCam.fTriggerDistance;
-  _fTriggerLength   := iActiveCam.fTriggerPulseLength;
+  _fTriggerDistance := _iActiveCam.fTriggerDistance;
+  _fTriggerLength   := _iActiveCam.fTriggerPulseLength;
 END_IF
 
 _bValid := _bStartTrig := FALSE;    // default values (outputs and properties)
 
+manualTrigger();     // handle manual trigger
 test_Functions();    // test functions
 
 // reset
@@ -154,7 +156,7 @@ CASE eState OF
       _pFbMarkDefinition^.saveMark(pMark:=pMark);
       
       // trigger camera
-      IF iActiveCam<>0 THEN iActiveCam.CamTrigger(bOk:=TRUE, nPos:=_nX0, nPosDeviation:=0); END_IF
+      IF _iActiveCam<>0 THEN _iActiveCam.CamTrigger(bOk:=TRUE, nPos:=_nX0, nPosDeviation:=0); END_IF
      
       IF _pFbMarkDefinition^.nMarks > 2 THEN      // we have intermediate marks
         nMarkSelection := nMarkSelection + 1;    // next mark
@@ -188,7 +190,7 @@ CASE eState OF
       _pFbMarkDefinition^.saveMark(pMark:=pMark);
 
       // camera trigger done
-      IF iActiveCam<>0 THEN iActiveCam.CamTriggerDone(); END_IF
+      IF _iActiveCam<>0 THEN _iActiveCam.CamTriggerDone(); END_IF
         
       eState := cL_IDLE;
     END_IF
@@ -218,7 +220,7 @@ VAR_INPUT
 END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF pMark = 0 THEN RETURN; END_IF
-IF pMark^.fHeight = 0 OR pMark^.fLength = 0 THEN analizeMark := TRUE; RETURN; END_IF
+IF pMark^.fHeight = 0 OR pMark^.fTrLength = 0 THEN analizeMark := TRUE; RETURN; END_IF
 
 (*
   Sensor should aligned to the middle of the sensor (fI_MarkHeight / 2)
@@ -229,9 +231,9 @@ IF pMark^.fHeight = 0 OR pMark^.fLength = 0 THEN analizeMark := TRUE; RETURN; EN
 pMark^.sState.fLengthReal := fRealMarkLength;
 pMark^.sState.dx := 0;
 IF pMark^.bInvertedX THEN
-  pMark^.sState.dy := -1*((pMark^.sState.fLengthReal * (pMark^.fHeight / 2 ) / (pMark^.fLength / 2)) - (pMark^.fHeight / 2 ));
+  pMark^.sState.dy := -1*((pMark^.sState.fLengthReal * (pMark^.fHeight / 2 ) / (pMark^.fTrLength / 2)) - (pMark^.fHeight / 2 ));
 ELSE     
-  pMark^.sState.dy := (pMark^.sState.fLengthReal * (pMark^.fHeight / 2 ) / (pMark^.fLength / 2)) - (pMark^.fHeight / 2 );
+  pMark^.sState.dy := (pMark^.sState.fLengthReal * (pMark^.fHeight / 2 ) / (pMark^.fTrLength / 2)) - (pMark^.fHeight / 2 );
 END_IF
 
 // check position qualitiy
@@ -429,10 +431,10 @@ IF rfT_StartSensor.FT AND NOT bInhibitTrigger THEN
     bErr := TRUE;
   END_IF
 
-ELSIF bMarkStartDetected AND (nCurrentPos - nRisingPos) > (nRisingPos + F_MeterToSubPixel(fPosMeter:=pMark^.fLength + fC_MarkLenghtMargin, fResoSubPx:=_fResolution)) THEN
+ELSIF bMarkStartDetected AND (nCurrentPos - nRisingPos) > (nRisingPos + F_MeterToSubPixel(fPosMeter:=pMark^.fTrLength + fC_MarkLenghtMargin, fResoSubPx:=_fResolution)) THEN
   // Expected mark end missed
   LogWarning('Mark end missed');
-  nFallingPos := nRisingPos + F_MeterToSubPixel(fPosMeter:=pMark^.fLength, fResoSubPx:=_fResolution);
+  nFallingPos := nRisingPos + F_MeterToSubPixel(fPosMeter:=pMark^.fTrLength, fResoSubPx:=_fResolution);
   bMarkEndDetected := TRUE;
   pMark^.sState.bMissed := TRUE;
 END_IF;
@@ -463,7 +465,7 @@ END_IF]]></ST>
       <Declaration><![CDATA[METHOD Disable : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[iActiveCam := 0;
+        <ST><![CDATA[_iActiveCam := 0;
 Disable := TRUE;
 ]]></ST>
       </Implementation>
@@ -481,7 +483,7 @@ END_VAR
   Enable := FALSE;
   LogError('setCam failed: invalid reference');
 ELSE
-  iActiveCam := iCam;
+  _iActiveCam := iCam;
   Enable     := TRUE;
 
   // save constant settings
@@ -591,10 +593,10 @@ nMarkSelection := 1; // start mark
 
 // reset camera (release if one is selected)
 IF eState <> cL_IDLE THEN
-  IF iActiveCam <> 0 THEN iActiveCam.CamTriggerDone(); END_IF   // notify an done/abort
+  IF _iActiveCam <> 0 THEN _iActiveCam.CamTriggerDone(); END_IF   // notify an done/abort
 END_IF
 eState := cL_IDLE;            // reset state machine
-_pFbMarkDefinition^.Reset();  // reset mark definition
+_pFbMarkDefinition^.ResetDefinition();  // reset mark definition
 bResetMethods := TRUE;        // reset checkForMark() state machine
 ]]></ST>
       </Implementation>
@@ -642,40 +644,15 @@ _nX0    := fbStartPosSim.nStartPositionX0;
     <Method Name="test_Functions" Id="{48e7a5d0-f383-41ed-b380-5d479a5b0ab1}">
       <Declaration><![CDATA[METHOD PRIVATE test_Functions : BOOL]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF bTestRegisterMark THEN bTestRegisterMark:=FALSE; 
-  _pFbMarkDefinition^.RegisterMark(sMark:=sNewTestMark);
-END_IF]]></ST>
+        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <LineIds Name="FB_MarkDetection">
-      <LineId Id="9376" Count="8" />
-      <LineId Id="9486" Count="4" />
-      <LineId Id="9390" Count="2" />
-      <LineId Id="9491" Count="1" />
-      <LineId Id="9395" Count="13" />
-      <LineId Id="9485" Count="0" />
-      <LineId Id="9410" Count="64" />
+      <LineId Id="9690" Count="99" />
       <LineId Id="6884" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDetection.analizeMark">
-      <LineId Id="29" Count="0" />
-      <LineId Id="13" Count="1" />
-      <LineId Id="6" Count="0" />
-      <LineId Id="30" Count="0" />
-      <LineId Id="7" Count="1" />
-      <LineId Id="32" Count="1" />
-      <LineId Id="43" Count="0" />
-      <LineId Id="42" Count="0" />
-      <LineId Id="9" Count="3" />
-      <LineId Id="5" Count="0" />
-      <LineId Id="17" Count="1" />
-      <LineId Id="39" Count="0" />
-      <LineId Id="45" Count="0" />
-      <LineId Id="40" Count="1" />
-      <LineId Id="50" Count="0" />
-      <LineId Id="49" Count="0" />
-      <LineId Id="51" Count="0" />
-      <LineId Id="47" Count="1" />
+      <LineId Id="114" Count="26" />
       <LineId Id="46" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDetection.bManualTeach.Get">
@@ -827,8 +804,7 @@ END_IF]]></ST>
       <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDetection.test_Functions">
-      <LineId Id="5" Count="0" />
-      <LineId Id="8" Count="1" />
+      <LineId Id="14" Count="0" />
     </LineIds>
   </POU>
 </TcPlcObject>
