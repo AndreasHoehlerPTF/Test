@@ -13,6 +13,9 @@ STRUCT
   //bInvertedY : BOOL;      // flipped in Y axis
   //state
   sState : ST_MarkState;  // mark detection state
+  //view
+  bShow : BOOL;
+  nMove : DINT;
 END_STRUCT 
 END_TYPE
 ]]></Declaration>

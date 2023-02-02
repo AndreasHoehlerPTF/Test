@@ -177,7 +177,7 @@
 		</DataType>
 	</DataTypes>
 	<Project GUID="{06E29AE1-7FD1-4F58-87FC-AD943F8BCC74}" Name="PlcProject" PrjFilePath="..\..\PlcProject\PlcProject.plcproj" TmcFilePath="..\..\PlcProject\PlcProject.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" CopyTmcToTarget="true" CopyTpyToTarget="false" ClearInvalidPersist="true">
-		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc" TmcHash="{3F3A862C-A3D3-56FE-3852-578D59D513FE}">
+		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc" TmcHash="{38FF65EA-7592-ACFA-ED50-F4F92BB67814}">
 			<Name>PlcProject Instance</Name>
 			<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 			<Vars VarGrpType="1">
@@ -508,36 +508,6 @@
 					<Type>UINT</Type>
 				</Var>
 				<Var>
-					<Name>PRG_PRINT.fbNeutralFibreDetermine.bIKp_MarkTrigger01</Name>
-					<Comment><![CDATA[Mark sensor 01]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKp_TimeStampPos01</Name>
-					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
-					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKn_TimeStampNeg01</Name>
-					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
-					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbNeutralFibreDetermine.bIKp_MarkTrigger02</Name>
-					<Comment><![CDATA[Mark sensor 02]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKp_TimeStampPos02</Name>
-					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
-					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKn_TimeStampNeg02</Name>
-					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
-					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
-				</Var>
-				<Var>
 					<Name>PRG_PRINT.fbPrintModule[1].fbPrintPosition.IlEncoderPulse</Name>
 					<Comment><![CDATA[ Encoder counter intput]]></Comment>
 					<Type>UDINT</Type>
@@ -584,6 +554,36 @@
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.fbPrintModule[2].fbMarkDetection.tIKn_TimeStampNeg</Name>
+					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbNeutralFibreDetermine.bIKp_MarkTrigger01</Name>
+					<Comment><![CDATA[Mark sensor 01]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKp_TimeStampPos01</Name>
+					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKn_TimeStampNeg01</Name>
+					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbNeutralFibreDetermine.bIKp_MarkTrigger02</Name>
+					<Comment><![CDATA[Mark sensor 02]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKp_TimeStampPos02</Name>
+					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKn_TimeStampNeg02</Name>
 					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
 					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>

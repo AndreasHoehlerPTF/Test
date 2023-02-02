@@ -96,8 +96,8 @@ IF pMark^.nId = 0 THEN pMark^.nId := _nMarks; END_IF
 // clear eventual mark state
 MEMSET(destAddr:=ADR(pMark^.sState), 0, SIZEOF(ST_MarkState));
 // view
-pMark^.sState.bShow := TRUE;
-pMark^.sState.nMove := TO_DINT(pMark^.nId-1);
+pMark^.bShow := TRUE;
+pMark^.nMove := TO_DINT(pMark^.nId-1);
 
 
 RegisterMark := TRUE;]]></ST>

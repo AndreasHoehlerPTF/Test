@@ -70,7 +70,6 @@ SUPER^.CamTrigger(bOk:=bOk, nPos:=nPos, nPosDeviation:=nPosDeviation);]]></ST>
 
 {warning 'Finalize mark handling'}
 
-_iMarkDefinition.ResetMarks();
 SUPER^.CamTriggerDone();]]></ST>
       </Implementation>
     </Method>
@@ -249,7 +248,8 @@ END_FOR]]></ST>
       <LineId Id="32" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkCamera_WEU.CamTriggerDone">
-      <LineId Id="22" Count="4" />
+      <LineId Id="22" Count="2" />
+      <LineId Id="26" Count="0" />
       <LineId Id="8" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkCamera_WEU.eCameraMode.Get">

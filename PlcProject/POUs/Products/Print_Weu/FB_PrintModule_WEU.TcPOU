@@ -20,7 +20,7 @@ VAR PERSISTENT
   _fEncoderCylinderDiameter : LREAL := 100.0;      // Encoder cylinder diameter [mm]
 END_VAR
 VAR CONSTANT
-  fC_EncoderImpU          : LREAL := 10_000 * 4;   // Impulses * 4 times sampling [Imp/U]
+  fC_EncoderImpU : LREAL := 10_000 * 4;   // Impulses * 4 times sampling [Imp/U]
 END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[// - calculate encoder resolution (fL_SubstrateThickness with factor is added to the radius because of the neutral fiber of the substrate)

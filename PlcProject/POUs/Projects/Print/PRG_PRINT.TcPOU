@@ -75,12 +75,8 @@ VAR
   sC_Config_P                               : ST_CONFIG_P;      // PRG configuration  
   bL_InitRemVar                             : BOOL := TRUE;
   
-
-
   fbModuleMaster                            : FB_ModuleMaster;
-  iMasterPosition                           : I_PrintPosition;
-  fMasterSpeed : LREAL;
-  nMasterPosition : DINT;
+
 
   // -- might be sub-modules of ModuleMaster
     //fbPrintPosition                         : ARRAY[1..iCPr_NB_PM] OF FB_PrintPositionDmax;   // a position per pm (external encoder wheel)
@@ -90,7 +86,7 @@ VAR
     //fbWorkerCamera                            : FB_WorkerDefGrid_Camera;
   //fbNoCamera                                : FB_CameraDummy;
     
-  fBCTManagerMain                         : FB_CTManagerDefGrid;
+
   fbPm                                    : FB_ProdManager_DMAX;
   fbHardwarePool                          : FB_HardwarePool;
   fbDefGridParamMediator                  : FB_DefGridParamMediator; {warning 'TODO: review this'}
@@ -207,18 +203,11 @@ fbProfiler();
 
 // Main/MasterModule part
 fbModuleMaster();
-iMasterPosition := fbModuleMaster.iMasterPrintPosition;
-
-// -- position
-fMasterSpeed    := iMasterPosition.getSpeed();
-nMasterPosition := iMasterPosition.getPosition();
 
 // --------------------------------------------------------
 // Print Blocks (global for all)
 // -- CT and ProdMngr (Production Management)
-fBCTManagerMain.nPositions[E_PosDomain.master_pos] := nMasterPosition;
-fBCTManagerMain.nPositions[E_PosDomain.pos_px]     := nMasterPosition/TO_DINT(nC_SubPixelResolution);
-fBCTManagerMain();
+
 
 fbOd();
 fbPm();
@@ -312,7 +301,7 @@ fbInspectionSystemTrigger( iI_CurrentPos         := nMasterPosition
 *)
 
 // Neutral fibre calculation with additional mark sensors
-fbNeutralFibreDetermine(fSpeed := fMasterSpeed);
+fbNeutralFibreDetermine(fSpeed := fbModuleMaster.fMasterSpeed);
 
 
 (****************************************************************************)
@@ -487,10 +476,10 @@ setLoggingLevels();
 (*-- Print blocks init --------------------------------------------------------------------------*)
 (*-- Module Master*)
 fbModuleMaster.Init(pPU:=ADR(FB_PU[1]), iHwPool:=fbHardwarePool);
-fbModuleMaster.setMasterModule(ADR(fbPrintModule[1]));
 
 (*-- CoE object dicionary*)
 fbOd.init(aAmsNetId:=sC_AMSNETID_LOCALHOST, aFilePath:=F_Concat3(aC_PlcConfigPath, aC_PlcFlashFileSubPath, 'od.json'), pSimString:=0);
+
 
 (* -- PU PrintUnit*)
 FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PU) DO
@@ -508,8 +497,8 @@ FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PU) DO
                   );
 END_FOR;
 
-// init hw before module!!!
 
+(* -- PG PrintGroup*)
 FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PG) DO
 	(*-- ADS --*)
   setupAdsPg(pAds:=ADR(sAdsPrintGroup[nCtr]), nIdx:=nCtr);
@@ -518,6 +507,9 @@ FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PG) DO
   PRG_INK.pAdsPg[nCtr] := ADR(sAdsPrintGroup[nCtr]);  
 END_FOR;
 
+
+// !!! Init HW before module (PCs, PHs) !!! --------------------
+(* -- PC Print Controller*)
 FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PC) DO
 	(*-- PC --*)
 	FB_PC[nCtr].Init( pAds               := ADR(sAdsPrintController[nCtr])
@@ -557,6 +549,7 @@ FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PH) DO
                   );
 END_FOR;
 
+
 (*----SUBSTRATE init*)
 FOR nCtr := 1 TO TO_UDINT(iCPr_NB_SUBSTRATE_DEVICES) DO
   setupAdsSub(pAds:=ADR(sAdsSubstrate[nCtr]), nIdx:=nCtr); 
@@ -589,11 +582,13 @@ FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PM) DO
                           , iStartPos := 0  // set internally
                           , pMachineInputs := ADR(PRG_MACHINE.fbMachineComm.sModuleMachineState[nCtr])
                           , pMachineOutputs := ADR(PRG_MACHINE.fbMachineComm.sModuleMachineFeedback[nCtr])
-                          , pCTManager := ADR(fBCTManagerMain)
+                          , pCTManager := fbModuleMaster.pCTM
                           , iParamMediator := fbDefGridParamMediator
   );
-  
+  // register to master
+  fbModuleMaster.registerModule(pModule:=ADR(fbPrintModule[nCtr]));
 END_FOR;
+fbModuleMaster.setMasterModule(ADR(fbPrintModule[1]));
 
 
 (*-- Print management init ------------------------------------------------------------------*)
@@ -604,8 +599,6 @@ fbPm.init( pPU    := ADR(FB_PU[ePr_PU_UNIT_1])
 fbPm();  // call it once for self-initialisation
 FB_PU[ePr_PU_UNIT_1].registerStatusClient(sClient := fbPm);
 
-(*-- Container management init ------------------------------------------------------------------*)
-fBCTManagerMain.Init();
 
 (*-- Worker init --------------------------------------------------------------------------------*)
 
@@ -614,18 +607,18 @@ fBCTManagerMain.Init();
 //  -> defined in Module
 
 // -- Verify
-fbWorkerVerify.Init(pCtManager:= ADR(fBCTManagerMain), iParamMediator := fbDefGridParamMediator, pMsgConfig:=FB_PU[1].pO_MsgConfig, fPrintResolution := nC_PrintResolution, fSubPxResolution := nC_SubPixelResolution);
+fbWorkerVerify.Init(pCtManager:= fbModuleMaster.pCTM, iParamMediator := fbDefGridParamMediator, pMsgConfig:=FB_PU[1].pO_MsgConfig, fPrintResolution := nC_PrintResolution, fSubPxResolution := nC_SubPixelResolution);
 fbWorkerVerify.InitWorkerVerify(pPm:=ADR(fbPm));
 fbWorkerVerify.reg();
 fB_PU[ePr_PU_UNIT_1].registerStatusClient(sClient:=fbWorkerVerify);
 
 // -- Inspection
-fbWorkerInspection.Init(pCtManager:= ADR(fBCTManagerMain), iParamMediator := fbDefGridParamMediator, pMsgConfig:=FB_PU[1].pO_MsgConfig, fPrintResolution := nC_PrintResolution, fSubPxResolution := nC_SubPixelResolution);
+fbWorkerInspection.Init(pCtManager:= fbModuleMaster.pCTM, iParamMediator := fbDefGridParamMediator, pMsgConfig:=FB_PU[1].pO_MsgConfig, fPrintResolution := nC_PrintResolution, fSubPxResolution := nC_SubPixelResolution);
 fbWorkerInspection.reg();
 fB_PU[ePr_PU_UNIT_1].registerStatusClient(sClient:=fbWorkerInspection);
 
 // -- Delete
-fbWorkerDelete.Init(pCtManager:= ADR(fBCTManagerMain), iParamMediator := fbDefGridParamMediator, pMsgConfig:=FB_PU[1].pO_MsgConfig, fPrintResolution := nC_PrintResolution, fSubPxResolution := nC_SubPixelResolution);
+fbWorkerDelete.Init(pCtManager:= fbModuleMaster.pCTM, iParamMediator := fbDefGridParamMediator, pMsgConfig:=FB_PU[1].pO_MsgConfig, fPrintResolution := nC_PrintResolution, fSubPxResolution := nC_SubPixelResolution);
 fbWorkerDelete.reg();
 fB_PU[ePr_PU_UNIT_1].registerStatusClient(sClient:=fbWorkerDelete);
 
@@ -1020,8 +1013,7 @@ END_VAR
       <Implementation>
         <ST><![CDATA[(*Configure logging*)
 LogPrSetup.LogLevel                  := ePrint_LogLevel;
-FB_PU[ePr_PU_UNIT_1].LogLevel        := ePrint_LogLevel;
-fBCTManagerMain.LogLevel := E_LogSeverity.Info;]]></ST>
+FB_PU[ePr_PU_UNIT_1].LogLevel        := ePrint_LogLevel;]]></ST>
       </Implementation>
     </Method>
     <Method Name="setupAdsPc" Id="{d0e6d224-b679-461c-962b-262e0b7468ef}" FolderPath="AdsSetup\">
@@ -1261,16 +1253,13 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
       <LineId Id="76985" Count="0" />
       <LineId Id="77187" Count="1" />
       <LineId Id="77205" Count="0" />
-      <LineId Id="77207" Count="0" />
-      <LineId Id="77206" Count="0" />
-      <LineId Id="77202" Count="0" />
-      <LineId Id="77199" Count="1" />
       <LineId Id="77211" Count="0" />
       <LineId Id="77233" Count="1" />
-      <LineId Id="77238" Count="3" />
+      <LineId Id="77238" Count="0" />
+      <LineId Id="77241" Count="0" />
       <LineId Id="77237" Count="0" />
       <LineId Id="77235" Count="1" />
-      <LineId Id="77231" Count="1" />
+      <LineId Id="77624" Count="1" />
       <LineId Id="77204" Count="0" />
       <LineId Id="77201" Count="0" />
       <LineId Id="77217" Count="13" />
@@ -1339,9 +1328,11 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
       <LineId Id="2145" Count="0" />
       <LineId Id="1343" Count="16" />
       <LineId Id="1374" Count="3" />
-      <LineId Id="2093" Count="2" />
+      <LineId Id="2093" Count="1" />
       <LineId Id="2309" Count="0" />
-      <LineId Id="1378" Count="4" />
+      <LineId Id="1378" Count="1" />
+      <LineId Id="2344" Count="0" />
+      <LineId Id="1380" Count="2" />
       <LineId Id="1954" Count="1" />
       <LineId Id="1383" Count="0" />
       <LineId Id="1956" Count="0" />
@@ -1350,9 +1341,19 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
       <LineId Id="1385" Count="2" />
       <LineId Id="1389" Count="2" />
       <LineId Id="1436" Count="0" />
-      <LineId Id="2253" Count="0" />
+      <LineId Id="2343" Count="0" />
+      <LineId Id="2342" Count="0" />
       <LineId Id="2252" Count="0" />
-      <LineId Id="2257" Count="51" />
+      <LineId Id="2258" Count="6" />
+      <LineId Id="2341" Count="0" />
+      <LineId Id="2334" Count="0" />
+      <LineId Id="2265" Count="0" />
+      <LineId Id="2335" Count="0" />
+      <LineId Id="2266" Count="18" />
+      <LineId Id="2340" Count="0" />
+      <LineId Id="2286" Count="17" />
+      <LineId Id="2339" Count="0" />
+      <LineId Id="2304" Count="4" />
       <LineId Id="2255" Count="1" />
       <LineId Id="2254" Count="0" />
       <LineId Id="1445" Count="0" />
@@ -1379,9 +1380,12 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
       <LineId Id="2003" Count="0" />
       <LineId Id="2113" Count="0" />
       <LineId Id="1905" Count="0" />
+      <LineId Id="2337" Count="0" />
       <LineId Id="2112" Count="0" />
       <LineId Id="1494" Count="0" />
-      <LineId Id="1631" Count="10" />
+      <LineId Id="1631" Count="0" />
+      <LineId Id="2338" Count="0" />
+      <LineId Id="1632" Count="7" />
       <LineId Id="1643" Count="0" />
       <LineId Id="1645" Count="1" />
       <LineId Id="2104" Count="0" />
@@ -1442,7 +1446,7 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
       <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="PRG_PRINT.setLoggingLevels">
-      <LineId Id="6" Count="3" />
+      <LineId Id="6" Count="2" />
     </LineIds>
     <LineIds Name="PRG_PRINT.setupAdsPc">
       <LineId Id="10" Count="5" />
