@@ -4,7 +4,7 @@
     <Declaration><![CDATA[TYPE ST_MarkState :
 STRUCT
   bSet        : BOOL;     // mark was set & valid (detected)
-  bMissed     : BOOL;     // mark was internally generated
+  bMissed     : BOOL;     // mark was missing (+internally generated)
   bInArea     : BOOL;     // mark withing ok area
   dx          : LREAL;    // x displacement [m]
   dy          : LREAL;    // y displacement [m]

@@ -5,7 +5,7 @@
   This fb is the master controller of modules.
   Like an interface handler/provider for Module to Main communiation
 *)
-FUNCTION_BLOCK FB_ModuleMaster EXTENDS T_NamedBase IMPLEMENTS I_ModuleMaster, I_HardwarePool
+FUNCTION_BLOCK FB_ModuleMaster EXTENDS T_NamedBase IMPLEMENTS I_ModuleMaster, I_HardwarePool, I_DeformationHandler
 VAR_OUTPUT
   fMasterSpeed    : LREAL;    // master speed [m/s]
   nMasterPosition : DINT;     // master position [SubPx]
@@ -14,6 +14,7 @@ VAR
   bInit : BOOL;
   // references
   _pPU : POINTER TO FB_PU;    // PU access
+  _pProdMngr : POINTER TO FB_ProdManager_DMAX;
   _iHwPool : I_HardwarePool;  // reference of all harware
     
   // global instances
@@ -25,6 +26,11 @@ VAR
   
   _pMasterModule : POINTER TO FB_PrintModule_Base;  // current selected master module
   _iMasterPos : I_PrintPosition; // current master position interface
+  _iMasterStartPosDetect : I_StartPosDetect;
+  
+  // helper
+  iNewCt : I_CT;
+  pCT : POINTER TO FB_ContainerDefGrid;
 END_VAR
 VAR CONSTANT
   nC_MaxModules : UDINT := 8;
@@ -38,13 +44,50 @@ IF _iMasterPos <> 0 THEN
   fMasterSpeed := _iMasterPos.getSpeed();
 END_IF
 
+// Create CT
+_iMasterStartPosDetect := _pMasterModule^.iStartPos;
+IF _iMasterStartPosDetect <> 0 AND_THEN _iMasterStartPosDetect.bStartTrig AND _iMasterStartPosDetect.bValid THEN
+  // create new CT
+  iNewCt := fBCTManagerMain.CreateCT();
+  IF iNewCt <> 0 THEN 
+    LogLvl(Lvl:=E_LogSeverity.Debug, Msg:=F_Concat2('CreateCT: ', TO_STRING(iNewCt.pCT^.iId)));
+    // setup new CT
+    iNewCt.bProductPresent := TRUE;
+    iNewCt.SetPosX0(nPosDomain:=E_PosDomain.master_pos, nXO:= _iMasterStartPosDetect.nStartPositionX0); 
+    iNewCt.SetPosX0(nPosDomain:=E_PosDomain.pos_px,     nXO:= _iMasterStartPosDetect.nStartPositionX0 / FC_LREAL_TO_DINT(_iMasterPos.fSubPxResolution));
+    // Production Manger
+    _pProdMngr^.CT_Create(sCT := iNewCt); 
+    _pProdMngr^.CT_Produce(sCT := iNewCt);   // produce this CT
+    // Prepare deformation CT
+    pCT := fBCTManagerMain.GetContainerInstance(iCT:=iNewCt);
+    IF pCT <> 0 THEN
+      pCT^.StartScript(iDeformationHandler:=THIS^); // we do not have a script worker, just start it here
+		END_IF
+  END_IF
+  
+END_IF
+
+
 fBCTManagerMain.nPositions[E_PosDomain.master_pos] := nMasterPosition;
 fBCTManagerMain.nPositions[E_PosDomain.pos_px]     := nMasterPosition/TO_DINT(nC_SubPixelResolution);
 fBCTManagerMain();
 ]]></ST>
     </Implementation>
+    <Folder Name="I_DeformationHandler" Id="{c94b1ff5-fcac-4924-8128-07b634aaa60a}" />
     <Folder Name="I_HardwarePool" Id="{f7cf7209-17a6-41b9-9db7-2cb856085d44}" />
     <Folder Name="I_ModuleMaster" Id="{96598412-2f6b-42bc-90f9-92e56d561add}" />
+    <Method Name="DeleteCachedCt" Id="{bef7d381-99e2-4e39-ac2f-d6de948273d6}" FolderPath="I_DeformationHandler\">
+      <Declaration><![CDATA[METHOD DeleteCachedCt : BOOL
+VAR_INPUT
+	iCT	: I_CT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+
+// nothing to do or later TODO: DeleteCT in CTM?]]></ST>
+      </Implementation>
+    </Method>
     <Property Name="iHardwarePool" Id="{a847ca78-a2f3-4e9b-8e9d-71d00c55cae8}" FolderPath="I_ModuleMaster\">
       <Declaration><![CDATA[PROPERTY iHardwarePool : I_HardwarePool
 ]]></Declaration>
@@ -73,13 +116,15 @@ END_VAR
       <Declaration><![CDATA[METHOD Init : BOOL
 VAR_INPUT
   pPU : POINTER TO FB_PU;
+  pProdMngr : POINTER TO FB_ProdManager_DMAX;
   iHwPool : I_HardwarePool;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF pPU = 0 OR iHwPool = 0 THEN LogError('init() invalid init parameter'); RETURN; END_IF
+        <ST><![CDATA[IF pPU = 0 OR pProdMngr = 0 OR iHwPool = 0 THEN LogError('init() invalid init parameter'); RETURN; END_IF
 
 _pPU := pPU;
+_pProdMngr := pProdMngr;
 _iHwPool := iHwPool;
 
 fBCTManagerMain.Init();
@@ -193,8 +238,30 @@ _pMasterModule := pModule;]]></ST>
       </Implementation>
     </Method>
     <LineIds Name="FB_ModuleMaster">
-      <LineId Id="158" Count="10" />
+      <LineId Id="158" Count="7" />
+      <LineId Id="197" Count="0" />
+      <LineId Id="200" Count="0" />
+      <LineId Id="202" Count="0" />
+      <LineId Id="213" Count="0" />
+      <LineId Id="217" Count="2" />
+      <LineId Id="222" Count="4" />
+      <LineId Id="229" Count="0" />
+      <LineId Id="227" Count="0" />
+      <LineId Id="230" Count="0" />
+      <LineId Id="232" Count="0" />
+      <LineId Id="231" Count="0" />
+      <LineId Id="234" Count="1" />
+      <LineId Id="215" Count="0" />
+      <LineId Id="211" Count="0" />
+      <LineId Id="205" Count="0" />
+      <LineId Id="201" Count="0" />
+      <LineId Id="198" Count="0" />
+      <LineId Id="166" Count="2" />
       <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ModuleMaster.DeleteCachedCt">
+      <LineId Id="11" Count="1" />
+      <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_ModuleMaster.iHardwarePool.Get">
       <LineId Id="2" Count="0" />
@@ -206,6 +273,7 @@ _pMasterModule := pModule;]]></ST>
       <LineId Id="5" Count="0" />
       <LineId Id="9" Count="0" />
       <LineId Id="8" Count="0" />
+      <LineId Id="28" Count="0" />
       <LineId Id="10" Count="0" />
       <LineId Id="19" Count="2" />
       <LineId Id="16" Count="0" />

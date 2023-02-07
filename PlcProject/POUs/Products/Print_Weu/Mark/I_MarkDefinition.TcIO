@@ -6,12 +6,13 @@
     <Method Name="getMark" Id="{6dcce5ab-646c-4060-81c3-0eea54c1a7d3}">
       <Declaration><![CDATA[(*
   Get a mark definition.
-  
-  nIdx=0 - selects last mark 
+  nIdx= 1.._nMarks = registered marks
+  nIdx= 0 - selects last mark 
+  nIdx=-1 - selects boarder mark
 *)
 METHOD getMark : POINTER TO ST_MarkDefinition
 VAR_INPUT
-  nIdx : UDINT; // mark index: 1.._nMarks, 0 = last (endMark) 
+  nIdx : DINT; // mark index: 1.._nMarks, 0 = last (endMark) 
 END_VAR
 ]]></Declaration>
     </Method>
@@ -43,11 +44,11 @@ END_VAR
       <Declaration><![CDATA[METHOD ResetDefinition
 ]]></Declaration>
     </Method>
-    <Method Name="ResetMarks" Id="{8f025160-d4e0-46ad-879f-d784c19efaeb}">
+    <Method Name="ResetMarkStates" Id="{8f025160-d4e0-46ad-879f-d784c19efaeb}">
       <Declaration><![CDATA[(*
   Reset all registered marks
 *)
-METHOD ResetMarks]]></Declaration>
+METHOD ResetMarkStates]]></Declaration>
     </Method>
   </Itf>
 </TcPlcObject>

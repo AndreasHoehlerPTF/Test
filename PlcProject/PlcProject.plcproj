@@ -276,7 +276,7 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\Mark\_VISU_MarkDefinition_View_Backup.TcVIS">
+    <Compile Include="POUs\Products\Print_Weu\Mark\_VISU_MarkDefinition_View_edit.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -309,10 +309,6 @@ Fribourg/Switzerland (2017)</Description>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\VISU_PAPER_POS_DETECT.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
-    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\VISU_DropSpeedComp_Setup.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -522,10 +518,6 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="VISUs\Projects\System\VISU_RECIPE.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>Visualization Manager.TcVMO</DependentUpon>
-    </Compile>
     <Compile Include="VISUs\Projects\System\VISU_SERVICE.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
@@ -730,6 +722,9 @@ Fribourg/Switzerland (2017)</Description>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CalmarCompSystem">
       <Resolution>CalmarCompSystem, 1.7.0 (WIFAG-Polytype)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="CalmarCompTcpIp">
+      <Resolution>CalmarCompTcpIp, 1.0.4 (WIFAG-Polytype)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CmpIecTask">
       <Resolution>CmpIecTask, 3.5.13.0 (System)</Resolution>

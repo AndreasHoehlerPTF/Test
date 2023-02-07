@@ -6,45 +6,42 @@
   1 mark sensor (optional: reverse mode - roll printed in reversed direction, sensor moved to other side)
 *)
 FUNCTION_BLOCK FB_MarkCamera_WEU EXTENDS FB_CameraBase 
-VAR_INPUT
-END_VAR
 VAR
   // config
-  _iMarkDefinition          : I_MarkDefinition;
-  // helper
-  pMark                     : POINTER TO ST_MarkDefinition;
+  _iMarkDefinition          : I_MarkDefinition;     // link to detection logic (get points, teach points)
+  
+  // sample & delay of states
+  Dly_Ton                       : TON;      // delay timer
+  Dly_CamTrigger_Request        : BOOL;     // delayed CamTrigger() call request
+  Dly_CamTrigger_bOk            : BOOL;     // delayed CamTrigger() parameter
+	Dly_CamTrigger_nPos           : DINT;     // delayed CamTrigger() parameter
+  Dly_CamTrigger_nPosDeviation  : DINT;     // delayed CamTrigger() parameter
+  // teach info
+  _bTeachOk                     : BOOL;
+  _nTeachedPoints               : UDINT;
+  // delay
+  //  time or position
+  
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[IF NOT _bInitialized THEN RETURN; END_IF
 
-// The detection work is done in FB_CameraDetection
+// The detection work is done in FB_MarkDetection
 // This FB just uses(receives) the marks from the external implementation
 // - Receives events CamTrigger & CamTriggerDone from MarkDetection
 // - Get current marks and send them to the iCameraSink
 
-WHILE _iMarkDefinition.nMarksDetected > _nRxCamPoints DO
-  
-  pMark := _iMarkDefinition.getMark(nIdx:=_nRxCamPoints+1);
-  IF pMark <> 0 THEN
-    // Send Mark (CamPoint) to CameraSink
-    stCamPoint.x_ref := F_MeterToSubPixelReal(  fPosMeter:=pMark^.fPosX                                 (*[m]*)
-                                              , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
-    stCamPoint.y_ref := F_MeterToSubPixelReal( fPosMeter:=pMark^.fPosX                                  (*[m]*)
-                                              , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
-    stCamPoint.dx    := F_MeterToSubPixelReal( fPosMeter:=pMark^.sState.dx                              (*[m]*)
-                                              , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
-    stCamPoint.dy    := F_MeterToSubPixelReal( fPosMeter:=pMark^.sState.dy                              (*[m]*)
-                                              , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
-    stCamPoint.valid := pMark^.sState.bSet;
-  
-    IF _iCameraSink <> 0 THEN
-      _iCameraSink.AddCamPoint(sDeformationPoint:=stCamPoint);
-    END_IF
-    
-    _nRxCamPoints := _nRxCamPoints + 1;   // next mark
-  END_IF
-END_WHILE]]></ST>
+IF _bSimulate THEN sim_update(); END_IF
+
+Dly_Ton(IN:=Dly_CamTrigger_Request, PT:=T#4MS);  // deleay CamTrigger so CT will be for sure attached CameraWorker and Worker has enought time to see the CameraDone status
+IF Dly_Ton.Q THEN Dly_CamTrigger_Request := FALSE;
+  SUPER^.CamTrigger(bOk:=Dly_CamTrigger_bOk, nPos:=Dly_CamTrigger_nPos, nPosDeviation:=Dly_CamTrigger_nPosDeviation);
+END_IF
+
+IF _bCamTriggerStarted THEN
+  sendCamPoints();
+END_IF]]></ST>
     </Implementation>
     <Folder Name="I_CameraTriggerDevice" Id="{e2dec33a-897c-4e22-aee9-eb47423f04d4}" />
     <Folder Name="Teaching" Id="{9779439f-9901-4ac8-a24c-59c2e2c44f9c}" />
@@ -59,7 +56,19 @@ END_VAR
       <Implementation>
         <ST><![CDATA[IF NOT _bInitialized THEN RETURN; END_IF
 
-SUPER^.CamTrigger(bOk:=bOk, nPos:=nPos, nPosDeviation:=nPosDeviation);]]></ST>
+(* 
+  delay CamTrigger()
+  Needed because in endless mode the Sheet-End is potentially already the next start mark
+  and the CameraWorker would miss the CameraDone status (CameraTriggerDone()-->CameraTrigger() within same cycle
+*)
+Dly_CamTrigger_Request := TRUE;
+Dly_CamTrigger_bOk := bOk;
+Dly_CamTrigger_nPos := nPos;
+Dly_CamTrigger_nPosDeviation := nPosDeviation;
+
+_bTeachOk := (_iMarkDefinition.nMarks > 0);
+_nTeachedPoints := _iMarkDefinition.nMarks;
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="CamTriggerDone" Id="{1b47eb14-3697-493b-9422-5ad8294365cf}" FolderPath="I_CameraTriggerDevice\">
@@ -68,7 +77,12 @@ SUPER^.CamTrigger(bOk:=bOk, nPos:=nPos, nPosDeviation:=nPosDeviation);]]></ST>
       <Implementation>
         <ST><![CDATA[IF NOT _bInitialized THEN RETURN; END_IF
 
-{warning 'Finalize mark handling'}
+// stream lasting points to Worker Camera
+IF _bCamTriggerStarted THEN
+  sendCamPoints();
+END_IF
+
+sendBorderPoint();
 
 SUPER^.CamTriggerDone();]]></ST>
       </Implementation>
@@ -115,8 +129,8 @@ END_VAR]]></Declaration>
         <ST><![CDATA[IF _iMarkDefinition = 0 THEN RETURN; END_IF
 
 bConnectionOK  := TRUE;
-bTeachOk       := (_iMarkDefinition.nMarks > 0);
-nTeachedPoints := _iMarkDefinition.nMarks;  // teach marks
+bTeachOk       := _bTeachOk;
+nTeachedPoints := _nTeachedPoints;
 nScannedPoints := _nRxCamPoints;
 bCamStarted    := _bCamTriggerStarted;
 bCamDone       := _bCamTriggerDone;
@@ -153,7 +167,64 @@ _bInitialized := TRUE;]]></ST>
       <Declaration><![CDATA[METHOD mJobStart : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF eCameraMode <> E_CameraMode.NoCorrection THEN TeachMarks(); END_IF]]></ST>
+        <ST><![CDATA[IF eCameraMode <> E_CameraMode.NoCorrection THEN 
+  TeachMarks();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sendBorderPoint" Id="{65937b56-8343-4d7c-8bea-cb313141358d}">
+      <Declaration><![CDATA[METHOD PRIVATE sendBorderPoint
+VAR
+  pMark                     : POINTER TO ST_MarkDefinition;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pMark := _iMarkDefinition.getMark(nIdx:=-1);
+IF pMark <> 0 AND_THEN pMark^.sState.bSet THEN
+  // Send Mark (CamPoint) to CameraSink
+  stCamPoint.x_ref := F_MeterToSubPixelReal(  fPosMeter:=pMark^.fPosX                                 (*[m]*)
+                                            , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
+  stCamPoint.y_ref := F_MeterToSubPixelReal( fPosMeter:=pMark^.fPosX                                  (*[m]*)
+                                            , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
+  stCamPoint.dx    := F_MeterToSubPixelReal( fPosMeter:=pMark^.sState.dx                              (*[m]*)
+                                            , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
+  stCamPoint.dy    := F_MeterToSubPixelReal( fPosMeter:=pMark^.sState.dy                              (*[m]*)
+                                            , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
+  stCamPoint.valid := pMark^.sState.bSet;
+
+  IF _iCameraSink <> 0 THEN
+    _iCameraSink.AddCamPoint(sDeformationPoint:=stCamPoint);
+  END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sendCamPoints" Id="{d711b1c2-120f-41dd-b383-e767c9a1e424}">
+      <Declaration><![CDATA[METHOD PRIVATE sendCamPoints
+VAR
+  pMark                     : POINTER TO ST_MarkDefinition;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[WHILE _iMarkDefinition.nMarksDetected > _nRxCamPoints DO
+  
+  pMark := _iMarkDefinition.getMark(nIdx:=_nRxCamPoints+1);
+  IF pMark <> 0 THEN
+    // Send Mark (CamPoint) to CameraSink
+    stCamPoint.x_ref := F_MeterToSubPixelReal(  fPosMeter:=pMark^.fPosX                                 (*[m]*)
+                                              , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
+    stCamPoint.y_ref := F_MeterToSubPixelReal( fPosMeter:=pMark^.fPosX                                  (*[m]*)
+                                              , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
+    stCamPoint.dx    := F_MeterToSubPixelReal( fPosMeter:=pMark^.sState.dx                              (*[m]*)
+                                              , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
+    stCamPoint.dy    := F_MeterToSubPixelReal( fPosMeter:=pMark^.sState.dy                              (*[m]*)
+                                              , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
+    stCamPoint.valid := pMark^.sState.bSet;
+  
+    IF _iCameraSink <> 0 THEN
+      _iCameraSink.AddCamPoint(sDeformationPoint:=stCamPoint);
+    END_IF
+    
+    _nRxCamPoints := _nRxCamPoints + 1;   // next mark
+  END_IF
+END_WHILE]]></ST>
       </Implementation>
     </Method>
     <Method Name="setCameraMode" Id="{b544e398-6fa9-48f7-9517-2291b5b5ae0e}">
@@ -180,6 +251,12 @@ ELSE
   _eCameraMode := E_CameraMode.NoCorrection;
 END_IF
 ]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sim_update" Id="{e54e3043-ebe0-4063-a98c-afcbb3fddb7f}">
+      <Declaration><![CDATA[METHOD PRIVATE sim_update]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Not implemented]]></ST>
       </Implementation>
     </Method>
     <Property Name="sName" Id="{19c5cb89-f3d7-4de6-8450-7cd468806f5b}">
@@ -240,16 +317,35 @@ END_FOR]]></ST>
       </Implementation>
     </Method>
     <LineIds Name="FB_MarkCamera_WEU">
-      <LineId Id="885" Count="27" />
+      <LineId Id="885" Count="5" />
+      <LineId Id="948" Count="1" />
+      <LineId Id="940" Count="4" />
+      <LineId Id="927" Count="0" />
+      <LineId Id="926" Count="0" />
       <LineId Id="850" Count="0" />
+      <LineId Id="928" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkCamera_WEU.CamTrigger">
-      <LineId Id="68" Count="1" />
-      <LineId Id="32" Count="0" />
+      <LineId Id="68" Count="0" />
+      <LineId Id="77" Count="1" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="79" Count="1" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="84" Count="0" />
+      <LineId Id="69" Count="0" />
+      <LineId Id="86" Count="1" />
+      <LineId Id="90" Count="0" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="76" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkCamera_WEU.CamTriggerDone">
-      <LineId Id="22" Count="2" />
-      <LineId Id="26" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="39" Count="3" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="28" Count="0" />
       <LineId Id="8" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkCamera_WEU.eCameraMode.Get">
@@ -280,6 +376,15 @@ END_FOR]]></ST>
     </LineIds>
     <LineIds Name="FB_MarkCamera_WEU.mJobStart">
       <LineId Id="4" Count="0" />
+      <LineId Id="6" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_MarkCamera_WEU.sendBorderPoint">
+      <LineId Id="8" Count="15" />
+      <LineId Id="26" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkCamera_WEU.sendCamPoints">
+      <LineId Id="6" Count="20" />
+      <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkCamera_WEU.setCameraMode">
       <LineId Id="53" Count="2" />
@@ -293,6 +398,9 @@ END_FOR]]></ST>
       <LineId Id="33" Count="0" />
       <LineId Id="31" Count="0" />
       <LineId Id="22" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkCamera_WEU.sim_update">
+      <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkCamera_WEU.sName.Get">
       <LineId Id="2" Count="0" />

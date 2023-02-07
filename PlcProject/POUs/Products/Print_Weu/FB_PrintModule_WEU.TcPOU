@@ -170,7 +170,28 @@ SUPER^.Init(
   iParamMediator    := iParamMediator
 );
 
-fbView.init(pModule:=THIS, pPositioning:=ADR(fbPrintPosition));]]></ST>
+fbView.init(pModule:=THIS, pPositioning:=ADR(fbPrintPosition));
+setLogLevels(lvl:=E_LogSeverity.Debug);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setLogLevels" Id="{5091c51d-bf32-4546-a533-7a39a341c61f}">
+      <Declaration><![CDATA[METHOD PRIVATE setLogLevels
+VAR_INPUT
+  lvl : E_LogSeverity;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// set default logging levels
+// - base
+fbWorkerCamera.LogLevel := lvl;
+fbWorkerPrint[1].LogLevel := lvl;
+fbWorkerPrint[2].LogLevel := lvl;
+// - weu
+fbPrintPosition.LogLevel := lvl;
+fbMarkDefinition.LogLevel := lvl;
+fbMarkDetection.LogLevel := lvl;
+fbMarkCameraWeu.LogLevel := lvl;
+fbNoCamera.LogLevel := lvl;]]></ST>
       </Implementation>
     </Method>
     <LineIds Name="FB_PrintModule_WEU">
@@ -240,6 +261,15 @@ fbView.init(pModule:=THIS, pPositioning:=ADR(fbPrintPosition));]]></ST>
       <LineId Id="29" Count="1" />
       <LineId Id="123" Count="0" />
       <LineId Id="122" Count="0" />
+      <LineId Id="149" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_WEU.setLogLevels">
+      <LineId Id="5" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="11" Count="1" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="13" Count="4" />
     </LineIds>
   </POU>
 </TcPlcObject>

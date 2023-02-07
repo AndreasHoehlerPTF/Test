@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
-  <POU Name="FB_MarkDetection" Id="{9a49eb65-c69c-4374-bbae-64640fc50cbd}" SpecialFunc="None">
+  <POU Name="FB_MarkDetection" Id="{aad86697-3914-473c-b011-68a889a9d234}" SpecialFunc="None">
     <Declaration><![CDATA[(*
   Detects Marks and generates StartTrigger based on one EL1252 timestamp input I/O.
   
@@ -13,14 +13,6 @@
   NOTE: 
     - a mark has always a rising and falling edge of the sensor (triangle)
     - center position is the middle of the triangular mark
-  
-   MarkLength -->
-   |--------
-   |      /
-   |    / -- center --
-^  |  /
-|  |
-| MarkHeight
 
 *)
 FUNCTION_BLOCK FB_MarkDetection EXTENDS T_NamedBase IMPLEMENTS I_StartPosDetect, I_CameraTrigger, I_Sim
@@ -55,12 +47,9 @@ VAR
   _fTriggerDistance               : LREAL;          // Distance between Sensor and Trigger [m]
   _fTriggerLength                 : LREAL := 10;    // Length of trigger signal in ms, min. 3 bus cycles
   _iActiveCam                     : I_CameraTriggerDevice;  // active camera interface (set by Enable() on I_CameraTrigger)
-  
-  // instances
-  //fbStartPosSim                   : FB_StartPositionDummy;  // StartPosition simulation
-  
+
   // sensor
-  eState                          : BYTE;           (*Marks detection state*)
+  bSheetActive                    : BOOL;           (*sheet is scanning*)
   bSpeedValid                     : BOOL;           (*speed is valid*)
   bTriggerArmed                   : BOOL;           (*trigger is armed*)
   bCamValid                       : BOOL;           (*camera is valid*)
@@ -68,9 +57,12 @@ VAR
   // helper
   rfT_Enable                      : RF_TRIG;        // edge detection enable
   bResetMethods                   : BOOL;           (*Reset request for checkForMark() internals*)
-  nMarkSelection                  : UDINT := 1;     (*Current selected mask*)
-  pMark                           : POINTER TO ST_MarkDefinition;
-
+  isStartMark                     : BOOL;
+  isMarkError                     : BOOL;
+  nMarkSelection                  : UDINT := 1;     (*Current selected mask to search*)
+  pMarkSearch                     : POINTER TO ST_MarkDefinition;
+  _fSubstrateLengthEffective      : LREAL;          // Substrate length in [m]
+  
   // time calculations
   tNowDc                          : T_DCTIME64;     (* Get Current Timestamp (now)*)
   fCycleTime                      : LREAL;          (*Current calculated cycle time [s]*)
@@ -79,7 +71,6 @@ VAR
   _bStartTrig                     : BOOL;           // Start Trigger Edge
   _nX0                            : DINT;           // X0 Position [SubPx]
   _bValid                         : BOOL;           //
-  _fSubstrateLengthEffective      : LREAL;          // detected substrate length
   
   // simulation & debug
   _bSimEnable                     : BOOL;           // simulation mode enabled
@@ -87,20 +78,14 @@ VAR
   nMarkXMoveScale                 : UDINT := 140;
 END_VAR
 VAR PERSISTENT
+  bR_TerminateLast                : BOOL;           // Terminate sheet with last defined & detected mark
   nR_AreaMarkSensorOk             : INT := 10;      (*Area with the correct arrangement of the mark sensor [%]*)
 END_VAR
 VAR CONSTANT
   fC_InhibitSubstrateMargin       : LREAL := 0.010;   (*[m] decrease substrate for inhibit in*)
   fC_MinimalSpeed                 : LREAL := 0.010;   //[m/s]
-  fC_MarkLenghtMargin             : LREAL := 0.005;   // [m]
-  (*old compensation*)
-  //nC_CurrentTimeStampComp         : DINT := 2_000;   (*µs*)
-  //nC_SensorTimeStampComp          : DINT := 150;     (*µs*)
-  
-  (*State*)
-  cL_IDLE                         : BYTE := 0;      (*Idle state, no trigger active*)
-  cL_TRIGACTIVE                   : BYTE := 5;      (*Trigger set*)
-  cL_WAITSTOP                     : BYTE := 6;      (*Trigger reset*)
+  fC_MarkLengthMargin             : LREAL := 0.005;   // [m]
+  fC_MaxSubstrateFactor           : LREAL := 1.025;   // factor which the sheet length can be max. longer
 END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[// check parameter
@@ -121,15 +106,15 @@ END_IF
 _bValid := _bStartTrig := FALSE;    // default values (outputs and properties)
 
 manualTrigger();     // handle manual trigger
-test_Functions();    // test functions
 
-// reset
-rfT_Enable(CLK:=bEnable);                 // edge detection (or use bTriggerArmed)
+// enable & reset
+rfT_Enable(CLK:=bEnable);             // edge detection (or use bTriggerArmed)
 IF rfT_Enable.RT OR rfT_Enable.FT OR bManualReset THEN Reset(); bManualReset:=FALSE; END_IF;
 IF NOT bEnable THEN RETURN; END_IF    // do nothing if not enabled
 IF NOT bTriggerArmed THEN RETURN; END_IF
 
-// TODO:
+
+// Work
 // - detect marks
 //   - detect missing marks (based on teach definition, type and a margin)
 //   - maybe replace missing marks (trend or teach)
@@ -140,86 +125,79 @@ IF NOT bTriggerArmed THEN RETURN; END_IF
 
 
 (*State Machine ----------------------------------------------------------------*)
-CASE eState OF
-  cL_IDLE:     (*Not started, waiting for start trigger*)
-    
-    nMarkSelection := 1;    // start mark
-    pMark := _pFbMarkDefinition^.getMark(nIdx:=nMarkSelection);
-    IF checkForMark(pMark:=pMark) THEN  // search for start mark
-      
-      // create start trigger
-      _bStartTrig := TRUE;
-      {warning 'TBD: X0 calculation based on mark pos???'}
-      _nX0 := pMark^.sState.nPosXReal;
-           
-      // trigger camera
-      IF _iActiveCam<>0 THEN _iActiveCam.CamTrigger(bOk:=TRUE, nPos:=_nX0, nPosDeviation:=0); END_IF
-     
-      // save mark
-      _pFbMarkDefinition^.saveMark(pMark:=pMark);
-     
-      IF _pFbMarkDefinition^.nMarks > 2 THEN      // we have intermediate marks
-        nMarkSelection := nMarkSelection + 1;    // next mark
-        eState := cL_TRIGACTIVE;
-      ELSE
-        eState := cL_WAITSTOP;
-      END_IF
-    END_IF
-    
-  cL_TRIGACTIVE:
-    pMark := _pFbMarkDefinition^.getMark(nIdx:=nMarkSelection);
-    IF checkForMark(pMark:=pMark) THEN  // search for intermediate mark
-      
-      // send point
-      _pFbMarkDefinition^.saveMark(pMark:=pMark);
-      
+// select mark
+pMarkSearch :=  _pFbMarkDefinition^.getMark(nIdx:=nMarkSelection);
+// search for mark
+IF checkForMark(pMark:=pMarkSearch, bStartMark=>isStartMark, bErr=>isMarkError) THEN 
+  
+  // searched start, found start (normal start)
+  IF isStartMark AND nMarkSelection = 1 THEN
+    IF _pFbMarkDefinition^.nMarks = 1 THEN 
+      // only one mark --> TERMINATE + START
+      // - start
+      SheetStart(pMark:=pMarkSearch);
+      IF bR_TerminateLast THEN SheetStop(nNewX0:=0); END_IF  // TERMINATE already after single mark scanned
+    ELSE
+      // more marks --> START + NEXT
+      // - start
+      SheetStart(pMark:=pMarkSearch);
+      // - next
       nMarkSelection := nMarkSelection + 1;    // next mark
-      IF nMarkSelection >= _pFbMarkDefinition^.nMarks THEN // we have intermediate marks
-        eState := cL_WAITSTOP;
-      END_IF
-    END_IF
-    
-  cL_WAITSTOP:
-    nMarkSelection := 0;  // end mark
-    pMark := _pFbMarkDefinition^.getMark(nIdx:=nMarkSelection);
-    IF checkForMark(pMark:=pMark) THEN  // search for end mark
+		END_IF
 
-      _fSubstrateLengthEffective := calcSubstrateLength();
-          
-      // send point
-      _pFbMarkDefinition^.saveMark(pMark:=pMark);
+  // search other mark and found start mark (start abort)
+  ELSIF isStartMark AND nMarkSelection > 1 THEN
+    // terminate(abort) last
+    IF nMarkSelection < _pFbMarkDefinition^.nMarks THEN
+      LogError('New start mark before last mark detected, missed a mark?');
+    END_IF 
 
-      // camera trigger done
-      IF _iActiveCam<>0 THEN 
-        _pFbMarkDefinition^.ResetMarks();
-        _iActiveCam.CamTriggerDone(); 
-      END_IF
-        
-      eState := cL_IDLE;
-    END_IF
+    // terminate/abort with new --> TERMINATE + START
+    // - start
+    SheetStart(pMark:=pMarkSearch);
     
-ELSE  (*Default*)
-  eState           := cL_IDLE;
-END_CASE;
+    nMarkSelection := nMarkSelection + 1;    // next mark
+
+  // intermediate marks
+  ELSIF NOT isStartMark AND nMarkSelection > 1 THEN
+    // search and found other --> NEXT (ev. terminate)
+    
+    IF _pFbMarkDefinition^.nMarksDetected <= _pFbMarkDefinition^.nMarks THEN
+      // - save mark
+        _pFbMarkDefinition^.saveMark(pMark:=pMarkSearch);
+      // - last mark?
+      IF nMarkSelection = _pFbMarkDefinition^.nMarks THEN
+        IF bR_TerminateLast THEN SheetStop(nNewX0:=0); END_IF
+        nMarkSelection := 1;
+      ELSE
+        nMarkSelection := nMarkSelection + 1;    // next mark
+      END_IF 
+    END_IF
+	END_IF
+END_IF
+
 
 // outputs
-// _bStartTrig := 
-// _nX0 := 
-_bValid := _bStartTrig AND NOT _bCamManualTeachMode AND bCamValid;
+// _bStartTrig := // set in SheetStart
+// _nX0 :=  // set in SheetStart
+_bValid := TRUE;
 ]]></ST>
     </Implementation>
-    <Folder Name="I_CameraTrigger" Id="{ab394f6a-371c-4df7-92ab-7a0be273618e}" />
-    <Folder Name="I_Sim" Id="{1a704b0a-6d5d-4f41-8059-61ce114f9d30}" />
-    <Folder Name="I_StartPosDetect" Id="{98241320-1885-43b6-971b-bc4a35032292}" />
-    <Method Name="analizeMark" Id="{8364dcc7-df22-49f7-92e3-a9e0b842c7bc}">
+    <Folder Name="I_CameraTrigger" Id="{951bb3eb-97c7-4f0d-9018-d2b2f92afa7b}" />
+    <Folder Name="I_Sim" Id="{5df11d36-d3ca-4210-8bb0-1fc208e98f36}" />
+    <Folder Name="I_StartPosDetect" Id="{e7d8e197-7395-46b8-9002-2d0643b01c02}" />
+    <Method Name="analizeMark" Id="{2226e637-ac93-4e17-8c80-c61d8a827017}">
       <Declaration><![CDATA[(*
-  Check if mark was detected in ok area and type matches.
+  Check if mark was detected properly and type matches.
   :returns:  TRUE if in OK area
 *)
 METHOD PRIVATE analizeMark : BOOL
 VAR_INPUT
   pMark           : POINTER TO ST_MarkDefinition;     // mark to search for
-  fRealMarkLength : LREAL;                            // real detected mark lenght [m]
+  fRealMarkLength : LREAL;                            // real detected mark length [m]
+END_VAR
+VAR_OUTPUT
+  bStartMark : BOOL;     // a start mark was detected
 END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF pMark = 0 THEN RETURN; END_IF
@@ -227,16 +205,20 @@ IF pMark^.fHeight = 0 OR pMark^.fTrLength = 0 THEN analizeMark := TRUE; RETURN; 
 
 (*
   Sensor should aligned to the middle of the sensor (fI_MarkHeight / 2)
-  With the difference OF the measured lenght TO the normal lenght, the fO_LateralOffset can be calculated
+  With the difference OF the measured length TO the normal lenght, the fO_LateralOffset can be calculated
   invert in CASE OF wrong mirrored marks 
 *)
+
+
 {warning 'TODO: check if this is correct based on defined mark type'}
 pMark^.sState.fLengthReal := fRealMarkLength;
-pMark^.sState.dx := 0;
+// - dx  (based on sheet begin) dx = current mark position - teached mark position
+pMark^.sState.dx := getMarkDistanceEffective(pMark:=pMark) - pMark^.fPosX;
+  
+// - dy 
+pMark^.sState.dy := (pMark^.sState.fLengthReal * (pMark^.fHeight / 2 ) / ((pMark^.fTrLength / 2) + pMark^.fSqLength)) - (pMark^.fHeight / 2 );
 IF pMark^.bInvertedX THEN
-  pMark^.sState.dy := -1*((pMark^.sState.fLengthReal * (pMark^.fHeight / 2 ) / (pMark^.fTrLength / 2)) - (pMark^.fHeight / 2 ));
-ELSE     
-  pMark^.sState.dy := (pMark^.sState.fLengthReal * (pMark^.fHeight / 2 ) / (pMark^.fTrLength / 2)) - (pMark^.fHeight / 2 );
+  pMark^.sState.dy := -1*pMark^.sState.dy;    
 END_IF
 
 // check position qualitiy
@@ -246,16 +228,17 @@ pMark^.sState.bInArea := FC_COMPARE_RANGE_PERCENT(
                                      , fI_RangePercent := nR_AreaMarkSensorOk);
 
 // type of mark
-{warning 'TODO: check if type matches, else ignore if searched for start, but not start detected'}
+bStartMark := (fRealMarkLength >= _pFbMarkDefinition^.fMinLengthStartMark);
 pMark^.sState.bSet := TRUE;
+
 analizeMark := pMark^.sState.bSet;
 ]]></ST>
       </Implementation>
     </Method>
-    <Property Name="bManualTeach" Id="{e92667d3-ab62-412d-8bec-2686a894f035}" FolderPath="I_CameraTrigger\">
+    <Property Name="bManualTeach" Id="{9ccd84ef-b178-444d-9968-74fe337cc112}" FolderPath="I_CameraTrigger\">
       <Declaration><![CDATA[PROPERTY bManualTeach : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{5134cfa1-301f-4744-a69b-e6a74203d670}">
+      <Get Name="Get" Id="{3c621ff5-c2e0-4af4-bc4d-7adec5456f1c}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -263,7 +246,7 @@ END_VAR
           <ST><![CDATA[bManualTeach := _bCamManualTeachMode;]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{a471216e-c140-465c-af41-40f552b7000b}">
+      <Set Name="Set" Id="{591af842-abd1-4acb-b59a-ff05fb7e464d}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -272,12 +255,12 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="bSimEnable" Id="{d0136055-e97b-49c7-8f14-5e3cd1d91090}" FolderPath="I_Sim\">
+    <Property Name="bSimEnable" Id="{8a324fcb-05d0-4beb-acff-031aabaf7968}" FolderPath="I_Sim\">
       <Declaration><![CDATA[{attribute 'monitoring' := 'call'}
 (*Simulation is enabled set/get*)
 PROPERTY bSimEnable : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{c0749290-a708-4a6b-abfb-92e053e6817f}">
+      <Get Name="Get" Id="{7b8886ba-d9fb-42f1-b412-1d65bef226ab}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -285,7 +268,7 @@ END_VAR
           <ST><![CDATA[bSimEnable := _bSimEnable;]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{a49982c3-e693-4edd-b978-de1f3860b844}">
+      <Set Name="Set" Id="{c04103e8-063c-4ccc-8026-c70875221124}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -294,14 +277,14 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="bStartTrig" Id="{7b43b33f-9bf0-44f8-80ea-6467ccc7b6ac}" FolderPath="I_StartPosDetect\">
+    <Property Name="bStartTrig" Id="{5f1cbe8e-5396-4953-8dea-a9185935d9f4}" FolderPath="I_StartPosDetect\">
       <Declaration><![CDATA[(*
   A new container detected.
   NOTE: a pulse only
 *)
 PROPERTY bStartTrig : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{61146fb4-b0e4-4d37-98cf-be1b2d53564e}">
+      <Get Name="Get" Id="{94ab8131-a50a-4fbf-b08b-6db18e43cad0}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -310,13 +293,13 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="bValid" Id="{db526211-032f-41cc-9ee1-56df9cc72ce8}" FolderPath="I_StartPosDetect\">
+    <Property Name="bValid" Id="{758c4d74-99bc-4788-bf04-f29065844fa6}" FolderPath="I_StartPosDetect\">
       <Declaration><![CDATA[(*
   A valid container detected.
 *)
 PROPERTY bValid : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{148281df-56e3-426e-a776-186f5e5b6886}">
+      <Get Name="Get" Id="{1296b8e4-740f-4242-bf1b-6d33f3e87748}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -325,7 +308,7 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Method Name="calcCycleTime" Id="{b0b06c3e-0c02-4d98-b180-d75790e71d46}">
+    <Method Name="calcCycleTime" Id="{3a719839-fb67-4b11-81e5-8be0a942ea69}">
       <Declaration><![CDATA[METHOD PRIVATE calcCycleTime : LREAL
 VAR_INPUT
   tCurrent : T_DCTIME64;
@@ -338,23 +321,7 @@ END_VAR]]></Declaration>
 tLastTimeStamp  := tCurrent;  // memory timestamp]]></ST>
       </Implementation>
     </Method>
-    <Method Name="calcSubstrateLength" Id="{663931c2-87f9-47bb-82a0-83f37d5ad41a}">
-      <Declaration><![CDATA[METHOD PRIVATE calcSubstrateLength : LREAL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// -- substrate length calculation
-{warning 'TODO: proper length detection base on mark definition (or maybe nLastX0)'}
-(*IF nLastX0 <> 0 THEN
-  calcSubstrateLength := F_SubPixelToMeter(lPosSubPx:=ABS(_nX0-nLastX0), fResSubPx:=_fResolution);  
-ELSE
-  calcSubstrateLength := _fSubstrateLength;
-END_IF
-nLastX0 := _nX0;  // save current
-*)
-calcSubstrateLength := _fSubstrateLength;]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="checkForMark" Id="{e5bb2592-2954-439c-9b97-ee5968a8b289}">
+    <Method Name="checkForMark" Id="{09cc2cb3-7a7d-458b-84fd-eeb114800296}">
       <Declaration><![CDATA[(*
   Poll for sensor triggers and marks.
   :return: true if a mark was detected
@@ -364,7 +331,8 @@ VAR_INPUT
   pMark : POINTER TO ST_MarkDefinition;             // mark to search for
 END_VAR
 VAR_OUTPUT
-  
+  bErr : BOOL;
+  bStartMark : BOOL;     // a start mark was detected
 END_VAR
 VAR_INST
   rfT_StartSensor                 : RF_TRIG;        // edge detection start trigger
@@ -375,7 +343,7 @@ VAR_INST
    
   bMarkStartDetected              : BOOL;   // mark started
   bMarkEndDetected                : BOOL;   // marks end reached
-  bErr, bDone   : BOOL;
+  bDone   : BOOL;
   
   // (Todo) inhibit control
   bInhibitTrigger                 : BOOL;       (*inhibit sensor signals, TRUE=inhibit*)
@@ -394,10 +362,8 @@ IF bDone OR bResetMethods THEN   // reset methods internal states
   bDone := FALSE;
 END_IF
 
-{warning 'TODO: add supervision for individual marks, check relative to X0 and current pos if a mark was missed'}
-{warning 'TODO: add abort if EndMark was not detected'}
 IF _bSimEnable THEN 
-  checkForMark := SimMarks(pMark:=pMark);
+  checkForMark := SimMarks(pMark:=pMark, bStartMark=>bStartMark);
   RETURN;
 END_IF
 
@@ -407,6 +373,12 @@ rfT_StartSensor(CLK:=bIKp_StartSensor);   // edge detection
 IF rfT_StartSensor.RT AND NOT bInhibitTrigger THEN
   tRisingEdge := tIKp_TimeStampPos;
   bMarkStartDetected := TRUE;
+  
+  IF bMarkStartDetected OR bMarkEndDetected THEN 
+    LogError(F_Concat3('Rigsing trigger while already a ', SEL(bMarkStartDetected, 'falling', 'rising') ,' edge was detected'));
+    bErr := TRUE;
+    {warning 'TODO: implement a fallback in any case'}
+  END_IF
   
  // before calculation with some compensation
 (*
@@ -429,6 +401,7 @@ END_IF;
 
 // -- falling edge detection
 IF rfT_StartSensor.FT AND NOT bInhibitTrigger THEN
+  // falling edge
   tFallingEdge := tIKn_TimeStampNeg;
   bMarkEndDetected := TRUE;
   
@@ -440,12 +413,13 @@ IF rfT_StartSensor.FT AND NOT bInhibitTrigger THEN
     bErr := TRUE;
   END_IF
 
-ELSIF bMarkStartDetected AND (nCurrentPos - nRisingPos) > (nRisingPos + F_MeterToSubPixel(fPosMeter:=pMark^.fTrLength + fC_MarkLenghtMargin, fResoSubPx:=_fResolution)) THEN
-  // Expected mark end missed
+ELSIF bMarkStartDetected AND (nCurrentPos - nRisingPos) > (nRisingPos + F_MeterToSubPixel(fPosMeter:=pMark^.fTrLength + pMark^.fSqLength + fC_MarkLengthMargin, fResoSubPx:=_fResolution)) THEN
+  // Expected falling edge missed
   LogWarning('Mark end missed');
-  nFallingPos := nRisingPos + F_MeterToSubPixel(fPosMeter:=pMark^.fTrLength, fResoSubPx:=_fResolution);
+  nFallingPos := nRisingPos + F_MeterToSubPixel(fPosMeter:=pMark^.fTrLength/2+pMark^.fSqLength, fResoSubPx:=_fResolution);
   bMarkEndDetected := TRUE;
   pMark^.sState.bMissed := TRUE;
+  
 END_IF;
 
 
@@ -453,20 +427,15 @@ END_IF;
 IF bMarkStartDetected AND bMarkEndDetected THEN
   // mark finished
   
-  (* it is better to reset if CamTriggerDone(), se we can better handle the mark missed cases
-  IF isStartMark(pMark:=pMark) THEN
-    _pFbMarkDefinition^.ResetMarks();
-  END_IF*)
-  
-  // - check mark
-  pMark^.sState.nPosXReal := nRisingPos;  // save detected start pos
-  fMarkDuration    := (ULINT_TO_LREAL(tFallingEdge) - ULINT_TO_LREAL(tRisingEdge));		(* Calculate how long the signal was ON *)
+  // - define mark
+  pMark^.sState.nPosXReal := nRisingPos;  // save detected mark pos
+  fMarkDuration    := (ULINT_TO_LREAL(tFallingEdge) - ULINT_TO_LREAL(tRisingEdge));		// Calculate how long the signal was ON
   
   // check mark & calculate offsets
-  IF analizeMark( pMark:=pMark, fRealMarkLength:=fMarkDuration * fCurrentSpeed * 0.000_000_001 ) THEN
+  IF analizeMark( pMark:=pMark, fRealMarkLength:=fMarkDuration * fCurrentSpeed * 0.000_000_001, bStartMark => bStartMark ) THEN
     checkForMark := TRUE;
   ELSE
-    ;  // invalid mark detected, ignore
+   bErr := TRUE;  // invalid mark detected
 	END_IF
   
   bDone := TRUE;   // done, reset states
@@ -476,7 +445,7 @@ ELSIF bErr THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Disable" Id="{425d269a-4af9-4073-8b84-d311c3b46bcc}" FolderPath="I_CameraTrigger\">
+    <Method Name="Disable" Id="{cfef52af-6d49-44b6-9c3e-ba52ccce2a01}" FolderPath="I_CameraTrigger\">
       <Declaration><![CDATA[METHOD Disable : BOOL
 ]]></Declaration>
       <Implementation>
@@ -485,7 +454,7 @@ Disable := TRUE;
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Enable" Id="{671a495e-e487-4dda-bd5e-a9afd7434262}" FolderPath="I_CameraTrigger\">
+    <Method Name="Enable" Id="{fad3ab13-8e5e-43fa-9e5c-21e5bd36b7b3}" FolderPath="I_CameraTrigger\">
       <Declaration><![CDATA[METHOD Enable : BOOL
 VAR_INPUT
 	iCam	                    : I_CameraTriggerDevice;
@@ -511,18 +480,47 @@ ELSE
 END_IF;]]></ST>
       </Implementation>
     </Method>
-    <Property Name="fSubstrateLengthEffective" Id="{ca08c587-5c8c-4689-ac80-71bbcdab6e0a}">
-      <Declaration><![CDATA[PROPERTY fSubstrateLengthEffective : LREAL]]></Declaration>
-      <Get Name="Get" Id="{519e96c0-6651-4d6a-a2ac-e95f16c3f1ad}">
-        <Declaration><![CDATA[VAR
+    <Method Name="getLastX0" Id="{c2e4e46e-b947-4396-bff2-ebd04f62309e}">
+      <Declaration><![CDATA[(*
+  Get X0 from detected start mark
+*)
+METHOD PRIVATE getLastX0 : DINT
+VAR
+  pLastStartMark : POINTER TO ST_MarkDefinition;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pLastStartMark := _pFbMarkDefinition^.pLastStartMark;
+
+IF pLastStartMark <> 0 THEN
+  getLastX0 := pLastStartMark^.sState.nPosXReal - F_MeterToSubPixel(fPosMeter:=pLastStartMark^.fPosX, fResoSubPx:=_fResolution);
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getMarkDistanceEffective" Id="{1b9471fe-46cb-43fb-9cdf-f1002616e846}">
+      <Declaration><![CDATA[(*
+  Calculate effective distance of mark to X0 [m]
+*)
+METHOD PRIVATE getMarkDistanceEffective : LREAL
+VAR_INPUT
+  pMark : POINTER TO ST_MarkDefinition;
 END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[fSubstrateLengthEffective := _fSubstrateLength;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Method Name="Init" Id="{66f29fb8-3159-4da9-a432-259e88855e84}">
+VAR
+  pFirstMark : POINTER TO ST_MarkDefinition;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF pMark = 0 THEN RETURN; END_IF
+
+IF pMark^.nId = 1 THEN 
+  getMarkDistanceEffective := pMark^.fPosX;
+ELSE
+  pFirstMark := _pFbMarkDefinition^.getMark(nIdx:=1);
+  // real distance between this mark and start mark + fPosX of start mark
+  getMarkDistanceEffective := pFirstMark^.fPosX + F_SubPixelToMeter(lPosSubPx:=pMark^.sState.nPosXReal - pFirstMark^.sState.nPosXReal, fResSubPx:=_fResolution);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Init" Id="{3330532e-1984-4d2a-add5-4d053cb8bee0}">
       <Declaration><![CDATA[METHOD Init
 VAR_INPUT
   fPrintResolution      : LREAL := 600;         // print(head) resolution in [dpi]
@@ -540,20 +538,7 @@ Reset();
 bInitOk := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="isStartMark" Id="{21b31ae3-5869-4bdf-bdac-d822d122f00d}">
-      <Declaration><![CDATA[METHOD PRIVATE isStartMark : BOOL
-VAR_INPUT
-  pMark : POINTER TO ST_MarkDefinition;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// detect based on form if it was a start mark
-IF pMark^.nId = 1 THEN isStartMark := TRUE;
-ELSE                   isStartMark := FALSE;
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="manualTrigger" Id="{8ece9116-7d44-460c-b04a-2d868ed46dea}">
+    <Method Name="manualTrigger" Id="{8dc41e87-4c55-4c20-97ff-5b47254e2b36}">
       <Declaration><![CDATA[METHOD PRIVATE manualTrigger : BOOL
 VAR_INST
   rfTrig_ManuTrigger : RF_TRIG;
@@ -569,14 +554,14 @@ END_IF
 manualTrigger := rfTrig_ManuTrigger.RT;]]></ST>
       </Implementation>
     </Method>
-    <Property Name="nPrintMarkPosBits" Id="{29976e93-4bc3-40c4-994b-b1fa0286b3b3}">
+    <Property Name="nPrintMarkPosBits" Id="{f9b16fa7-004c-4f94-b9bf-e4f4102484ed}">
       <Declaration><![CDATA[(*Print mark position (bit coded)*)
   (*Bit 0: no mark*)
   (*Bit 1: mark on drive side*)
   (*Bit 2: mark in center range*)
   (*Bit 3: mark on control side*)
 PROPERTY nPrintMarkPosBits : WORD]]></Declaration>
-      <Get Name="Get" Id="{c31c0f95-07ab-4d5d-86d2-5f294e5051c7}">
+      <Get Name="Get" Id="{e582339e-8abd-4811-a680-cb6add3334e6}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -591,13 +576,13 @@ nPrintMarkPosBits := 0;]]></ST>
         </Implementation>
       </Get>
     </Property>
-    <Property Name="nStartPositionX0" Id="{3ea89cb5-ea0e-45c7-b078-e62fb1d531d9}" FolderPath="I_StartPosDetect\">
+    <Property Name="nStartPositionX0" Id="{9b7e63ec-5a5b-4e34-a5d4-8c28025cc103}" FolderPath="I_StartPosDetect\">
       <Declaration><![CDATA[(*
   Detected start position X0 (absolute) in [SubPx].
 *)
 PROPERTY nStartPositionX0 : DINT
 ]]></Declaration>
-      <Get Name="Get" Id="{216712f8-954e-41fb-953a-59f33c5e77f1}">
+      <Get Name="Get" Id="{b2a61633-5ff3-44c0-a7bd-eef4cd7213ae}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -606,7 +591,7 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Method Name="Reset" Id="{f531218a-4841-479d-b5e0-1334f8015385}">
+    <Method Name="Reset" Id="{0cd8fba4-b26a-4d0c-9e5a-4fd1da9e4425}">
       <Declaration><![CDATA[(*
   Reset internal state and all marks
 *)
@@ -620,16 +605,16 @@ _bStartTrig := FALSE;
 nMarkSelection := 1; // start mark
 
 // reset camera (release if one is selected)
-IF eState <> cL_IDLE THEN
+IF bSheetActive THEN
   IF _iActiveCam <> 0 THEN _iActiveCam.CamTriggerDone(); END_IF   // notify an done/abort
 END_IF
-eState := cL_IDLE;            // reset state machine
-_pFbMarkDefinition^.ResetMarks();  // reset detected marks
+_pFbMarkDefinition^.ResetMarkStates();  // reset detected marks
+bSheetActive := FALSE;
 bResetMethods := TRUE;        // reset checkForMark() state machine
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="SetSubstrateLength" Id="{3b1bff73-15de-4a10-82c4-45879fc1784d}" FolderPath="I_CameraTrigger\">
+    <Method Name="SetSubstrateLength" Id="{67d10d0f-5946-4788-b994-e8b0f154d48a}" FolderPath="I_CameraTrigger\">
       <Declaration><![CDATA[METHOD SetSubstrateLength
 VAR_INPUT
   fSubstrateLength : LREAL;
@@ -643,13 +628,96 @@ _fSubstrateLength := fSubstrateLength;
 //_nSubstrateLength := F_MeterToSubPixel(fPosMeter:=_fSubstrateLength, fResoSubPx:=_fResolution);]]></ST>
       </Implementation>
     </Method>
-    <Method Name="SimMarks" Id="{ce635d9d-2028-4753-9aaf-3abac9147af0}">
+    <Method Name="SheetStart" Id="{e59349fa-2f99-425a-926a-8c081bd5049e}">
+      <Declaration><![CDATA[METHOD PRIVATE SheetStart
+VAR_INPUT
+  pMark : POINTER TO ST_MarkDefinition;
+END_VAR
+VAR
+  sMarkBackup : ST_MarkDefinition;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_nX0 := pMark^.sState.nPosXReal - F_MeterToSubPixel(fPosMeter:=pMark^.fPosX, fResoSubPx:=_fResolution);
+_bStartTrig := TRUE;
+
+// (force) terminate a sheet
+IF bSheetActive THEN 
+  sMarkBackup := pMark^;   // push 
+  SheetStop(nNewX0:=_nX0);
+  pMark^:= sMarkBackup;    // pop
+END_IF
+
+// save (start) mark
+_pFbMarkDefinition^.saveMark(pMark:=pMark);
+
+// trigger camera
+IF _iActiveCam<>0 THEN _iActiveCam.CamTrigger(bOk:=TRUE, nPos:=_nX0, nPosDeviation:=0); END_IF
+
+bSheetActive := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SheetStop" Id="{109ba6fa-ffe7-4a58-8b01-744c1a4dcc03}">
+      <Declaration><![CDATA[METHOD PRIVATE SheetStop
+VAR_INPUT
+  nNewX0 : DINT;   // new detected X0
+END_VAR
+VAR
+  pLastMark : POINTER TO ST_MarkDefinition;
+  pBorderMark : POINTER TO ST_MarkDefinition;
+  fD : LREAL;
+  fSLen : LREAL;
+  nDetectedX0 : DINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// - terminate
+
+fSLen := _fSubstrateLength;  // (default) original length
+
+// calculate effective sheet length
+nDetectedX0 := getLastX0();   // get sampled X0
+IF nNewX0 <> 0 AND nDetectedX0 <> 0 THEN
+  // real diff between two starts
+  fD := F_SubPixelToMeter(lPosSubPx:=nNewX0 - nDetectedX0, fResSubPx:=_fResolution);
+  IF fD < (_fSubstrateLength * fC_MaxSubstrateFactor) THEN
+    fSLen := fD;
+  END_IF 
+ELSIF nNewX0 = 0 AND _pFbMarkDefinition^.nMarksDetected > 1 THEN
+  // calculate based on last detected mark (a strech factor)
+  pLastMark:= _pFbMarkDefinition^.getMark(nIdx:=0);     // get last available mark
+  fD := getMarkDistanceEffective(pMark:=pLastMark);
+  fSLen := (pLastMark^.fPosX/SEL(fD<>0, pLastMark^.fPosX, fD)) * _fSubstrateLength;
+END_IF
+_fSubstrateLengthEffective := fSLen;
+
+
+// set sheet border point
+pBorderMark := _pFbMarkDefinition^.getMark(nIdx:=-1);
+IF pBorderMark <> 0 THEN
+  pBorderMark^.sState.bSet      := TRUE;
+  pBorderMark^.fPosX            := _fSubstrateLength;
+  pBorderMark^.fPosY            := 0;
+  pBorderMark^.sState.dx        := _fSubstrateLengthEffective - _fSubstrateLength;
+  pBorderMark^.sState.dy        := 0;
+  pBorderMark^.sState.nPosXReal := SEL(nNewX0=0, nNewX0, nDetectedX0 + F_MeterToSubPixel(fPosMeter:=_fSubstrateLengthEffective, fResoSubPx:=_fResolution) );
+  // no size information
+  _pFbMarkDefinition^.saveMark(pMark:=pBorderMark);
+END_IF
+
+
+IF _iActiveCam<>0 THEN _iActiveCam.CamTriggerDone(); END_IF 
+_pFbMarkDefinition^.ResetMarkStates();
+
+bSheetActive := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SimMarks" Id="{8373fdd1-b119-4d9c-8c3b-21226d870047}">
       <Declaration><![CDATA[METHOD PRIVATE SimMarks : BOOL
 VAR_INPUT
   pMark : POINTER TO ST_MarkDefinition;
 END_VAR
 VAR_OUTPUT
   nX0 : DINT;
+  bStartMark : BOOL;
 END_VAR
 VAR_INST
   bMarkOn : BOOL;
@@ -667,14 +735,14 @@ END_VAR]]></Declaration>
 // when sim enabled AND auto-trigger then create a StartMark after every sheet/repeate length
 //  then generate every following intermediate mark with a given length
 
-IF NOT bMarkOn THEN // start new mark
+IF NOT bMarkOn THEN  // start new mark
   // create rising edge
   IF pMark^.nId = 1 THEN
     // wait for next StartPosition
     IF F_SubPixelToMeter(lPosSubPx:=nCurrentPos - nLastStartMark, fResSubPx:=_fResolution) >= _fSubstrateLength THEN
       nLastStartMark := nCurrentPos;      // save start mark pos
       fStartMarkOffset := pMark^.fPosX;   // save start mark displacement from X0
-      pMark^.sState.nPosXReal := nCurrentPos - F_MeterToSubPixel(fPosMeter:=pMark^.fPosX, fResoSubPx:=_fResolution);  // save X0
+      pMark^.sState.nPosXReal := nCurrentPos;  // save rising edge
       nMarkStarted := nCurrentPos;
       l := F_MeterToSubPixel(fPosMeter:=pMark^.fSqLength + (pMark^.fTrLength/2), fResoSubPx:=_fResolution); // mark length
       bMarkOn := TRUE;
@@ -682,6 +750,7 @@ IF NOT bMarkOn THEN // start new mark
 	ELSE
     // wait for next mark position
     IF F_SubPixelToMeter(lPosSubPx:=nCurrentPos - nLastStartMark, fResSubPx:=_fResolution) >= pMark^.fPosX - fStartMarkOffset THEN
+      pMark^.sState.nPosXReal := nCurrentPos;  // save rising edge
       nMarkStarted := nCurrentPos;
       l := F_MeterToSubPixel(fPosMeter:=pMark^.fSqLength + (pMark^.fTrLength/2), fResoSubPx:=_fResolution); // mark length
       bMarkOn := TRUE;
@@ -694,31 +763,56 @@ ELSE
     rand(Seed:=13, Num=>rlrand);  // TODO: find a right scale 
     analizeMark(pMark:=pMark, fRealMarkLength:=F_SubPixelToMeter(lPosSubPx:=nCurrentPos - nMarkStarted, fResSubPx:=_fResolution));
     bMarkOn := FALSE;
+    If pMark^.nId = 1 THEN bStartMark := TRUE; END_IF
     SimMarks := TRUE;    // mark done
   END_IF
 END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="test_Functions" Id="{48e7a5d0-f383-41ed-b380-5d479a5b0ab1}">
-      <Declaration><![CDATA[METHOD PRIVATE test_Functions : BOOL]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
-      </Implementation>
-    </Method>
     <LineIds Name="FB_MarkDetection">
-      <LineId Id="9690" Count="48" />
-      <LineId Id="9742" Count="2" />
-      <LineId Id="9891" Count="1" />
-      <LineId Id="9890" Count="0" />
-      <LineId Id="9745" Count="32" />
-      <LineId Id="9895" Count="0" />
-      <LineId Id="9893" Count="1" />
-      <LineId Id="9778" Count="11" />
+      <LineId Id="10360" Count="23" />
+      <LineId Id="10757" Count="0" />
+      <LineId Id="10384" Count="13" />
+      <LineId Id="10758" Count="0" />
+      <LineId Id="10398" Count="0" />
+      <LineId Id="10542" Count="0" />
+      <LineId Id="10564" Count="0" />
+      <LineId Id="10403" Count="0" />
+      <LineId Id="10405" Count="3" />
+      <LineId Id="10567" Count="0" />
+      <LineId Id="10409" Count="1" />
+      <LineId Id="10523" Count="0" />
+      <LineId Id="10520" Count="2" />
+      <LineId Id="10411" Count="0" />
+      <LineId Id="10552" Count="8" />
+      <LineId Id="10563" Count="0" />
+      <LineId Id="10550" Count="0" />
+      <LineId Id="10577" Count="0" />
+      <LineId Id="10565" Count="0" />
+      <LineId Id="10576" Count="0" />
+      <LineId Id="10551" Count="0" />
+      <LineId Id="10412" Count="1" />
+      <LineId Id="10665" Count="1" />
+      <LineId Id="10528" Count="1" />
+      <LineId Id="10526" Count="1" />
+      <LineId Id="10531" Count="0" />
+      <LineId Id="10669" Count="0" />
+      <LineId Id="10535" Count="1" />
+      <LineId Id="10530" Count="0" />
+      <LineId Id="10668" Count="0" />
+      <LineId Id="10414" Count="1" />
+      <LineId Id="10566" Count="0" />
+      <LineId Id="10514" Count="4" />
       <LineId Id="6884" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDetection.analizeMark">
-      <LineId Id="114" Count="26" />
+      <LineId Id="173" Count="15" />
+      <LineId Id="206" Count="0" />
+      <LineId Id="189" Count="0" />
+      <LineId Id="207" Count="0" />
+      <LineId Id="190" Count="0" />
+      <LineId Id="194" Count="11" />
       <LineId Id="46" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDetection.bManualTeach.Get">
@@ -743,22 +837,12 @@ END_IF
       <LineId Id="5" Count="0" />
       <LineId Id="8" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MarkDetection.calcSubstrateLength">
-      <LineId Id="7" Count="0" />
-      <LineId Id="15" Count="0" />
-      <LineId Id="8" Count="1" />
-      <LineId Id="12" Count="1" />
-      <LineId Id="5" Count="0" />
-      <LineId Id="10" Count="0" />
-      <LineId Id="16" Count="1" />
-    </LineIds>
     <LineIds Name="FB_MarkDetection.checkForMark">
       <LineId Id="95" Count="0" />
       <LineId Id="199" Count="0" />
       <LineId Id="201" Count="2" />
       <LineId Id="207" Count="0" />
       <LineId Id="204" Count="2" />
-      <LineId Id="197" Count="1" />
       <LineId Id="208" Count="0" />
       <LineId Id="235" Count="0" />
       <LineId Id="239" Count="0" />
@@ -766,9 +850,16 @@ END_IF
       <LineId Id="240" Count="0" />
       <LineId Id="15" Count="0" />
       <LineId Id="5" Count="0" />
-      <LineId Id="21" Count="19" />
+      <LineId Id="21" Count="5" />
+      <LineId Id="280" Count="2" />
+      <LineId Id="287" Count="0" />
+      <LineId Id="279" Count="0" />
+      <LineId Id="278" Count="0" />
+      <LineId Id="27" Count="13" />
       <LineId Id="43" Count="1" />
-      <LineId Id="46" Count="6" />
+      <LineId Id="46" Count="4" />
+      <LineId Id="277" Count="0" />
+      <LineId Id="51" Count="1" />
       <LineId Id="113" Count="0" />
       <LineId Id="115" Count="1" />
       <LineId Id="58" Count="2" />
@@ -781,20 +872,15 @@ END_IF
       <LineId Id="112" Count="0" />
       <LineId Id="117" Count="0" />
       <LineId Id="110" Count="0" />
+      <LineId Id="283" Count="0" />
       <LineId Id="19" Count="0" />
       <LineId Id="156" Count="1" />
       <LineId Id="104" Count="0" />
       <LineId Id="71" Count="1" />
-      <LineId Id="245" Count="0" />
-      <LineId Id="247" Count="0" />
-      <LineId Id="249" Count="0" />
-      <LineId Id="242" Count="0" />
-      <LineId Id="248" Count="0" />
       <LineId Id="244" Count="0" />
       <LineId Id="134" Count="0" />
       <LineId Id="138" Count="0" />
-      <LineId Id="167" Count="0" />
-      <LineId Id="153" Count="0" />
+      <LineId Id="284" Count="1" />
       <LineId Id="159" Count="0" />
       <LineId Id="140" Count="0" />
       <LineId Id="160" Count="0" />
@@ -826,8 +912,23 @@ END_IF
       <LineId Id="96" Count="2" />
       <LineId Id="70" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MarkDetection.fSubstrateLengthEffective.Get">
-      <LineId Id="2" Count="0" />
+    <LineIds Name="FB_MarkDetection.getLastX0">
+      <LineId Id="16" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="15" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkDetection.getMarkDistanceEffective">
+      <LineId Id="5" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="13" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDetection.Init">
       <LineId Id="5" Count="0" />
@@ -837,11 +938,6 @@ END_IF
       <LineId Id="14" Count="0" />
       <LineId Id="9" Count="0" />
       <LineId Id="8" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MarkDetection.isStartMark">
-      <LineId Id="7" Count="1" />
-      <LineId Id="5" Count="0" />
-      <LineId Id="10" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDetection.manualTrigger">
       <LineId Id="5" Count="0" />
@@ -869,8 +965,8 @@ END_IF
       <LineId Id="34" Count="0" />
       <LineId Id="28" Count="0" />
       <LineId Id="25" Count="2" />
-      <LineId Id="24" Count="0" />
       <LineId Id="29" Count="0" />
+      <LineId Id="39" Count="0" />
       <LineId Id="22" Count="0" />
       <LineId Id="18" Count="0" />
     </LineIds>
@@ -879,6 +975,50 @@ END_IF
       <LineId Id="6" Count="0" />
       <LineId Id="14" Count="0" />
       <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkDetection.SheetStart">
+      <LineId Id="22" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="16" Count="1" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="8" Count="1" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="12" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkDetection.SheetStop">
+      <LineId Id="54" Count="0" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="59" Count="2" />
+      <LineId Id="73" Count="1" />
+      <LineId Id="62" Count="0" />
+      <LineId Id="75" Count="0" />
+      <LineId Id="63" Count="5" />
+      <LineId Id="110" Count="0" />
+      <LineId Id="109" Count="0" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="90" Count="0" />
+      <LineId Id="94" Count="0" />
+      <LineId Id="96" Count="0" />
+      <LineId Id="108" Count="0" />
+      <LineId Id="98" Count="0" />
+      <LineId Id="101" Count="0" />
+      <LineId Id="104" Count="3" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="84" Count="0" />
+      <LineId Id="69" Count="3" />
+      <LineId Id="9" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDetection.SimMarks">
       <LineId Id="28" Count="0" />
@@ -902,6 +1042,7 @@ END_IF
       <LineId Id="92" Count="0" />
       <LineId Id="80" Count="0" />
       <LineId Id="98" Count="0" />
+      <LineId Id="129" Count="0" />
       <LineId Id="105" Count="0" />
       <LineId Id="89" Count="1" />
       <LineId Id="79" Count="0" />
@@ -911,13 +1052,12 @@ END_IF
       <LineId Id="100" Count="0" />
       <LineId Id="106" Count="0" />
       <LineId Id="99" Count="0" />
-      <LineId Id="108" Count="1" />
+      <LineId Id="108" Count="0" />
+      <LineId Id="128" Count="0" />
+      <LineId Id="109" Count="0" />
       <LineId Id="102" Count="0" />
       <LineId Id="70" Count="0" />
       <LineId Id="42" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MarkDetection.test_Functions">
-      <LineId Id="14" Count="0" />
     </LineIds>
   </POU>
 </TcPlcObject>

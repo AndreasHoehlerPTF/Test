@@ -77,16 +77,6 @@ VAR
   
   fbModuleMaster                            : FB_ModuleMaster;
 
-
-  // -- might be sub-modules of ModuleMaster
-    //fbPrintPosition                         : ARRAY[1..iCPr_NB_PM] OF FB_PrintPositionDmax;   // a position per pm (external encoder wheel)
-    //fbMarkDefinition                          : FB_MarkDefinition;
-    //fbMarkDetection                           : FB_MarkDetection;       // StartPosTrigger, CameraTrigger and MarkDetection (Mark handler for MarkCamera)
-    //fMarkCameraWeu                            : FB_MarkCamera_WEU;
-    //fbWorkerCamera                            : FB_WorkerDefGrid_Camera;
-  //fbNoCamera                                : FB_CameraDummy;
-    
-
   fbPm                                    : FB_ProdManager_DMAX;
   fbHardwarePool                          : FB_HardwarePool;
   fbDefGridParamMediator                  : FB_DefGridParamMediator; {warning 'TODO: review this'}
@@ -475,7 +465,7 @@ setLoggingLevels();
 
 (*-- Print blocks init --------------------------------------------------------------------------*)
 (*-- Module Master*)
-fbModuleMaster.Init(pPU:=ADR(FB_PU[1]), iHwPool:=fbHardwarePool);
+fbModuleMaster.Init(pPU:=ADR(FB_PU[1]), pProdMngr:=ADR(fbpm), iHwPool:=fbHardwarePool);
 
 (*-- CoE object dicionary*)
 fbOd.init(aAmsNetId:=sC_AMSNETID_LOCALHOST, aFilePath:=F_Concat3(aC_PlcConfigPath, aC_PlcFlashFileSubPath, 'od.json'), pSimString:=0);
@@ -575,7 +565,7 @@ FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PM) DO
                           , fPrintResolution := nC_PrintResolution
                           , fSubPxResolution := nC_SubPixelResolution
                           , fCycleTime := pModuleDef^.fCycleTime_s
-                          , fPrintUnitWidth := 1 
+                          , fPrintUnitWidth := 1  {warning 'TODO: used for Grid ImageShift somehow and banana correction'}
                           , nYShiftPcCenter := nC_YShiftOffset
                           , iModuleMaster := fbModuleMaster
                           , iPosition := 0  // set internally
@@ -1013,7 +1003,8 @@ END_VAR
       <Implementation>
         <ST><![CDATA[(*Configure logging*)
 LogPrSetup.LogLevel                  := ePrint_LogLevel;
-FB_PU[ePr_PU_UNIT_1].LogLevel        := ePrint_LogLevel;]]></ST>
+FB_PU[ePr_PU_UNIT_1].LogLevel        := ePrint_LogLevel;
+fbModuleMaster.LogLevel              := ePrint_LogLevel;]]></ST>
       </Implementation>
     </Method>
     <Method Name="setupAdsPc" Id="{d0e6d224-b679-461c-962b-262e0b7468ef}" FolderPath="AdsSetup\">
@@ -1215,24 +1206,6 @@ END_VAR]]></Declaration>
 END_IF
 fbPrgPrintTest();
 
-// testing 
-(*
-FOR iL_I:=1 TO iCPr_NB_PM DO
-  //TEST: CT creation
-  fbCtCreateTrigger(CLK := bCreateTrig);
-  bCreateTrig := FALSE;
-  IF fbCtCreateTrigger.RT THEN //Passt nicht, muss beim CreateCT beim Beladen
-    iCT := fBCTManager[iL_I].CreateCT(); //<==Call this when a new workpiece has been loaded, destroyCT?
-  END_IF
-  
-  //TEST: CT destroy
-  fbCtDestroyTrigger(CLK := bDestroyTrig);
-  bDestroyTrig := FALSE;
-  IF fbCtDestroyTrigger.RT THEN //Passt nicht, muss beim DestroyCT beim Entladen
-    fBCTManager[iL_I].DestroyCT(iCT := fBCTManager[iL_I].getCT(nIdx := 1));
-  END_IF
-END_FOR
-*)
 
 // call project test program
 PRG_TEST();]]></ST>
@@ -1447,6 +1420,7 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
     </LineIds>
     <LineIds Name="PRG_PRINT.setLoggingLevels">
       <LineId Id="6" Count="2" />
+      <LineId Id="12" Count="0" />
     </LineIds>
     <LineIds Name="PRG_PRINT.setupAdsPc">
       <LineId Id="10" Count="5" />
@@ -1499,17 +1473,8 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
       <LineId Id="60" Count="0" />
       <LineId Id="58" Count="0" />
       <LineId Id="18" Count="0" />
-      <LineId Id="50" Count="0" />
+      <LineId Id="67" Count="0" />
       <LineId Id="45" Count="0" />
-      <LineId Id="17" Count="0" />
-      <LineId Id="51" Count="0" />
-      <LineId Id="28" Count="1" />
-      <LineId Id="48" Count="0" />
-      <LineId Id="30" Count="5" />
-      <LineId Id="49" Count="0" />
-      <LineId Id="36" Count="3" />
-      <LineId Id="47" Count="0" />
-      <LineId Id="46" Count="0" />
       <LineId Id="13" Count="0" />
       <LineId Id="5" Count="0" />
     </LineIds>

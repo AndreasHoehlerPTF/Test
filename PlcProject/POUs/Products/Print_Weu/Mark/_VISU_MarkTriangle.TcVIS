@@ -833,10 +833,10 @@
                                 <v>TL_ElementProperties.Points</v>
                                 <v>DescriptionUseFromParent</v>
                                 <v></v>
-                                <v>DefaultArraySize</v>
-                                <v>500</v>
                                 <v>''NORMAL__COMMENT</v>
                                 <v> There is no more information than the parent provides</v>
+                                <v>DefaultArraySize</v>
+                                <v>500</v>
                               </d>
                               <v n="ConvDone">true</v>
                             </o>
@@ -889,8 +889,6 @@
                         <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
                           <v n="AttrFlags">81920UL</v>
                           <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
-                            <v>PolygonPoints</v>
-                            <v></v>
                             <v>DescriptionTextId</v>
                             <v>TL_ElementProperties.Desc_StaticPolygonPos</v>
                             <v>DisplayTextId</v>
@@ -907,6 +905,8 @@
                             <v>visu_elemdev</v>
                             <v>Storable</v>
                             <v>True</v>
+                            <v>PolygonPoints</v>
+                            <v></v>
                           </d>
                           <v n="ConvDone">true</v>
                         </o>
@@ -1092,11 +1092,11 @@
                     </o>
                     <o>
                       <v n="Id">1649127785L</v>
-                      <v n="Value">112</v>
+                      <v n="Value">80</v>
                     </o>
                     <o>
                       <v n="Id">357335551L</v>
-                      <v n="Value">8</v>
+                      <v n="Value">9</v>
                     </o>
                     <o>
                       <v n="Id">2422045748L</v>
@@ -1127,11 +1127,11 @@
                     </o>
                     <o>
                       <v n="Id">550940142L</v>
-                      <v n="Value">132</v>
+                      <v n="Value">99</v>
                     </o>
                     <o>
                       <v n="Id">1473355128L</v>
-                      <v n="Value">18</v>
+                      <v n="Value">20</v>
                     </o>
                     <o>
                       <v n="Id">2678395525L</v>
@@ -1143,7 +1143,7 @@
                     </o>
                     <o>
                       <v n="Id">390574330L</v>
-                      <v n="Value">"%0.3f"</v>
+                      <v n="Value">"h:%0.3f"</v>
                     </o>
                     <o>
                       <v n="Id">2827249010L</v>
@@ -1167,7 +1167,7 @@
                     </o>
                     <o>
                       <v n="Id">823443203L</v>
-                      <v n="Value">"993"</v>
+                      <v n="Value">"5110"</v>
                     </o>
                     <o>
                       <v n="Id">3438453433L</v>
@@ -1285,7 +1285,7 @@
                     </o>
                     <o>
                       <v n="Id">2422045748L</v>
-                      <v n="Value" t="Int16">40</v>
+                      <v n="Value" t="Int16">50</v>
                     </o>
                     <o>
                       <v n="Id">2134141914L</v>
@@ -1312,7 +1312,7 @@
                     </o>
                     <o>
                       <v n="Id">550940142L</v>
-                      <v n="Value">100</v>
+                      <v n="Value">105</v>
                     </o>
                     <o>
                       <v n="Id">1473355128L</v>
@@ -1328,7 +1328,7 @@
                     </o>
                     <o>
                       <v n="Id">390574330L</v>
-                      <v n="Value">"tr: %0.3f"</v>
+                      <v n="Value">"tr:%0.3f"</v>
                     </o>
                     <o>
                       <v n="Id">2827249010L</v>
@@ -1352,7 +1352,7 @@
                     </o>
                     <o>
                       <v n="Id">823443203L</v>
-                      <v n="Value">"19513"</v>
+                      <v n="Value">"7951"</v>
                     </o>
                     <o>
                       <v n="Id">3438453433L</v>
@@ -1470,7 +1470,7 @@
                     </o>
                     <o>
                       <v n="Id">2422045748L</v>
-                      <v n="Value" t="Int16">40</v>
+                      <v n="Value" t="Int16">50</v>
                     </o>
                     <o>
                       <v n="Id">2134141914L</v>
@@ -1497,11 +1497,11 @@
                     </o>
                     <o>
                       <v n="Id">550940142L</v>
-                      <v n="Value">60</v>
+                      <v n="Value">61</v>
                     </o>
                     <o>
                       <v n="Id">1473355128L</v>
-                      <v n="Value">50</v>
+                      <v n="Value">45</v>
                     </o>
                     <o>
                       <v n="Id">2678395525L</v>
@@ -1513,7 +1513,7 @@
                     </o>
                     <o>
                       <v n="Id">390574330L</v>
-                      <v n="Value">"sq: %0.3f"</v>
+                      <v n="Value">"sq:%0.3f"</v>
                     </o>
                     <o>
                       <v n="Id">2827249010L</v>
@@ -1537,7 +1537,7 @@
                     </o>
                     <o>
                       <v n="Id">823443203L</v>
-                      <v n="Value">"4565"</v>
+                      <v n="Value">"12942"</v>
                     </o>
                     <o>
                       <v n="Id">3438453433L</v>
@@ -1607,7 +1607,7 @@
                     </o>
                     <o>
                       <v n="Id">2340015797L</v>
-                      <v n="Value">"HCENTER"</v>
+                      <v n="Value">"LEFT"</v>
                     </o>
                     <o>
                       <v n="Id">2565699834L</v>
@@ -1651,7 +1651,7 @@
                     </o>
                     <o>
                       <v n="Id">357335551L</v>
-                      <v n="Value">10</v>
+                      <v n="Value">0</v>
                     </o>
                     <o>
                       <v n="Id">2422045748L</v>
@@ -1659,7 +1659,7 @@
                     </o>
                     <o>
                       <v n="Id">2134141914L</v>
-                      <v n="Value" t="Int16">20</v>
+                      <v n="Value" t="Int16">10</v>
                     </o>
                     <o>
                       <v n="Id">3729828405L</v>
@@ -1686,7 +1686,7 @@
                     </o>
                     <o>
                       <v n="Id">1473355128L</v>
-                      <v n="Value">20</v>
+                      <v n="Value">5</v>
                     </o>
                     <o>
                       <v n="Id">2678395525L</v>
@@ -1883,7 +1883,7 @@
                     </o>
                     <o>
                       <v n="Id">390574330L</v>
-                      <v n="Value">"x: %0.3f"</v>
+                      <v n="Value">"x:%0.3f"</v>
                     </o>
                     <o>
                       <v n="Id">2827249010L</v>
@@ -1907,7 +1907,7 @@
                     </o>
                     <o>
                       <v n="Id">823443203L</v>
-                      <v n="Value">"1638"</v>
+                      <v n="Value">"2388"</v>
                     </o>
                     <o>
                       <v n="Id">3438453433L</v>
@@ -2068,7 +2068,7 @@
                     </o>
                     <o>
                       <v n="Id">390574330L</v>
-                      <v n="Value">"y: %0.3f"</v>
+                      <v n="Value">"y:%0.3f"</v>
                     </o>
                     <o>
                       <v n="Id">2827249010L</v>
@@ -2088,11 +2088,11 @@
                     </o>
                     <o>
                       <v n="Id">2477733581L</v>
-                      <v n="Value">"mInst.fPosX"</v>
+                      <v n="Value">"mInst.fPosY"</v>
                     </o>
                     <o>
                       <v n="Id">823443203L</v>
-                      <v n="Value">"5249"</v>
+                      <v n="Value">"18143"</v>
                     </o>
                     <o>
                       <v n="Id">3438453433L</v>
@@ -2575,7 +2575,7 @@
                     </o>
                     <o>
                       <v n="Id">550940142L</v>
-                      <v n="Value">20</v>
+                      <v n="Value">19</v>
                     </o>
                     <o>
                       <v n="Id">1473355128L</v>
@@ -2591,7 +2591,7 @@
                     </o>
                     <o>
                       <v n="Id">390574330L</v>
-                      <v n="Value">"dx: %0.3f"</v>
+                      <v n="Value">"dx:%0.3f"</v>
                     </o>
                     <o>
                       <v n="Id">2827249010L</v>
@@ -2619,7 +2619,7 @@
                     </o>
                     <o>
                       <v n="Id">823443203L</v>
-                      <v n="Value">"7303"</v>
+                      <v n="Value">"1197"</v>
                     </o>
                     <o>
                       <v n="Id">3438453433L</v>
@@ -2780,7 +2780,7 @@
                     </o>
                     <o>
                       <v n="Id">390574330L</v>
-                      <v n="Value">"dy: %0.3f"</v>
+                      <v n="Value">"dy:%0.3f"</v>
                     </o>
                     <o>
                       <v n="Id">2827249010L</v>
@@ -2808,7 +2808,7 @@
                     </o>
                     <o>
                       <v n="Id">823443203L</v>
-                      <v n="Value">"14629"</v>
+                      <v n="Value">"10064"</v>
                     </o>
                     <o>
                       <v n="Id">3438453433L</v>
@@ -2932,10 +2932,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable_1" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>f0fc90b3-359d-4737-ae69-9dbe56dbb0c7</v>
-                <v>FB_Reinit</v>
-                <v>66931ef3-beda-4809-9383-56a08d827b33</v>
                 <v>FB_Exit</v>
                 <v>08399755-58aa-459a-83c5-5a5cdebf89dc</v>
+                <v>FB_Reinit</v>
+                <v>66931ef3-beda-4809-9383-56a08d827b33</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{fec8ddb3-ea52-4297-88c6-af9647f40407}</v>
@@ -3016,12 +3016,12 @@
             <d2 n="Size" ckt="Int32" cvt="VisualObjectSize">
               <v>0</v>
               <o>
-                <v n="Width">152</v>
+                <v n="Width">130</v>
                 <v n="Height">60</v>
               </o>
               <v>1</v>
               <o>
-                <v n="Width">152</v>
+                <v n="Width">130</v>
                 <v n="Height">60</v>
               </o>
             </d2>

@@ -38,6 +38,7 @@ VAR
   // instances
   fbWorkerCamera          : FB_WorkerDefGrid_Camera;
   fbWorkerPrint           : ARRAY[1..GVL_WEU.nC_WorkerPrintPerPm] OF FB_WorkerDefGrid_Print_WEU;
+  fbWorkerDeformation     : FB_WorkerDefGrid_Deformation;
   
   // hw (references only for now) ------
   // - pc
@@ -52,8 +53,8 @@ VAR
   _nPhToPcCh_Mapping      : ARRAY[1..GVL_WEU.nC_MaxPhPerPm] OF UDINT;  // Mapping of PH to PC channel
   
   // helper
-  nCtr : UDINT;
-  fSpeed, fSpeedMpMin : LREAL;
+  nCtr                    : UDINT;
+  fSpeed, fSpeedMpMin     : LREAL;
   bProductionSpeedReached : BOOL;
   fPuElevation            : LREAL;
   nPos_SubPx, nPos_Px     : DINT;
@@ -72,7 +73,7 @@ VAR
   _bSim : BOOL;
 END_VAR
 VAR PERSISTENT
-  _fPrintModuleAdjustY      : LREAL; // Module adjust Y [µm]*)
+  _fPrintModuleAdjustY    : LREAL; // Module adjust Y [µm]*)
 END_VAR
 VAR CONSTANT
   fC_HeadOffsetPlate      : LREAL := 0.000_2;      // Head offset to base plate [m]
@@ -82,7 +83,11 @@ END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[IF NOT bInit THEN RETURN; END_IF
 
-bReadyForPrinting := _pModuleMachineState^.bEngaged AND _pModuleMachineState^.bPrintEnabled AND _pModuleMachineState^.bUnitInPrintPosition;
+bReadyForPrinting :=    _pModuleMachineState^.bEngaged 
+                     AND _pModuleMachineState^.bPrintEnabled 
+                     AND _pModuleMachineState^.bUnitInPrintPosition
+                     AND NOT _pModuleMachineState^.bEStop
+                     AND NOT _pModuleMachineState^.bSleep;
 
 // sync trigger generation
 rT_SyncRequest(CLK:=bReadyForPrinting);
@@ -280,6 +285,12 @@ fbWorkerCamera.InitAds(pAdsIf:=pAdsCam);
 fbWorkerCamera.Init(pCtManager:=pCTManager, iParamMediator:=iParamMediator, pMsgConfig:=ADR(sL_MsgConfig), fPrintResolution:=fPrintResolution, fSubPxResolution:=fSubPxResolution);
 fbWorkerCamera.reg();
 iModuleMaster.registerPuStatusClient(sClient:=fbWorkerCamera);
+
+// -- Worker deformation
+fbWorkerDeformation.Init(pCtManager:=pCTManager, iParamMediator:=iParamMediator, pMsgConfig:=ADR(sL_MsgConfig), fPrintResolution:=fPrintResolution, fSubPxResolution:=fSubPxResolution);
+fbWorkerDeformation.InitWorkerDeformation(nPrintUnitWidth:=TO_UDINT(F_MeterToSubPixel(fPosMeter:=fPrintUnitWidth, fResoSubPx:=fPrintResolution)));
+fbWorkerDeformation.reg();
+iModuleMaster.registerPuStatusClient(sClient:=fbWorkerDeformation);
 
 // -- Worker print
 FOR nCtr := 1 TO GVL_WEU.nC_WorkerPrintPerPm DO
@@ -488,6 +499,8 @@ END_FOR
     </Method>
     <LineIds Name="FB_PrintModule_Base">
       <LineId Id="3595" Count="2" />
+      <LineId Id="3736" Count="1" />
+      <LineId Id="3739" Count="1" />
       <LineId Id="3599" Count="1" />
       <LineId Id="3658" Count="0" />
       <LineId Id="3601" Count="56" />
@@ -516,7 +529,13 @@ END_FOR
     </LineIds>
     <LineIds Name="FB_PrintModule_Base.Init">
       <LineId Id="1273" Count="11" />
-      <LineId Id="1287" Count="80" />
+      <LineId Id="1287" Count="16" />
+      <LineId Id="1394" Count="1" />
+      <LineId Id="1397" Count="0" />
+      <LineId Id="1399" Count="0" />
+      <LineId Id="1398" Count="0" />
+      <LineId Id="1393" Count="0" />
+      <LineId Id="1304" Count="63" />
       <LineId Id="14" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule_Base.iPrintPosition.Get">
