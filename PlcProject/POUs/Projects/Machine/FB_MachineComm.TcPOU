@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <POU Name="FB_MachineComm" Id="{e9f9c26e-ed32-48ca-8d5f-6b876637e0b4}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK FB_MachineComm
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_MachineComm EXTENDS FB_Sim
 VAR_INPUT
   // from prg internals to machine
   sModuleMachineFeedback : ARRAY[1..iCPr_NB_PM] OF ST_ModuleMachineInterface_OUT;
@@ -11,6 +11,7 @@ VAR_OUTPUT
   sModuleMachineState : ARRAY[1..iCPr_NB_PM] OF ST_ModuleMachineInterface_IN;
 END_VAR
 VAR
+  bInit : BOOL;
   nCtr : UDINT;
   _bSimOk : BOOL;
   _bSimRand : BOOL;
@@ -23,7 +24,10 @@ VAR PERSISTENT
   bMarksInverted : BOOL;  //inverted marks in case of wrong mirrored prints
 END_VAR]]></Declaration>
     <Implementation>
-      <ST><![CDATA[// TODO: move all EAP or handling structure to this fb
+      <ST><![CDATA[IF NOT bInit THEN Init(); RETURN; END_IF
+SUPER^();
+
+// TODO: move all EAP or handling structure to this fb
 
 FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PM) DO 
   {warning 'TODO: SubstrateLength from Job or Machine? Check somewhere'}  
@@ -38,8 +42,8 @@ FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PM) DO
   sModuleMachineState[nCtr].bDriftControlMissMarks := getValueBool ( FALSE, FALSE); // fB_DriftControl[nCtr].bO_SupervisionMissMarks
   sModuleMachineState[nCtr].bSafetyOk              := getValueBool ( PRG_MACHINE.bL_SafetyOk[nCtr], TRUE);
   sModuleMachineState[nCtr].bUnitInPrintPosition   := getValueBool ( PRG_MACHINE.fb_CleaningPU[nCtr].pInPosPrint, TRUE);
-  sModuleMachineState[nCtr].bEngaged               := getValueBool ( PRG_MACHINE.bL_IO_Engaged[nCtr] OR PRG_MACHINE.bL_SimMachineReady, TRUE);
-  sModuleMachineState[nCtr].bPrintEnabled          := getValueBool ( (PRG_MACHINE.IbEAP_PrintEnabled[nCtr] AND PRG_MACHINE.fb_CleaningPU[nCtr].pInPosPrint) OR PRG_MACHINE.bL_SimMachineReady, TRUE);
+  sModuleMachineState[nCtr].bEngaged               := getValueBool ( PRG_MACHINE.bL_IO_Engaged[nCtr] OR PRG_MACHINE.bSimulation, TRUE);
+  sModuleMachineState[nCtr].bPrintEnabled          := getValueBool ( (PRG_MACHINE.IbEAP_PrintEnabled[nCtr] AND PRG_MACHINE.fb_CleaningPU[nCtr].pInPosPrint) OR PRG_MACHINE.bSimulation, TRUE);
   sModuleMachineState[nCtr].fSubstrateThickness    := getValueLreal( TO_LREAL(PRG_MACHINE.InEAP_SubstrateThickness) / 1_000_000, 0.003);    (*[µm] => [m]*)
   sModuleMachineState[nCtr].fSubstrateLen          := getValueLreal( TO_LREAL(PRG_MACHINE.InEAP_FormatLength) / 1_000_000, 0.55);    (*[µm] => [m]*) 
   sModuleMachineState[nCtr].fWebStretchCalculated  := getValueLreal( (1.0 - (DINT_TO_LREAL(PRG_MACHINE.InEAP_WebStretchFactor) / 1_000_000)), 0.99);
@@ -57,7 +61,16 @@ FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PM) DO
   _bSpeedExeeded := _bSpeedExeeded OR sModuleMachineFeedback[nCtr].bSpeedExeeded;
   _bMachineMoving := _bMachineMoving OR sModuleMachineFeedback[nCtr].bMoving;
 END_FOR
-]]></ST>
+
+// simulation
+IF bSimEnable THEN
+  IF    _nModeSel = 1 THEN _bSimOk := TRUE;  _bSimRand := FALSE;
+  ELSIF _nModeSel = 2 THEN _bSimOk := FALSE; _bSimRand := TRUE;
+  END_IF
+ELSE
+  _bSimOk := FALSE;
+  _bSimRand := FALSE;
+END_IF]]></ST>
     </Implementation>
     <Property Name="bMachineMoving" Id="{173515c6-a5fa-45dc-babe-0afd24e261f6}">
       <Declaration><![CDATA[PROPERTY bMachineMoving : BOOL]]></Declaration>
@@ -137,6 +150,24 @@ ELSE                 getValueLreal := in;
 END_IF]]></ST>
       </Implementation>
     </Method>
+    <Method Name="Init" Id="{d3550ff3-17d6-4874-8a6f-22423e70a428}">
+      <Declaration><![CDATA[METHOD Init : BOOL
+VAR
+  sMode : ST_SimModeDef;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(*
+sMode.aMode := 'default';  // sim ok
+sMode.sCfg := '{ "desc":"sim machine all ok inputs" }';
+setMode(sMode:=sMode);
+*)
+sMode.aMode := 'sim random';
+sMode.sCfg := '{ "desc":"sim random inpus" }';
+setMode(sMode:=sMode);
+
+bInit := TRUE;]]></ST>
+      </Implementation>
+    </Method>
     <Property Name="nMaxSpeedMpMin" Id="{69a12bb9-8167-4f03-922f-c54d8911c5fc}">
       <Declaration><![CDATA[(*Max. possible speed [m/min]*)
 PROPERTY nMaxSpeedMpMin : DINT]]></Declaration>
@@ -148,13 +179,23 @@ PROPERTY nMaxSpeedMpMin : DINT]]></Declaration>
       </Get>
     </Property>
     <LineIds Name="FB_MachineComm">
+      <LineId Id="269" Count="0" />
+      <LineId Id="280" Count="0" />
+      <LineId Id="270" Count="0" />
       <LineId Id="124" Count="2" />
       <LineId Id="187" Count="0" />
       <LineId Id="226" Count="19" />
       <LineId Id="152" Count="4" />
       <LineId Id="158" Count="0" />
       <LineId Id="160" Count="3" />
+      <LineId Id="272" Count="0" />
+      <LineId Id="271" Count="0" />
+      <LineId Id="276" Count="0" />
+      <LineId Id="273" Count="2" />
       <LineId Id="64" Count="0" />
+      <LineId Id="277" Count="0" />
+      <LineId Id="279" Count="0" />
+      <LineId Id="278" Count="0" />
     </LineIds>
     <LineIds Name="FB_MachineComm.bMachineMoving.Get">
       <LineId Id="2" Count="0" />
@@ -184,6 +225,17 @@ PROPERTY nMaxSpeedMpMin : DINT]]></Declaration>
       <LineId Id="7" Count="0" />
       <LineId Id="9" Count="0" />
       <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MachineComm.Init">
+      <LineId Id="6" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="9" Count="1" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="13" Count="0" />
     </LineIds>
     <LineIds Name="FB_MachineComm.nMaxSpeedMpMin.Get">
       <LineId Id="16" Count="0" />

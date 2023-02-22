@@ -118,6 +118,9 @@ VAR_INPUT
   bI_Barcode_BufferFull                 AT%I* : BOOL;                                  (*EL6001: Barcode scanner buffer full*)
   bI_Barcode_FramingError               AT%I* : BOOL;                                  (*EL6001: Barcode scanner framing error*)
   bI_Barcode_OverRunError               AT%I* : BOOL;                                  (*EL6001: Barcode scanner over run error*)
+
+  (*Simulation*)
+  bSimulation                                 : BOOL;
 END_VAR
 
 VAR_OUTPUT
@@ -635,7 +638,7 @@ ELSE (*Else when init Ok*)
   Visu();
 
   (*Call simulation*)
-  IF bL_SimInputs THEN Simulate(); END_IF
+  IF bSimulation THEN Simulate(); END_IF
 
   (*Set monitor variables, will be set to false if a device is not ok*)
   bO_VacuumOk      := TRUE;
@@ -3012,25 +3015,34 @@ END_IF;]]></ST>
     </Action>
     <Action Name="Simulate" Id="{508ed5c3-b0e3-425a-a7cb-2e0393f6db76}">
       <Implementation>
-        <ST><![CDATA[FOR iL_CounterDgas := 1 TO iCIk_NB_DGAS DO
-  fb_DgasMencContr[iL_CounterDgas].iI_ActValue := LREAL_TO_INT(fb_DgasMencContr[iL_CounterDgas].pSetValue * fb_DgasMencContr[iL_CounterDgas].fR_ConvAdsToLocal);
+        <ST><![CDATA[IF bL_SimInputs THEN
+  
+  FOR iL_CounterDgas := 1 TO iCIk_NB_DGAS DO
+    fb_DgasMencContr[iL_CounterDgas].iI_ActValue := LREAL_TO_INT(fb_DgasMencContr[iL_CounterDgas].pSetValue * fb_DgasMencContr[iL_CounterDgas].fR_ConvAdsToLocal);
+  
+    sAdsIkDgas[iL_CounterDgas].bI_Enable := TRUE;
+  END_FOR
+  
+  FOR iL_CounterMenc := 1 TO iCIk_NB_MENC_STA DO
+    fb_MeniscusMencContr[iL_CounterMenc].iI_ActValue := LREAL_TO_INT(fb_MeniscusMencContr[iL_CounterMenc].pSetValue * fb_MeniscusMencContr[iL_CounterMenc].fR_ConvAdsToLocal);
+  
+    sAdsIkMenc[iL_CounterMenc].bI_Enable := TRUE;
+  END_FOR
+  
+  bIKn_TankCleanerLevelEmpty := TRUE;
+  bIKn_TankRefuseLevelFull   := TRUE;
+  
+  FOR iL_Counter := 1 TO iCIk_NB_TEMP_HYS DO
+    fb_TempControllerHys[iL_Counter].iI_ActValue := DINT_TO_INT(fb_TempControllerHys[iL_Counter].pSetValue);
+  END_FOR
+END_IF
 
-  sAdsIkDgas[iL_CounterDgas].bI_Enable := TRUE;
-END_FOR
-
-FOR iL_CounterMenc := 1 TO iCIk_NB_MENC_STA DO
-  fb_MeniscusMencContr[iL_CounterMenc].iI_ActValue := LREAL_TO_INT(fb_MeniscusMencContr[iL_CounterMenc].pSetValue * fb_MeniscusMencContr[iL_CounterMenc].fR_ConvAdsToLocal);
-
-  sAdsIkMenc[iL_CounterMenc].bI_Enable := TRUE;
-END_FOR
-
-bIKn_TankCleanerLevelEmpty := TRUE;
-bIKn_TankRefuseLevelFull   := TRUE;
-
-FOR iL_Counter := 1 TO iCIk_NB_TEMP_HYS DO
-  fb_TempControllerHys[iL_Counter].iI_ActValue := DINT_TO_INT(fb_TempControllerHys[iL_Counter].pSetValue);
-END_FOR
-]]></ST>
+// init any storage tank assignement
+FOR iL_Counter := 1 TO iCIk_NB_HEADERTANK DO
+  IF sAdsIkHeaderTank[iL_Counter].sI_StoragetankAssignment.lI_Val = 0 THEN
+    sAdsIkHeaderTank[iL_Counter].sI_StoragetankAssignment.lI_Val := UDINT_TO_DINT(sL_BLK_INKSTORAGE_TANK[1].iBlk_AdsId);
+	END_IF
+END_FOR]]></ST>
       </Implementation>
     </Action>
     <Action Name="Visu" Id="{6ca6bb5d-a511-4764-b7c7-2f50776ed47f}">
@@ -3547,6 +3559,7 @@ fb_VisuMeniscusMencController(sI_Ary_Fb := fb_MeniscusMencContr, sI_Ary_Ads := s
       <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="PRG_INK.Simulate">
+      <LineId Id="48" Count="1" />
       <LineId Id="11" Count="0" />
       <LineId Id="15" Count="0" />
       <LineId Id="29" Count="0" />
@@ -3562,6 +3575,11 @@ fb_VisuMeniscusMencController(sI_Ary_Fb := fb_MeniscusMencContr, sI_Ary_Ads := s
       <LineId Id="47" Count="0" />
       <LineId Id="46" Count="0" />
       <LineId Id="1" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="52" Count="0" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="53" Count="2" />
     </LineIds>
     <LineIds Name="PRG_INK.Visu">
       <LineId Id="5" Count="0" />

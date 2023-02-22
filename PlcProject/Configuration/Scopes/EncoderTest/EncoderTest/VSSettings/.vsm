@@ -1,0 +1,637 @@
+<Node>
+  <Title>EncoderTest</Title>
+  <Expanded>False</Expanded>
+  <FileName></FileName>
+  <Children>
+    <Node>
+      <Title>EncoderXY</Title>
+      <Expanded>False</Expanded>
+      <FileName>C:\Work\Projects\DPST-1026-WEU 2 Demo\WEU2\PlcProject\Configuration\Scopes\EncoderTest\EncoderTest\EncoderXY.tcscopex</FileName>
+      <Children>
+        <Node>
+          <Title>DataPool</Title>
+          <Expanded>True</Expanded>
+          <FileName></FileName>
+          <Children>
+            <Node>
+              <Title>bI_BeltSensor</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>bI_Sensor_State</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>bI_SheetSensor</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fI_PrimaryEncoder</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fI_SecondaryEncoder</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fL_AvgSpeedPrimary</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fL_AvgSpeedSecondary</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fO_BeltPosition</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fO_DeltaEncoder</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fO_DeltaEncoder (1)</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fO_DeltaPrimary</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fO_DeltaPrimary (1)</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fO_DeltaSecondary</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fO_DeltaSecondary (1)</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>lPosReference</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>lPosReference (1)</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+          </Children>
+        </Node>
+        <Node>
+          <Title>XY</Title>
+          <Expanded>True</Expanded>
+          <FileName></FileName>
+          <Children>
+            <Node>
+              <Title>Axis</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>Delta_Primary_to_Secondary [mm]</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>X: fO_BeltPosition</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                    <Node>
+                      <Title>Y: fO_DeltaEncoder</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+                <Node>
+                  <Title>DeltaPrimary [mm]</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>X: fO_BeltPosition (1)</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                    <Node>
+                      <Title>Y: fO_DeltaPrimary</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+                <Node>
+                  <Title>DeltaSecondary [mm]</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>X: fO_BeltPosition (2)</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                    <Node>
+                      <Title>Y: fO_DeltaSecondary</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+                <Node>
+                  <Title>SheetDedect</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>X: fO_BeltPosition (3)</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                    <Node>
+                      <Title>Y: bI_Sensor_State</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+              </Children>
+            </Node>
+          </Children>
+        </Node>
+        <Node>
+          <Title>YT</Title>
+          <Expanded>True</Expanded>
+          <FileName></FileName>
+          <Children>
+            <Node>
+              <Title>PositionM</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>fI_PrimaryEncoder</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>Y: fI_PrimaryEncoder</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+                <Node>
+                  <Title>fI_SecondaryEncoder</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>Y: fI_SecondaryEncoder</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+              </Children>
+            </Node>
+            <Node>
+              <Title>Speed</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>fL_AvgSpeedPrimary</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>Y: fL_AvgSpeedPrimary</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+                <Node>
+                  <Title>fL_AvgSpeedSecondary</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>Y: fL_AvgSpeedSecondary</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+              </Children>
+            </Node>
+            <Node>
+              <Title>PosDelta</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>fO_DeltaPrimary (1)</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>Y: fO_DeltaPrimary (1)</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+                <Node>
+                  <Title>fO_DeltaSecondary (1)</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>Y: fO_DeltaSecondary (1)</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+                <Node>
+                  <Title>fO_DeltaEncoder (1)</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>Y: fO_DeltaEncoder (1)</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+              </Children>
+            </Node>
+            <Node>
+              <Title>Bool</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>bI_BeltSensor</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>Y: bI_BeltSensor</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+                <Node>
+                  <Title>bI_SheetSensor</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>Y: bI_SheetSensor</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+              </Children>
+            </Node>
+            <Node>
+              <Title>Encoder</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>lPosReference_Primary</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>Y: lPosReference (1)</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+                <Node>
+                  <Title>lPosReference_Scondary</Title>
+                  <Expanded>True</Expanded>
+                  <FileName></FileName>
+                  <Children>
+                    <Node>
+                      <Title>Y: lPosReference</Title>
+                      <Expanded>False</Expanded>
+                      <FileName></FileName>
+                      <Children />
+                    </Node>
+                  </Children>
+                </Node>
+              </Children>
+            </Node>
+          </Children>
+        </Node>
+        <Node>
+          <Title>Trigger</Title>
+          <Expanded>False</Expanded>
+          <FileName></FileName>
+          <Children />
+        </Node>
+      </Children>
+    </Node>
+    <Node>
+      <Title>EncoderXY_1.svdx</Title>
+      <Expanded>False</Expanded>
+      <FileName></FileName>
+      <Children />
+    </Node>
+    <Node>
+      <Title>EncoderXY_2.svdx</Title>
+      <Expanded>False</Expanded>
+      <FileName></FileName>
+      <Children />
+    </Node>
+    <Node>
+      <Title>EncoderXY_20180907_Pfeil.svdx</Title>
+      <Expanded>False</Expanded>
+      <FileName></FileName>
+      <Children />
+    </Node>
+    <Node>
+      <Title>EncoderXY_20190111_Diagonal.svdx</Title>
+      <Expanded>False</Expanded>
+      <FileName></FileName>
+      <Children />
+    </Node>
+    <Node>
+      <Title>EncoderXY_20190111_Diagonal_mBoegen.svdx</Title>
+      <Expanded>False</Expanded>
+      <FileName></FileName>
+      <Children />
+    </Node>
+    <Node>
+      <Title>EncoderXY_20190117_Diagonal_Free-Primary-Encoder.svdx</Title>
+      <Expanded>False</Expanded>
+      <FileName></FileName>
+      <Children />
+    </Node>
+    <Node>
+      <Title>MasterSpeed</Title>
+      <Expanded>True</Expanded>
+      <FileName>C:\Work\Projects\DPST-1026-WEU 2 Demo\WEU2\PlcProject\Configuration\Scopes\EncoderTest\EncoderTest\MasterSpeed.tcscopex</FileName>
+      <Children>
+        <Node>
+          <Title>DataPool</Title>
+          <Expanded>True</Expanded>
+          <FileName></FileName>
+          <Children>
+            <Node>
+              <Title>fMasterspeed</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+          </Children>
+        </Node>
+        <Node>
+          <Title>Chart</Title>
+          <Expanded>True</Expanded>
+          <FileName></FileName>
+          <Children>
+            <Node>
+              <Title>Axis</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>fMasterspeed</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+              </Children>
+            </Node>
+          </Children>
+        </Node>
+        <Node>
+          <Title>Trigger</Title>
+          <Expanded>False</Expanded>
+          <FileName></FileName>
+          <Children />
+        </Node>
+      </Children>
+    </Node>
+    <Node>
+      <Title>OtherSignals</Title>
+      <Expanded>True</Expanded>
+      <FileName>C:\Work\Projects\DPST-1026-WEU 2 Demo\WEU2\PlcProject\Configuration\Scopes\EncoderTest\EncoderTest\OtherSignals.tcscopex</FileName>
+      <Children>
+        <Node>
+          <Title>DataPool</Title>
+          <Expanded>True</Expanded>
+          <FileName></FileName>
+          <Children>
+            <Node>
+              <Title>bI_Sensor_State</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>bO_WasteGateActive</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fL_MasterPositionDiffToAux</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fMasterspeed</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fO_BeltPosition</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fO_DeltaEncoder</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fO_Master_Speed (1)</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+          </Children>
+        </Node>
+        <Node>
+          <Title>Chart</Title>
+          <Expanded>True</Expanded>
+          <FileName></FileName>
+          <Children>
+            <Node>
+              <Title>Axis</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>Fb_Ph_Master[1].fO_Master_Speed</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+                <Node>
+                  <Title>Fb_Aux_Master[1].fO_Master_Speed</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+              </Children>
+            </Node>
+            <Node>
+              <Title>Axis(1)</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>fO_BeltPosition</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+                <Node>
+                  <Title>fO_DeltaEncoder</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+              </Children>
+            </Node>
+            <Node>
+              <Title>Axis(2)</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>bI_Sensor_State</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+                <Node>
+                  <Title>bO_WasteGateActive</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+              </Children>
+            </Node>
+            <Node>
+              <Title>Axis(3)</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>fL_MasterPositionDiffToAux</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+              </Children>
+            </Node>
+          </Children>
+        </Node>
+        <Node>
+          <Title>Trigger</Title>
+          <Expanded>False</Expanded>
+          <FileName></FileName>
+          <Children />
+        </Node>
+      </Children>
+    </Node>
+    <Node>
+      <Title>OtherSignals_1.svdx</Title>
+      <Expanded>False</Expanded>
+      <FileName></FileName>
+      <Children />
+    </Node>
+    <Node>
+      <Title>OtherSignals_2.svdx</Title>
+      <Expanded>False</Expanded>
+      <FileName></FileName>
+      <Children />
+    </Node>
+    <Node>
+      <Title>OtherSignals_3.svdx</Title>
+      <Expanded>False</Expanded>
+      <FileName></FileName>
+      <Children />
+    </Node>
+  </Children>
+</Node>

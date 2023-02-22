@@ -52,7 +52,7 @@ VAR
   sL_BLK_PC                                 : ARRAY [1..iCPr_NB_PC] OF ST_MAP_BLK;
   pFB_PC                                    : POINTER TO ARRAY [1..iCPr_NB_PC] OF POINTER TO FB_PC;
   //pFB_PC                                    : ARRAY [1..iCPr_NB_PC] OF POINTER TO FB_PC;    (* pointer array to PCs*)
-  FB_PH                                     : ARRAY [1..iCPr_NB_PH] OF FB_PH;           (*PH - Print Head*)
+  FB_PH                                     : ARRAY [1..iCPr_NB_PH] OF FB_PH_Grid;          (*PH - Print Head*)
   sAdsPrintHead                             : ARRAY [1..iCPr_NB_PH] OF ST_ADS_PH;
   sL_BLK_PH                                 : ARRAY [1..iCPr_NB_PH] OF ST_MAP_BLK;
   sAdsSheetAlignment                        : ARRAY [1..iCPr_NB_PU] OF ST_ADS_DVTSHEETALIGNMENT;          (*SA - Sheet alignement*)
@@ -77,9 +77,9 @@ VAR
   
   fbModuleMaster                            : FB_ModuleMaster;
 
-  fbPm                                    : FB_ProdManager_DMAX;
-  fbHardwarePool                          : FB_HardwarePool;
-  fbDefGridParamMediator                  : FB_DefGridParamMediator; {warning 'TODO: review this'}
+  fbPm                                      : FB_ProdManager_DMAX;
+  fbHardwarePool                            : FB_HardwarePool;
+  fbDefGridParamMediator                    : FB_DefGridParamMediator;
      
 
   fbWorkerInspection                        : FB_WorkerDefGrid_Inspection;
@@ -150,7 +150,6 @@ VAR
   
   
   (*Visualisations*)
-  fb_visu_pu                                : FB_PU_Visu;
   nServiceVisuFrameIndex                    : UINT := 0;   // VISU_SERVICE frame selection
   nSelectPmView                             : UDINT := 1;  // visu pm selection
 
@@ -159,6 +158,9 @@ VAR
   LogPrSetup                                : T_NamedBase;  // just a I_LogSourceMacro implementation (logging PRINT module setup things)
   ePrint_LogLevel                           : E_LogSeverity  := E_LogSeverity.Debug;
   fbProfiler                                : FB_PrgProfiler;
+
+  (*Simulation*)
+  bSimulation                               : BOOL;
 END_VAR
 
 VAR PERSISTENT
@@ -187,8 +189,8 @@ END_IF;
 RemVar();           (*Call update remanent data action*)
 DownloadFiles();    (*Call file downloads*)
 Testing();          (*Call test code*)
-Visu();             (*Call visualisation control*)
 fbProfiler();
+setLoggingLevels();
 
 
 // Main/MasterModule part
@@ -460,16 +462,15 @@ RemVar();
 
 (*************************************************************************************************)
 (* Init FB and ADS instances*)
-
 setLoggingLevels();
 
 (*-- Print blocks init --------------------------------------------------------------------------*)
 (*-- Module Master*)
 fbModuleMaster.Init(pPU:=ADR(FB_PU[1]), pProdMngr:=ADR(fbpm), iHwPool:=fbHardwarePool);
 
+
 (*-- CoE object dicionary*)
 fbOd.init(aAmsNetId:=sC_AMSNETID_LOCALHOST, aFilePath:=F_Concat3(aC_PlcConfigPath, aC_PlcFlashFileSubPath, 'od.json'), pSimString:=0);
-
 
 (* -- PU PrintUnit*)
 FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PU) DO
@@ -572,8 +573,6 @@ FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PM) DO
                           , iStartPos := 0  // set internally
                           , pMachineInputs := ADR(PRG_MACHINE.fbMachineComm.sModuleMachineState[nCtr])
                           , pMachineOutputs := ADR(PRG_MACHINE.fbMachineComm.sModuleMachineFeedback[nCtr])
-                          , pCTManager := fbModuleMaster.pCTM
-                          , iParamMediator := fbDefGridParamMediator
   );
   // register to master
   fbModuleMaster.registerModule(pModule:=ADR(fbPrintModule[nCtr]));
@@ -597,18 +596,18 @@ FB_PU[ePr_PU_UNIT_1].registerStatusClient(sClient := fbPm);
 //  -> defined in Module
 
 // -- Verify
-fbWorkerVerify.Init(pCtManager:= fbModuleMaster.pCTM, iParamMediator := fbDefGridParamMediator, pMsgConfig:=FB_PU[1].pO_MsgConfig, fPrintResolution := nC_PrintResolution, fSubPxResolution := nC_SubPixelResolution);
+fbWorkerVerify.Init(iWorkerParams:=fbModuleMaster.iWorkerParams, pMsgConfig:=FB_PU[1].pO_MsgConfig, fPrintResolution := nC_PrintResolution, fSubPxResolution := nC_SubPixelResolution);
 fbWorkerVerify.InitWorkerVerify(pPm:=ADR(fbPm));
 fbWorkerVerify.reg();
 fB_PU[ePr_PU_UNIT_1].registerStatusClient(sClient:=fbWorkerVerify);
 
 // -- Inspection
-fbWorkerInspection.Init(pCtManager:= fbModuleMaster.pCTM, iParamMediator := fbDefGridParamMediator, pMsgConfig:=FB_PU[1].pO_MsgConfig, fPrintResolution := nC_PrintResolution, fSubPxResolution := nC_SubPixelResolution);
+fbWorkerInspection.Init(iWorkerParams:=fbModuleMaster.iWorkerParams, pMsgConfig:=FB_PU[1].pO_MsgConfig, fPrintResolution := nC_PrintResolution, fSubPxResolution := nC_SubPixelResolution);
 fbWorkerInspection.reg();
 fB_PU[ePr_PU_UNIT_1].registerStatusClient(sClient:=fbWorkerInspection);
 
 // -- Delete
-fbWorkerDelete.Init(pCtManager:= fbModuleMaster.pCTM, iParamMediator := fbDefGridParamMediator, pMsgConfig:=FB_PU[1].pO_MsgConfig, fPrintResolution := nC_PrintResolution, fSubPxResolution := nC_SubPixelResolution);
+fbWorkerDelete.Init(iWorkerParams:=fbModuleMaster.iWorkerParams, pMsgConfig:=FB_PU[1].pO_MsgConfig, fPrintResolution := nC_PrintResolution, fSubPxResolution := nC_SubPixelResolution);
 fbWorkerDelete.reg();
 fB_PU[ePr_PU_UNIT_1].registerStatusClient(sClient:=fbWorkerDelete);
 
@@ -1196,33 +1195,91 @@ VAR_INPUT
 END_VAR
 VAR
   nCt, nRun : DINT;
+  eLogLevel : E_LogSeverity;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF NOT fbPrgPrintTest.bInitialized THEN 
-  fbPrgPrintTest.Init(pAdsPu := ADR(sAdsPrintUnit[1]), 
-                      pAdsCamera:=ADR(sAdsCamera[1]),
-                      pAdsSub:=ADR(sAdsSubstrate[1])
-  ); 
+        <ST><![CDATA[//-------------------------------------------------------------
+// Test handler for PRG_PRINT specific tasks. 
+// Here we have full access to all PRG_PRINT internal elements.
+//-------------------------------------------------------------
+
+//-------------------------------------------------------
+PRG_TEST();     // call the other PRG_TEST code
+//-------------------------------------------------------
+
+//-------------------------------------------------------
+// test tasks 
+
+//- testing disabled completely  
+IF NOT fbPrgPrintTest.bEnTesting THEN 
+  RETURN;
 END_IF
-fbPrgPrintTest();
 
+//- Initialize the testing at start  
+IF NOT fbPrgPrintTest.bInitialized THEN 
+  fbPrgPrintTest.Init(
+    pAdsPu:=ADR(sAdsPrintUnit[1]), 
+    pAdsCamera:=ADR(sAdsCamera[1]),
+    pAdsSubstrate:=ADR(sAdsSubstrate[1])
+  ); 
+  RETURN;
+END_IF
 
-// call project test program
-PRG_TEST();]]></ST>
+//- Enter machine into testing mode
+IF fbPrgPrintTest.bEnterSim THEN
+    LogPrSetup.LogWarning('Start print testing...');
+    // configure persistences (if they were lost)
+    sAdsPrintGroup[1].bI_Enable := TRUE;
+    sAdsPrintGroup[2].bI_Enable := FALSE;
+    sAdsPrintController[1].bI_Enable := TRUE;
+    sAdsPrintController[1].sI_EnableHeater.bI_SetBool := TRUE;
+    sAdsPrintController[1].sI_EnablePrint.bI_SetBool := TRUE;
+    sAdsPrintHead[1].iI_Temperature := 500;
+    // global worker
+    fbWorkerVerify.bWorkerEnable := TRUE;
+    fbWorkerDelete.bWorkerEnable := TRUE;
+END_IF
+//- Exit machine from testing mode (may need a restart completely, values before test were not persisted)
+IF fbPrgPrintTest.bExitSim THEN
+    LogPrSetup.LogWarning('Stop print testing...');   
+    // exit simulation mode
+    //fbPrintModule[1].bSimEnable := FALSE;
+END_IF
+IF fbPrgPrintTest.bStartMachine THEN
+    LogPrSetup.LogWarning('Start machine...');
+    fbPrgPrintTest.bSimPrgMachine := TRUE;
+    fbPrintModule[1].bSimEnable := TRUE;
+END_IF
+IF fbPrgPrintTest.bStopMachine THEN
+    LogPrSetup.LogWarning('Stop machine...');
+    fbPrgPrintTest.bSimPrgMachine := FALSE;
+    fbPrintModule[1].bSimEnable := FALSE;
+END_IF
+//- log level management
+IF fbPrgPrintTest.isLogLevelUpdate(eLogSeverity=>eLogLevel) THEN
+    // TODO: implement something similar in PrintModule simaulation
+    PRG_PRINT.fbWorkerVerify.LogLevel := eLogLevel;
+    PRG_PRINT.fbWorkerDelete.LogLevel := eLogLevel;
+    PRG_PRINT.LogPrSetup.LogLevel := eLogLevel;
+END_IF
+
+fbPrgPrintTest(); // call test fb
+
+// distribute simulation mode to PRGs
+IF fbPrgPrintTest.bChangedPrgSim THEN
+  PRG_PRINT.bSimulation := fbPrgPrintTest.bSimPrgPrint;
+  PRG_MACHINE.bSimulation := fbPrgPrintTest.bSimPrgMachine;
+  PRG_INK.bSimulation := fbPrgPrintTest.bSimPrgInk;
+END_IF]]></ST>
       </Implementation>
     </Method>
-    <Action Name="Visu" Id="{f68d4b28-cf7f-4a25-9134-ca48d2d9ccb8}">
-      <Implementation>
-        <ST><![CDATA[(*call visu controls*)
-fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
-      </Implementation>
-    </Action>
     <LineIds Name="PRG_PRINT">
       <LineId Id="74005" Count="7" />
       <LineId Id="74015" Count="0" />
       <LineId Id="77437" Count="0" />
-      <LineId Id="74016" Count="1" />
+      <LineId Id="74016" Count="0" />
       <LineId Id="76293" Count="0" />
+      <LineId Id="77801" Count="0" />
       <LineId Id="76985" Count="0" />
       <LineId Id="77187" Count="1" />
       <LineId Id="77205" Count="0" />
@@ -1300,12 +1357,13 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
       <LineId Id="1342" Count="0" />
       <LineId Id="2145" Count="0" />
       <LineId Id="1343" Count="16" />
-      <LineId Id="1374" Count="3" />
+      <LineId Id="1375" Count="2" />
       <LineId Id="2093" Count="1" />
+      <LineId Id="2354" Count="0" />
       <LineId Id="2309" Count="0" />
       <LineId Id="1378" Count="1" />
-      <LineId Id="2344" Count="0" />
-      <LineId Id="1380" Count="2" />
+      <LineId Id="2352" Count="0" />
+      <LineId Id="1381" Count="1" />
       <LineId Id="1954" Count="1" />
       <LineId Id="1383" Count="0" />
       <LineId Id="1956" Count="0" />
@@ -1350,8 +1408,6 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
       <LineId Id="2136" Count="1" />
       <LineId Id="1909" Count="0" />
       <LineId Id="2120" Count="0" />
-      <LineId Id="2003" Count="0" />
-      <LineId Id="2113" Count="0" />
       <LineId Id="1905" Count="0" />
       <LineId Id="2337" Count="0" />
       <LineId Id="2112" Count="0" />
@@ -1466,21 +1522,29 @@ fb_visu_pu      (sI_Ary_Fb      := FB_PU, sI_Ary_Ads := sAdsPrintUnit);]]></ST>
       <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="PRG_PRINT.Testing">
-      <LineId Id="22" Count="0" />
-      <LineId Id="57" Count="0" />
-      <LineId Id="59" Count="0" />
-      <LineId Id="61" Count="0" />
-      <LineId Id="60" Count="0" />
-      <LineId Id="58" Count="0" />
-      <LineId Id="18" Count="0" />
-      <LineId Id="67" Count="0" />
-      <LineId Id="45" Count="0" />
-      <LineId Id="13" Count="0" />
+      <LineId Id="73" Count="19" />
+      <LineId Id="192" Count="0" />
+      <LineId Id="94" Count="4" />
+      <LineId Id="195" Count="0" />
+      <LineId Id="99" Count="8" />
+      <LineId Id="208" Count="0" />
+      <LineId Id="189" Count="0" />
+      <LineId Id="180" Count="0" />
+      <LineId Id="114" Count="0" />
+      <LineId Id="127" Count="4" />
+      <LineId Id="193" Count="0" />
+      <LineId Id="134" Count="2" />
+      <LineId Id="204" Count="0" />
+      <LineId Id="211" Count="0" />
+      <LineId Id="139" Count="2" />
+      <LineId Id="206" Count="0" />
+      <LineId Id="212" Count="0" />
+      <LineId Id="144" Count="2" />
+      <LineId Id="207" Count="0" />
+      <LineId Id="153" Count="7" />
+      <LineId Id="219" Count="0" />
+      <LineId Id="161" Count="2" />
       <LineId Id="5" Count="0" />
-    </LineIds>
-    <LineIds Name="PRG_PRINT.Visu">
-      <LineId Id="2" Count="0" />
-      <LineId Id="4" Count="0" />
     </LineIds>
   </POU>
 </TcPlcObject>

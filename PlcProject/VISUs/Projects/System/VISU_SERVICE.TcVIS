@@ -1550,11 +1550,11 @@
                               <o>
                                 <v n="VisuNodeReferenceGuid">{00000000-0000-0000-0000-000000000000}</v>
                                 <n n="VisuNodeReference" />
-                                <v n="VisNodeRefs33">"CalmarCompPrint.VISU_PU"</v>
+                                <v n="VisNodeRefs33">"CalmarCompPrint._VISU_PU"</v>
                                 <l n="TypeNodeChildren" t="ArrayList" cet="BasicTypeNode">
                                   <o>
                                     <v n="Flags">2L</v>
-                                    <v n="BasicTypeNodeValue">"PRG_PRINT.fb_visu_pu"</v>
+                                    <n n="BasicTypeNodeValue" />
                                     <v n="BasicTypeNodeAcceptsExpression">true</v>
                                     <n n="BasicTypeNodeFastAccess" />
                                     <a n="BasicTypeNodeEnumValues" et="String" />
@@ -1565,17 +1565,17 @@
                                     <l n="TypeNodeChildren" t="ArrayList" />
                                     <o n="TypeNodeType" t="TypeNodeType">
                                       <v n="TypeClass" t="TypeClass">Reference</v>
-                                      <v n="QualifiedName">"FB_PU_Visu"</v>
-                                      <v n="Name">"FB_PU_Visu"</v>
+                                      <v n="QualifiedName">"FB_PU"</v>
+                                      <v n="Name">"FB_PU"</v>
                                     </o>
-                                    <v n="TypeNodeName">"m_visu_fb"</v>
+                                    <v n="TypeNodeName">"m_Inst_Fb"</v>
                                     <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
                                       <v n="AttrFlags">0UL</v>
                                       <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" />
                                       <v n="ConvDone">true</v>
                                     </o>
                                     <v n="TypeNodeId" t="Int16">255</v>
-                                    <v n="TypeNodeIdLong">1868205244L</v>
+                                    <v n="TypeNodeIdLong">21768824L</v>
                                     <n n="LibraryId" />
                                     <n n="DisplayTextId" />
                                     <n n="DescriptionTextID" />
@@ -1649,12 +1649,12 @@
                               <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
                                 <v>Visible</v>
                                 <v>False</v>
-                                <v>ieccodeconversion_array</v>
-                                <v></v>
-                                <v>VisibleChildren</v>
-                                <v>True</v>
                                 <v>DefaultArraySize</v>
                                 <v>5</v>
+                                <v>VisibleChildren</v>
+                                <v>True</v>
+                                <v>ieccodeconversion_array</v>
+                                <v></v>
                                 <v>''NORMAL__COMMENT</v>
                                 <v> We hide this node to prevent having two References nodes
  Nevertheless we want to make sure that the children are displayed</v>
@@ -1710,8 +1710,8 @@
                         <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
                           <v n="AttrFlags">81920UL</v>
                           <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
-                            <v>conditionalshow</v>
-                            <v>visu_elemdev</v>
+                            <v>DisplayFrameReferencesConfiguration</v>
+                            <v></v>
                             <v>DescriptionTextId</v>
                             <v>TL_ElementProperties.Desc_ReferencedVisus</v>
                             <v>SortFlag</v>
@@ -1722,14 +1722,14 @@
                             <v>Simple|Standard</v>
                             <v>DynamicArray</v>
                             <v></v>
-                            <v>DisplayFrameReferencesConfiguration</v>
-                            <v></v>
+                            <v>conditionalshow</v>
+                            <v>visu_elemdev</v>
                             <v>FrameReferences</v>
                             <v></v>
-                            <v>Storable</v>
-                            <v>True</v>
                             <v>DisplayTextId</v>
                             <v>TL_ElementProperties.References</v>
+                            <v>Storable</v>
+                            <v>True</v>
                           </d>
                           <v n="ConvDone">true</v>
                         </o>
@@ -2127,69 +2127,6 @@
                       <v n="Value">"PRG_PRINT.nServiceVisuFrameIndex"</v>
                     </o>
                     <o>
-                      <v n="Id">3995046217L</v>
-                      <o n="Value" t="VisualizationNode">
-                        <v n="VisuNodeReferenceGuid">{00000000-0000-0000-0000-000000000000}</v>
-                        <n n="VisuNodeReference" />
-                        <v n="VisNodeRefs33">"CalmarCompPrint.VISU_PU"</v>
-                        <l n="TypeNodeChildren" t="ArrayList" cet="BasicTypeNode">
-                          <o>
-                            <v n="Flags">2L</v>
-                            <v n="BasicTypeNodeValue">"PRG_PRINT.fb_visu_pu"</v>
-                            <v n="BasicTypeNodeAcceptsExpression">true</v>
-                            <n n="BasicTypeNodeFastAccess" />
-                            <a n="BasicTypeNodeEnumValues" et="String" />
-                            <n n="EnumValueDisplayTextIds" />
-                            <n n="EnumValueVisibilityAttributeValues" />
-                            <n n="EnumValueLibraryId" />
-                            <n n="DynamicEnumMemberVisibilityCheckerTypeGuid" />
-                            <l n="TypeNodeChildren" t="ArrayList" />
-                            <o n="TypeNodeType" t="TypeNodeType">
-                              <v n="TypeClass" t="TypeClass">Reference</v>
-                              <v n="QualifiedName">"FB_PU_Visu"</v>
-                              <v n="Name">"FB_PU_Visu"</v>
-                            </o>
-                            <v n="TypeNodeName">"m_visu_fb"</v>
-                            <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
-                              <v n="AttrFlags">0UL</v>
-                              <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" />
-                              <v n="ConvDone">true</v>
-                            </o>
-                            <v n="TypeNodeId" t="Int16">255</v>
-                            <v n="TypeNodeIdLong">1868205244L</v>
-                            <n n="LibraryId" />
-                            <n n="DisplayTextId" />
-                            <n n="DescriptionTextID" />
-                            <v n="DescriptionUseParent">false</v>
-                          </o>
-                        </l>
-                        <o n="TypeNodeType" t="TypeNodeType">
-                          <v n="TypeClass" t="TypeClass">Userdef</v>
-                          <v n="QualifiedName">"IVisualisation"</v>
-                          <v n="Name">"IVisualisation"</v>
-                        </o>
-                        <v n="TypeNodeName">"[5]"</v>
-                        <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
-                          <v n="AttrFlags">0UL</v>
-                          <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
-                            <v>ieccodeconversion_useexistinginterface</v>
-                            <v>_3S.CoDeSys.VisuGenerated.IVisualisationIEC</v>
-                            <v>conditionalshow</v>
-                            <v>visu_elemdev</v>
-                            <v>''NORMAL__COMMENT</v>
-                            <v> interface contains additional methods to IVisualElement</v>
-                          </d>
-                          <v n="ConvDone">true</v>
-                        </o>
-                        <v n="TypeNodeId" t="Int16">1</v>
-                        <v n="TypeNodeIdLong">3995046217L</v>
-                        <n n="LibraryId" />
-                        <n n="DisplayTextId" />
-                        <n n="DescriptionTextID" />
-                        <v n="DescriptionUseParent">false</v>
-                      </o>
-                    </o>
-                    <o>
                       <v n="Id">3693736907L</v>
                       <o n="Value" t="VisualizationNode">
                         <v n="VisuNodeReferenceGuid">{00000000-0000-0000-0000-000000000000}</v>
@@ -2297,6 +2234,73 @@
                         <v n="DescriptionUseParent">false</v>
                       </o>
                     </o>
+                    <o>
+                      <v n="Id">3995046217L</v>
+                      <o n="Value" t="VisualizationNode">
+                        <v n="VisuNodeReferenceGuid">{00000000-0000-0000-0000-000000000000}</v>
+                        <n n="VisuNodeReference" />
+                        <v n="VisNodeRefs33">"CalmarCompPrint._VISU_PU"</v>
+                        <l n="TypeNodeChildren" t="ArrayList" cet="BasicTypeNode">
+                          <o>
+                            <v n="Flags">2L</v>
+                            <v n="BasicTypeNodeValue">"PRG_PRINT.FB_PU[1]"</v>
+                            <v n="BasicTypeNodeAcceptsExpression">true</v>
+                            <n n="BasicTypeNodeFastAccess" />
+                            <a n="BasicTypeNodeEnumValues" et="String" />
+                            <n n="EnumValueDisplayTextIds" />
+                            <n n="EnumValueVisibilityAttributeValues" />
+                            <n n="EnumValueLibraryId" />
+                            <n n="DynamicEnumMemberVisibilityCheckerTypeGuid" />
+                            <l n="TypeNodeChildren" t="ArrayList" />
+                            <o n="TypeNodeType" t="TypeNodeType">
+                              <v n="TypeClass" t="TypeClass">Reference</v>
+                              <v n="QualifiedName">"FB_PU"</v>
+                              <v n="Name">"FB_PU"</v>
+                            </o>
+                            <v n="TypeNodeName">"m_Inst_Fb"</v>
+                            <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
+                              <v n="AttrFlags">0UL</v>
+                              <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" />
+                              <v n="ConvDone">true</v>
+                            </o>
+                            <v n="TypeNodeId" t="Int16">255</v>
+                            <v n="TypeNodeIdLong">21768824L</v>
+                            <n n="LibraryId" />
+                            <n n="DisplayTextId" />
+                            <n n="DescriptionTextID" />
+                            <v n="DescriptionUseParent">false</v>
+                          </o>
+                        </l>
+                        <o n="TypeNodeType" t="TypeNodeType">
+                          <v n="TypeClass" t="TypeClass">Userdef</v>
+                          <v n="QualifiedName">"IVisualisation"</v>
+                          <v n="Name">"IVisualisation"</v>
+                        </o>
+                        <v n="TypeNodeName">"[5]"</v>
+                        <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
+                          <v n="AttrFlags">0UL</v>
+                          <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
+                            <v>ieccodeconversion_useexistinginterface</v>
+                            <v>_3S.CoDeSys.VisuGenerated.IVisualisationIEC</v>
+                            <v>conditionalshow</v>
+                            <v>visu_elemdev</v>
+                            <v>''NORMAL__COMMENT</v>
+                            <v> interface contains additional methods to IVisualElement</v>
+                          </d>
+                          <v n="ConvDone">true</v>
+                        </o>
+                        <v n="TypeNodeId" t="Int16">1</v>
+                        <v n="TypeNodeIdLong">3995046217L</v>
+                        <n n="LibraryId" />
+                        <n n="DisplayTextId" />
+                        <n n="DescriptionTextID" />
+                        <v n="DescriptionUseParent">false</v>
+                      </o>
+                    </o>
+                    <o>
+                      <v n="Id">21768824L</v>
+                      <v n="Value">"PRG_PRINT.FB_PU[1]"</v>
+                    </o>
                   </l>
                 </o>
                 <v n="VisualElementName">"Frame"</v>
@@ -2313,7 +2317,7 @@
                     <v>CalmarCompPrint.VISU_SETUP_HIB</v>
                     <v>CalmarCompPrint.VISU_SETUP_PH</v>
                     <v>CalmarCompSystem.VISU_SYSTEM</v>
-                    <v>CalmarCompPrint.VISU_PU</v>
+                    <v>CalmarCompPrint._VISU_PU</v>
                     <v>CalmarCompSystem.VISU_RECIPE</v>
                   </a>
                 </o>
@@ -2771,10 +2775,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable_1" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>a0ff2ccd-d4ac-4f37-8f44-6ccacf190a6e</v>
-                <v>FB_Exit</v>
-                <v>dbf3b16d-d40d-4002-9179-937e84754c9f</v>
                 <v>FB_Reinit</v>
                 <v>73f4c96c-4bde-4ea3-af6a-da9255271854</v>
+                <v>FB_Exit</v>
+                <v>dbf3b16d-d40d-4002-9179-937e84754c9f</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{c046d8f1-d131-46f2-9ec3-7f8f8fa3d808}</v>

@@ -353,10 +353,6 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Projects\Machine\PRG_MACHINE.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Projects\Machine\VISU_MACHINE.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
     <Compile Include="POUs\Projects\Machine\_VISU_MachineComm.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
@@ -377,6 +373,10 @@ Fribourg/Switzerland (2017)</Description>
     </Compile>
     <Compile Include="POUs\Projects\Print\_Test\PRG_TEST.TcPOU">
       <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Projects\Print\_Test\_VISU_PrgPrint_test.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="POUs\Projects\System\PRG_SYSTEM.TcPOU">
       <SubType>Code</SubType>
@@ -502,6 +502,14 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
+    <Compile Include="VISUs\Projects\Machine\VISU_MACHINE.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="VISUs\Projects\Print\_VISU_CT_Details.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
     <Compile Include="VISUs\Projects\Print\VISU_Base_Header.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
@@ -515,6 +523,10 @@ Fribourg/Switzerland (2017)</Description>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="VISUs\Projects\Print\VISU_Workers.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
+    <Compile Include="VISUs\Projects\Print\VIUS_TestnDebug.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>

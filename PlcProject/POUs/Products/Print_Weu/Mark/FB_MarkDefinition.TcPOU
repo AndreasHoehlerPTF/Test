@@ -7,19 +7,26 @@
 {attribute 'no_explicit_call' := 'do not call this POU directly'} 
 FUNCTION_BLOCK FB_MarkDefinition EXTENDS T_NamedBase IMPLEMENTS I_MarkDefinition
 VAR
-  _nMarks : UDINT;          // number of registered marks
+  // marks
+  // - mark list
+  _nMarks : UDINT;          // number of registered (teached) marks
+  sMarkDef : ARRAY[1..50] OF ST_MarkDefinition;   // teached marks
+  // - border mark
+  _bBorderMarkUsed : BOOL;   // a border mark was teached
+  sSheetBorderEndMark : ST_MarkDefinition;  // internal mark created on edge of sheet (used for effective sheet length)
+  
+  // mark states
   _nMarksDetected : UDINT;  // number of detected marks
-  sMarkDef : ARRAY[1..10] OF ST_MarkDefinition;   // teached marks
+  _bSheetBorderDetected : BOOL;
   _fSubstrateLengthEffective      : LREAL;        // detected substrate length
 
   // internals
   nMaxMarks : UDINT;
   sLastStartMark : ST_MarkDefinition;       // sampled start mark (because first mark will be overwritten already by next sheet)
-  sSheetBorderEndMark : ST_MarkDefinition;  // internal mark created on edge of sheet (used for effective sheet length)
 END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[(*
-  Definition of a mark
+  Definition of a mark.
   
    SqLength | TrLength -->
    |--------|--------
@@ -28,12 +35,12 @@ END_VAR]]></Declaration>
 ^  |        |  /
 |  |--------|
 | Height
-  
-Requirements
+
+Requirements:
   - StartMark has to be unique (minimal length > than max. length of Other marks)
   - Distance between Start and Endmark has to be bigger than length of StartMark + Minimal space
   - Mark has a minimum lenth, so the sensor can see the mark
-  
+
 *)]]></ST>
     </Implementation>
     <Folder Name="I_MarkDefinition" Id="{16b91438-f803-4348-8fb7-10427a0559c7}" />
@@ -59,6 +66,7 @@ END_IF]]></ST>
   nIdx= 1.._nMarks = registered marks
   nIdx= 0 - selects last mark 
   nIdx=-1 - selects border mark
+  :returns: pointer to mark defintion or 0 if not found
 *)
 METHOD getMark : POINTER TO ST_MarkDefinition
 VAR_INPUT
@@ -68,12 +76,14 @@ END_VAR
       <Implementation>
         <ST><![CDATA[IF    nIdx = 0 THEN 
   getMark := ADR(sMarkDef[_nMarks]); // last mark (end or last)
-ELSIF nIdx = -1 THEN 
-  getMark := ADR(sSheetBorderEndMark);  // sheet border mark  
+ELSIF nIdx = -1 THEN
+  IF _bBorderMarkUsed THEN
+    getMark := ADR(sSheetBorderEndMark);  // sheet border mark
+  END_IF  
 ELSIF nIdx > 0 AND nIdx <= TO_DINT(_nMarks) THEN 
   getMark := ADR(sMarkDef[nIdx]);
 ELSE 
-  getMark := ADR(sMarkDef[_nMarks]);  LogError(F_Concat4('Invalid mark requested, Idx=', TO_STRING(nIdx), ' returned=', TO_STRING(_nMarks)));
+  LogError(F_Concat2('Invalid mark requested, Idx=', TO_STRING(nIdx)));
 END_IF]]></ST>
       </Implementation>
     </Method>
@@ -95,7 +105,7 @@ PROPERTY nMarks : UDINT]]></Declaration>
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[nMarks := _nMarks;]]></ST>
+          <ST><![CDATA[nMarks := _nMarks + SEL(_bBorderMarkUsed, 0, 1);]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -107,7 +117,8 @@ PROPERTY nMarksDetected : UDINT]]></Declaration>
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[nMarksDetected := _nMarksDetected;]]></ST>
+          <ST><![CDATA[// number of detected marks + sheetborder if used
+nMarksDetected := _nMarksDetected + SEL(_bBorderMarkUsed AND _bSheetBorderDetected, 0, 1);]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -124,7 +135,9 @@ END_VAR
     </Property>
     <Method Name="RegisterMark" Id="{fb7b9469-75c3-49cc-8ce1-a384ac9c5291}" FolderPath="I_MarkDefinition\">
       <Declaration><![CDATA[(*
-  Register a mark to camera (teach)
+  Register a mark to camera (teach).
+  If mark.nId >= 0 then it will be a detectable mark.
+  If mark.nId = -1 it will be the sheet-end border mark
 *)
 METHOD RegisterMark : BOOL
 VAR_INPUT
@@ -134,34 +147,44 @@ VAR
   pMark : POINTER TO ST_MarkDefinition;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF _nMarks >= nMaxMarks THEN LogError('Number of marks exeeded, ignore'); RETURN; END_IF
+        <ST><![CDATA[IF sMark.nId = -1 THEN
+  // - border mark
+  _bBorderMarkUsed := TRUE;
+  pMark := ADR(sSheetBorderEndMark);
+  // copy mark data
+  pMark^ := sMark;
+  // view 
+  pMark^.bShow := FALSE;
+  pMark^.nMove := TO_DINT(_nMarks+1);
+ELSE
+  // - for all other teach marks
+  IF _nMarks >= nMaxMarks THEN LogError('Number of marks exeeded, ignore'); RETURN; END_IF
+  // we assume first mark is start mark, last mark is end mark (marks need to be registered in sorted order)
+  // (TODO) otherwise add marks in a sorted way to list
+  _nMarks := _nMarks + 1;
+  pMark := ADR(sMarkDef[_nMarks]);
+  // copy mark data
+  pMark^ := sMark;
 
-// we assume first mark is start mark, last mark is end mark (marks need to be registered in sorted order)
-// (TODO) otherwise add marks in a sorted way to list
-_nMarks := _nMarks + 1;
-pMark := ADR(sMarkDef[_nMarks]);
+  // set id if not given
+  IF pMark^.nId = 0 THEN pMark^.nId := TO_DINT(_nMarks); END_IF
+  
+  // view
+  pMark^.bShow := TRUE;
+  pMark^.nMove := TO_DINT(pMark^.nId-1);
+  
+  // checks
+  IF _nMarks > 1 THEN   
+    // -- start mark length requirement 
+    IF pMark^.fSqLength + pMark^.fTrLength >= sMarkDef[1].fSqLength THEN 
+      LogError(F_Concat5('RegisterMark: mark not unique, too long: ', TO_STRING(pMark^.fSqLength + pMark^.fTrLength), ' > ', TO_STRING(sMarkDef[1].fSqLength), ' of start min. length'));
+    END_IF
+  END_IF
+END_IF  
 
-// copy mark data
-pMark^ := sMark;
-// set id if not given
-IF pMark^.nId = 0 THEN pMark^.nId := _nMarks; END_IF
+
 // clear eventual mark state
 MEMSET(destAddr:=ADR(pMark^.sState), 0, SIZEOF(ST_MarkState));
-// view
-pMark^.bShow := TRUE;
-pMark^.nMove := TO_DINT(pMark^.nId-1);
-
-// checks
-IF _nMarks > 1 THEN   
-  // -- start mark length requirement 
-  IF pMark^.fSqLength + pMark^.fTrLength >= sMarkDef[1].fSqLength THEN 
-    LogError(F_Concat5('RegisterMark: mark not unique, too long: ', 
-                        TO_STRING(pMark^.fSqLength + pMark^.fTrLength),
-                        ' > ', 
-                        TO_STRING(sMarkDef[1].fSqLength), 
-                        ' of start min. length')); 
-  END_IF
-END_IF
 
 RegisterMark := TRUE;]]></ST>
       </Implementation>
@@ -176,11 +199,14 @@ END_VAR
         <ST><![CDATA[ResetMarkStates();
 
 _nMarks := 0;
+_bBorderMarkUsed:=FALSE;
+
 MEMSET(destAddr:=ADR(sMarkDef), fillByte:=0, SIZEOF(sMarkDef));
 MEMSET(destAddr:=ADR(sLastStartMark), fillByte:=0, SIZEOF(sLastStartMark));
 MEMSET(destAddr:=ADR(sSheetBorderEndMark), fillByte:=0, SIZEOF(sSheetBorderEndMark));
 // prepare border point
-sSheetBorderEndMark.nId := -1;]]></ST>
+sSheetBorderEndMark.nId := -1;
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="ResetMarkStates" Id="{227543d6-3613-4076-8bf0-3ecac98acbd2}" FolderPath="I_MarkDefinition\">
@@ -195,6 +221,7 @@ END_VAR
       <Implementation>
         <ST><![CDATA[// reset detected marks
 _nMarksDetected := 0;
+_bSheetBorderDetected := FALSE;
 _fSubstrateLengthEffective := 0;
 // reset mark state only
 FOR i:=1 TO _nMarks DO
@@ -221,8 +248,9 @@ IF pMark^.nId = 1 THEN
   _nMarksDetected := _nMarksDetected + 1;
   saveMark := TRUE;
 
-ELSIF pMark^.nId = -1 THEN
+ELSIF pMark^.nId = -1 AND _bBorderMarkUsed THEN
   sSheetBorderEndMark := pMark^;     // save sheet border point
+  _bSheetBorderDetected := TRUE;
   saveMark := TRUE;
   
 ELSIF pMark^.nId > 1 AND pMark^.nId <= TO_DINT(_nMarks) THEN
@@ -231,7 +259,7 @@ ELSIF pMark^.nId > 1 AND pMark^.nId <= TO_DINT(_nMarks) THEN
   saveMark := TRUE;  
   
 ELSE
-  LogError(F_Concat3('saveMark: mark with id=', TO_STRING(pMark^.nId), ' not supported'));
+  LogError(F_Concat3('saveMark: mark with id=', TO_STRING(pMark^.nId), ' not available'));
 END_IF
 
 ]]></ST>
@@ -257,11 +285,13 @@ END_IF
       <LineId Id="5" Count="0" />
       <LineId Id="22" Count="0" />
       <LineId Id="21" Count="0" />
+      <LineId Id="38" Count="0" />
       <LineId Id="23" Count="0" />
+      <LineId Id="39" Count="0" />
       <LineId Id="10" Count="0" />
       <LineId Id="24" Count="0" />
       <LineId Id="7" Count="0" />
-      <LineId Id="25" Count="0" />
+      <LineId Id="37" Count="0" />
       <LineId Id="8" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDefinition.Init">
@@ -272,47 +302,51 @@ END_IF
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDefinition.nMarksDetected.Get">
+      <LineId Id="5" Count="0" />
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDefinition.pLastStartMark.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDefinition.RegisterMark">
-      <LineId Id="5" Count="0" />
-      <LineId Id="26" Count="0" />
-      <LineId Id="7" Count="0" />
-      <LineId Id="10" Count="0" />
-      <LineId Id="6" Count="0" />
-      <LineId Id="42" Count="0" />
-      <LineId Id="44" Count="1" />
-      <LineId Id="43" Count="0" />
-      <LineId Id="28" Count="0" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="103" Count="0" />
+      <LineId Id="96" Count="1" />
+      <LineId Id="121" Count="0" />
+      <LineId Id="135" Count="0" />
+      <LineId Id="124" Count="0" />
+      <LineId Id="122" Count="1" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="98" Count="4" />
+      <LineId Id="128" Count="0" />
+      <LineId Id="125" Count="0" />
+      <LineId Id="133" Count="1" />
+      <LineId Id="131" Count="1" />
+      <LineId Id="127" Count="0" />
+      <LineId Id="118" Count="2" />
+      <LineId Id="116" Count="0" />
+      <LineId Id="106" Count="4" />
+      <LineId Id="115" Count="0" />
+      <LineId Id="105" Count="0" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="89" Count="0" />
       <LineId Id="31" Count="0" />
       <LineId Id="29" Count="0" />
       <LineId Id="27" Count="0" />
-      <LineId Id="14" Count="0" />
-      <LineId Id="39" Count="0" />
-      <LineId Id="46" Count="0" />
-      <LineId Id="58" Count="0" />
-      <LineId Id="48" Count="0" />
-      <LineId Id="59" Count="0" />
-      <LineId Id="68" Count="0" />
-      <LineId Id="61" Count="1" />
-      <LineId Id="69" Count="0" />
-      <LineId Id="66" Count="0" />
-      <LineId Id="70" Count="1" />
-      <LineId Id="63" Count="0" />
-      <LineId Id="60" Count="0" />
       <LineId Id="47" Count="0" />
       <LineId Id="13" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDefinition.ResetDefinition">
-      <LineId Id="25" Count="6" />
+      <LineId Id="25" Count="2" />
+      <LineId Id="40" Count="1" />
+      <LineId Id="28" Count="3" />
       <LineId Id="34" Count="0" />
+      <LineId Id="39" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDefinition.ResetMarkStates">
       <LineId Id="17" Count="0" />
       <LineId Id="5" Count="0" />
+      <LineId Id="45" Count="0" />
       <LineId Id="33" Count="0" />
       <LineId Id="18" Count="0" />
       <LineId Id="6" Count="0" />
@@ -331,6 +365,7 @@ END_IF
       <LineId Id="42" Count="0" />
       <LineId Id="44" Count="0" />
       <LineId Id="65" Count="2" />
+      <LineId Id="74" Count="0" />
       <LineId Id="60" Count="0" />
       <LineId Id="69" Count="0" />
       <LineId Id="48" Count="0" />

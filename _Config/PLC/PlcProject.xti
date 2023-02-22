@@ -63,8 +63,8 @@
 			</Properties>
 		</DataType>
 		<DataType>
-			<Name GUID="{48DB5C9F-F246-BFCF-3CCA-E7969E4FCDA5}" Namespace="CalmarCompPrint" AutoDeleteType="true">ST_PcPdiOutput</Name>
-			<BitSize>128</BitSize>
+			<Name GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint" AutoDeleteType="true">ST_PcPdiOutput</Name>
+			<BitSize>160</BitSize>
 			<SubItem>
 				<Name>nPulseRef</Name>
 				<Type GUID="{18071995-0000-0000-0000-000000000009}">DINT</Type>
@@ -92,6 +92,13 @@
 				<Comment><![CDATA[ global y-shift position]]></Comment>
 				<BitSize>32</BitSize>
 				<BitOffs>96</BitOffs>
+			</SubItem>
+			<SubItem>
+				<Name>nImageXshift</Name>
+				<Type GUID="{18071995-0000-0000-0000-000000000009}">DINT</Type>
+				<Comment><![CDATA[ image x-shift position]]></Comment>
+				<BitSize>32</BitSize>
+				<BitOffs>128</BitOffs>
 			</SubItem>
 		</DataType>
 		<DataType>
@@ -177,7 +184,7 @@
 		</DataType>
 	</DataTypes>
 	<Project GUID="{06E29AE1-7FD1-4F58-87FC-AD943F8BCC74}" Name="PlcProject" PrjFilePath="..\..\PlcProject\PlcProject.plcproj" TmcFilePath="..\..\PlcProject\PlcProject.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" CopyTmcToTarget="true" CopyTpyToTarget="false" ClearInvalidPersist="true">
-		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc" TmcHash="{ABD491EB-5D89-CFEF-61D5-8193CAF0D3E4}">
+		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc" TmcHash="{FC8274F2-9653-AD87-8B31-43E766F52E6D}">
 			<Name>PlcProject Instance</Name>
 			<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 			<Vars VarGrpType="1">
@@ -508,6 +515,36 @@
 					<Type>UINT</Type>
 				</Var>
 				<Var>
+					<Name>PRG_PRINT.fbNeutralFibreDetermine.bIKp_MarkTrigger01</Name>
+					<Comment><![CDATA[Mark sensor 01]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKp_TimeStampPos01</Name>
+					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKn_TimeStampNeg01</Name>
+					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbNeutralFibreDetermine.bIKp_MarkTrigger02</Name>
+					<Comment><![CDATA[Mark sensor 02]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKp_TimeStampPos02</Name>
+					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKn_TimeStampNeg02</Name>
+					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+				</Var>
+				<Var>
 					<Name>PRG_PRINT.fbPrintModule[1].fbPrintPosition.IlEncoderPulse</Name>
 					<Comment><![CDATA[ Encoder counter intput]]></Comment>
 					<Type>UDINT</Type>
@@ -557,78 +594,48 @@
 					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
 					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbNeutralFibreDetermine.bIKp_MarkTrigger01</Name>
-					<Comment><![CDATA[Mark sensor 01]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKp_TimeStampPos01</Name>
-					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
-					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKn_TimeStampNeg01</Name>
-					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
-					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbNeutralFibreDetermine.bIKp_MarkTrigger02</Name>
-					<Comment><![CDATA[Mark sensor 02]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKp_TimeStampPos02</Name>
-					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
-					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKn_TimeStampNeg02</Name>
-					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
-					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
-				</Var>
 			</Vars>
 			<Vars VarGrpType="2" AreaNo="1">
 				<Name>PrgPrint Outputs</Name>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[1].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{48DB5C9F-F246-BFCF-3CCA-E7969E4FCDA5}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[2].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{48DB5C9F-F246-BFCF-3CCA-E7969E4FCDA5}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[3].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{48DB5C9F-F246-BFCF-3CCA-E7969E4FCDA5}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[4].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{48DB5C9F-F246-BFCF-3CCA-E7969E4FCDA5}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[5].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{48DB5C9F-F246-BFCF-3CCA-E7969E4FCDA5}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[6].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{48DB5C9F-F246-BFCF-3CCA-E7969E4FCDA5}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[7].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{48DB5C9F-F246-BFCF-3CCA-E7969E4FCDA5}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[8].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{48DB5C9F-F246-BFCF-3CCA-E7969E4FCDA5}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PH[1].nPhCommand</Name>
@@ -1482,11 +1489,6 @@
 					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_MACHINE.ObEAP_WarnungActive</Name>
-					<Comment><![CDATA[Warning active]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
 					<Name>PRG_MACHINE.OnEAP_VarnishQuantity</Name>
 					<Comment><![CDATA[Varnish quantity [g/m^2]]]></Comment>
 					<Type GUID="{F585EC68-350F-45ED-8409-4E110429A50F}">ARRAY [1..2] OF DINT</Type>
@@ -1495,6 +1497,11 @@
 					<Name>PRG_MACHINE.OnEAP_MaxWebSpeed</Name>
 					<Comment><![CDATA[Max web speed [m/min]]]></Comment>
 					<Type>DINT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_MACHINE.ObEAP_WarnungActive</Name>
+					<Comment><![CDATA[Warning active]]></Comment>
+					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_MACHINE.ObEAP_ErrorActive</Name>
@@ -1810,17 +1817,17 @@
 					<Type>INT</Type>
 				</Var>
 				<Var>
-					<Name>PRG_INK.fb_MeniscusMencContr[1].iI_ActValue</Name>
-					<Comment><![CDATA[Actual value]]></Comment>
-					<Type>INT</Type>
-				</Var>
-				<Var>
 					<Name>PRG_INK.fb_MeniscusMencContr[2].iI_ActValue</Name>
 					<Comment><![CDATA[Actual value]]></Comment>
 					<Type>INT</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.fb_MeniscusMencContr[3].iI_ActValue</Name>
+					<Comment><![CDATA[Actual value]]></Comment>
+					<Type>INT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.fb_MeniscusMencContr[1].iI_ActValue</Name>
 					<Comment><![CDATA[Actual value]]></Comment>
 					<Type>INT</Type>
 				</Var>
@@ -2027,14 +2034,14 @@
 					<Type>USINT</Type>
 				</Var>
 				<Var>
-					<Name>PRG_INK.bO_Barcode_ReqInit</Name>
-					<Comment><![CDATA[EL6001: Barcode scanner request init]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
 					<Name>PRG_INK.cO_Balance_TxBuffWord</Name>
 					<Comment><![CDATA[EL6021: Data out 0..49]]></Comment>
 					<Type GUID="{0BF29E54-38D5-B9F8-5230-399B8034A23F}">ARRAY [0..49] OF UINT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bO_Barcode_ReqInit</Name>
+					<Comment><![CDATA[EL6001: Barcode scanner request init]]></Comment>
+					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.bO_Barcode_AckRec</Name>
@@ -3080,6 +3087,26 @@
 			<Vars VarGrpType="1" ContextId="3" AreaNo="48">
 				<Name>PrgSystem Inputs</Name>
 				<Var>
+					<Name>PRG_INK.bI_Balance_BufferFull</Name>
+					<Comment><![CDATA[EL6021: Balance buffer full]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Balance_FramingError</Name>
+					<Comment><![CDATA[EL6021: Balance framing error]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Balance_OverRunError</Name>
+					<Comment><![CDATA[EL6021: Balance over run error]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Barcode_AckSend</Name>
+					<Comment><![CDATA[EL6001: Barcode scanner acknowledge send]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
 					<Name>PRG_MACHINE.bIKp_CabinetTemp_Ok</Name>
 					<Comment><![CDATA[monitoring input]]></Comment>
 					<Type>BOOL</Type>
@@ -3108,26 +3135,6 @@
 					<Name>PRG_MACHINE.InEAP_TargetSpeed</Name>
 					<Comment><![CDATA[Neutral fibre factor [m/min]]]></Comment>
 					<Type>DINT</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Balance_BufferFull</Name>
-					<Comment><![CDATA[EL6021: Balance buffer full]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Balance_FramingError</Name>
-					<Comment><![CDATA[EL6021: Balance framing error]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Balance_OverRunError</Name>
-					<Comment><![CDATA[EL6021: Balance over run error]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Barcode_AckSend</Name>
-					<Comment><![CDATA[EL6001: Barcode scanner acknowledge send]]></Comment>
-					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.lIKp_EncPulse</Name>

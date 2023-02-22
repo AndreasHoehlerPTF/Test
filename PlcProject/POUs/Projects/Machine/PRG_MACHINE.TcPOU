@@ -97,7 +97,10 @@ VAR_INPUT
   bI_PrintUnitStop                          : BOOL;   (*Printing unit stop*)
   lI_PrintedCopies                          : UDINT;  (*Printed copies*)
   bI_VacuumOk                               : BOOL;
-  bI_CommandPrintlineExec                   : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Printline is executing*)  
+  bI_CommandPrintlineExec                   : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Printline is executing*)
+
+  (*Simulation*)
+  bSimulation                               : BOOL;
 END_VAR
 
 VAR_OUTPUT
@@ -347,7 +350,6 @@ VAR
   bL_RecipeValuesLoadedMachine              : BOOL;
 
   (*Simulation variables*)
-  bL_SimMachineReady                        : BOOL := FALSE;
   bL_SimInputs                              : BOOL := FALSE;
 END_VAR
 
@@ -403,7 +405,7 @@ fb_ExhaustSystem[1](bI_PrintActive := bI_PrintActive);  (*PrintModule 1*)
 fb_ExhaustSystem[2](bI_PrintActive := bI_PrintActive);  (*PrintModule 2*)
 
 (*Call simulation*)
-IF bL_SimInputs THEN Simulate(); END_IF
+Simulate();
 
 
 (*-------------------------------------------------------------------------------------------------------------------*)
@@ -689,10 +691,10 @@ FOR iL_Counter := 1 TO iCPr_NB_PM DO
              // not existing AND fb_ExhaustSystem[iL_Counter].bO_FUReady
                              AND NOT fb_ExhaustSystem[iL_Counter].bO_VacuumErrorLevel
                              AND NOT sO_SystemCmd.bSleep;
-                             
-  IF bL_SimMachineReady THEN
+  // sim override
+  IF bSimulation THEN 
     bO_WEUReady[iL_Counter] := TRUE;
-  END_IF                             
+  END_IF               
 END_FOR
 
 
@@ -1379,18 +1381,21 @@ END_IF;]]></ST>
     </Action>
     <Action Name="Simulate" Id="{e7a5f0ee-588d-4b14-8443-ba1cccc8f235}">
       <Implementation>
-        <ST><![CDATA[bIKp_SeparatorNiveau_Ok[1] := TRUE;
-bIKp_SeparatorNiveau_Ok[2] := TRUE;
-(*
-fb_CleaningPU[1].fI_PositionService := 210;
-fb_CleaningPU[2].fI_PositionService := 210;
-fb_CleaningPU[1].fI_PositionWait    := 55;
-fb_CleaningPU[2].fI_PositionWait    := 55;
-fb_CleaningPU[1].fI_PositionPrint   := 1;
-fb_CleaningPU[2].fI_PositionPrint   := 1;
-*)
+        <ST><![CDATA[
+IF bL_SimInputs THEN
+  bIKp_SeparatorNiveau_Ok[1] := TRUE;
+  bIKp_SeparatorNiveau_Ok[2] := TRUE;
+  (*
+  fb_CleaningPU[1].fI_PositionService := 210;
+  fb_CleaningPU[2].fI_PositionService := 210;
+  fb_CleaningPU[1].fI_PositionWait    := 55;
+  fb_CleaningPU[2].fI_PositionWait    := 55;
+  fb_CleaningPU[1].fI_PositionPrint   := 1;
+  fb_CleaningPU[2].fI_PositionPrint   := 1;
+  *)
+END_IF
 
-]]></ST>
+fbMachineComm.bSimEnable := bSimulation;]]></ST>
       </Implementation>
     </Action>
     <Method Name="updateSleepLock" Id="{9f0b2729-2b82-49bd-a457-b9c8f897fdb2}">
@@ -1402,7 +1407,9 @@ fb_CleaningPU[2].fI_PositionPrint   := 1;
     <LineIds Name="PRG_MACHINE">
       <LineId Id="83840" Count="4" />
       <LineId Id="83846" Count="5" />
-      <LineId Id="83854" Count="24" />
+      <LineId Id="83854" Count="13" />
+      <LineId Id="89645" Count="0" />
+      <LineId Id="83869" Count="9" />
       <LineId Id="85877" Count="2" />
       <LineId Id="83879" Count="0" />
       <LineId Id="85880" Count="0" />
@@ -1440,7 +1447,9 @@ fb_CleaningPU[2].fI_PositionPrint   := 1;
       <LineId Id="84083" Count="14" />
       <LineId Id="85873" Count="2" />
       <LineId Id="84098" Count="100" />
-      <LineId Id="84201" Count="40" />
+      <LineId Id="84201" Count="5" />
+      <LineId Id="89646" Count="1" />
+      <LineId Id="84209" Count="32" />
       <LineId Id="84245" Count="4" />
       <LineId Id="84251" Count="9" />
       <LineId Id="85424" Count="0" />
@@ -1495,13 +1504,11 @@ fb_CleaningPU[2].fI_PositionPrint   := 1;
       <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="PRG_MACHINE.Simulate">
-      <LineId Id="21" Count="1" />
-      <LineId Id="31" Count="0" />
-      <LineId Id="1" Count="0" />
-      <LineId Id="23" Count="0" />
-      <LineId Id="27" Count="3" />
-      <LineId Id="25" Count="1" />
+      <LineId Id="32" Count="1" />
+      <LineId Id="44" Count="9" />
       <LineId Id="24" Count="0" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="54" Count="0" />
     </LineIds>
     <LineIds Name="PRG_MACHINE.updateSleepLock">
       <LineId Id="5" Count="0" />

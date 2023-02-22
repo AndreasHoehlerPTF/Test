@@ -22,8 +22,7 @@ VAR
   // delay
   //  time or position
   
-END_VAR
-]]></Declaration>
+END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[IF NOT _bInitialized THEN RETURN; END_IF
 
@@ -65,6 +64,7 @@ Dly_CamTrigger_Request := TRUE;
 Dly_CamTrigger_bOk := bOk;
 Dly_CamTrigger_nPos := nPos;
 Dly_CamTrigger_nPosDeviation := nPosDeviation;
+//do after timeout in body: SUPER^.CamTrigger(bOk:=bOk, nPos:=nPos, nPosDeviation:=nPosDeviation);
 
 _bTeachOk := (_iMarkDefinition.nMarks > 0);
 _nTeachedPoints := _iMarkDefinition.nMarks;
@@ -200,12 +200,13 @@ END_IF]]></ST>
     <Method Name="sendCamPoints" Id="{d711b1c2-120f-41dd-b383-e767c9a1e424}">
       <Declaration><![CDATA[METHOD PRIVATE sendCamPoints
 VAR
-  pMark                     : POINTER TO ST_MarkDefinition;
+  i : UDINT;
+  pMark : POINTER TO ST_MarkDefinition;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[WHILE _iMarkDefinition.nMarksDetected > _nRxCamPoints DO
+        <ST><![CDATA[WHILE _nRxCamPoints < _iMarkDefinition.nMarksDetected DO
   
-  pMark := _iMarkDefinition.getMark(nIdx:=_nRxCamPoints+1);
+  pMark := _iMarkDefinition.getMark(nIdx:=TO_DINT(_nRxCamPoints+1));
   IF pMark <> 0 THEN
     // Send Mark (CamPoint) to CameraSink
     stCamPoint.x_ref := F_MeterToSubPixelReal(  fPosMeter:=pMark^.fPosX                                 (*[m]*)
@@ -221,9 +222,11 @@ END_VAR]]></Declaration>
     IF _iCameraSink <> 0 THEN
       _iCameraSink.AddCamPoint(sDeformationPoint:=stCamPoint);
     END_IF
-    
-    _nRxCamPoints := _nRxCamPoints + 1;   // next mark
+  ELSE
+    LogWarning(F_Concat2('Requested mark not found, mark Idx=', TO_STRING(_nRxCamPoints+1)));
   END_IF
+  
+  _nRxCamPoints := _nRxCamPoints + 1;   // next mark
 END_WHILE]]></ST>
       </Implementation>
     </Method>
@@ -276,7 +279,7 @@ END_VAR
       <Declaration><![CDATA[(*
   Calculate marks (position, shape) and register to mark definition. 
 *)
-METHOD PUBLIC TeachMarks : BOOL
+METHOD PRIVATE TeachMarks : BOOL
 VAR_INPUT
 END_VAR
 VAR
@@ -327,13 +330,15 @@ END_FOR]]></ST>
     </LineIds>
     <LineIds Name="FB_MarkCamera_WEU.CamTrigger">
       <LineId Id="68" Count="0" />
-      <LineId Id="77" Count="1" />
+      <LineId Id="97" Count="0" />
+      <LineId Id="78" Count="0" />
       <LineId Id="83" Count="0" />
       <LineId Id="79" Count="1" />
       <LineId Id="82" Count="0" />
       <LineId Id="84" Count="0" />
       <LineId Id="69" Count="0" />
       <LineId Id="86" Count="1" />
+      <LineId Id="105" Count="0" />
       <LineId Id="90" Count="0" />
       <LineId Id="89" Count="0" />
       <LineId Id="88" Count="0" />
@@ -383,7 +388,12 @@ END_FOR]]></ST>
       <LineId Id="26" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkCamera_WEU.sendCamPoints">
-      <LineId Id="6" Count="20" />
+      <LineId Id="47" Count="0" />
+      <LineId Id="7" Count="16" />
+      <LineId Id="41" Count="1" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="48" Count="0" />
+      <LineId Id="39" Count="0" />
       <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkCamera_WEU.setCameraMode">

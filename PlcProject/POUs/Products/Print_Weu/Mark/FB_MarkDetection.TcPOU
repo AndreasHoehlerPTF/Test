@@ -53,6 +53,7 @@ VAR
   bSpeedValid                     : BOOL;           (*speed is valid*)
   bTriggerArmed                   : BOOL;           (*trigger is armed*)
   bCamValid                       : BOOL;           (*camera is valid*)
+  bMarkValid                      : BOOL;           (*definition is valid marks&substrate*)
   
   // helper
   rfT_Enable                      : RF_TRIG;        // edge detection enable
@@ -74,11 +75,13 @@ VAR
   
   // simulation & debug
   _bSimEnable                     : BOOL;           // simulation mode enabled
+  _bVerbose                       : BOOL;           // verbose mode
   // view 
   nMarkXMoveScale                 : UDINT := 140;
 END_VAR
 VAR PERSISTENT
   bR_TerminateLast                : BOOL;           // Terminate sheet with last defined & detected mark
+  bR_CreateBorderMark             : BOOL;           // Create a (virtual) mark at end-border of sheet
   nR_AreaMarkSensorOk             : INT := 10;      (*Area with the correct arrangement of the mark sensor [%]*)
 END_VAR
 VAR CONSTANT
@@ -93,10 +96,11 @@ IF NOT bInitOk THEN RETURN; END_IF
 
 // General calculations
 bSpeedValid   := fCurrentSpeed > fC_MinimalSpeed;                // speed valid (ignore trigger if not moving)
-bCamValid     := SEL(_iActiveCam<>0, FALSE, TRUE);                // camera valid (ignore trigger otherwise)
+bCamValid     := SEL(_iActiveCam<>0, FALSE, TRUE);               // camera valid (ignore trigger otherwise)
+bMarkValid    := (_fSubstrateLength > 0 AND _pFbMarkDefinition^.nMarks > 0);
 tNowDc        := F_GetCurDcTaskTime64();                         // current dc time (most accurate time stamp we have)
 fCycleTime    := calcCycleTime(tCurrent:=tNowDc);                // calculate cycle time of this fb
-bTriggerArmed :=  bSpeedValid AND bEnable AND (bAutomaticMode OR _bCamManualTeachMode OR _bSimEnable);   // trigger
+bTriggerArmed :=  bCamValid AND bSpeedValid AND bEnable AND bMarkValid AND (bAutomaticMode OR _bCamManualTeachMode OR _bSimEnable);   // trigger
 
 IF bCamValid THEN    // (not yet used) save dynamic changable settings
   _fTriggerDistance := _iActiveCam.fTriggerDistance;
@@ -126,10 +130,12 @@ IF NOT bTriggerArmed THEN RETURN; END_IF
 
 (*State Machine ----------------------------------------------------------------*)
 // select mark
-pMarkSearch :=  _pFbMarkDefinition^.getMark(nIdx:=nMarkSelection);
+pMarkSearch :=  _pFbMarkDefinition^.getMark(nIdx:=TO_DINT(nMarkSelection));
 // search for mark
 IF checkForMark(pMark:=pMarkSearch, bStartMark=>isStartMark, bErr=>isMarkError) THEN 
-  
+
+  IF _bVerbose THEN LogInfo(F_Concat6('found mark: Start=', SEL(isStartMark,'0','1'), ' Err=', SEL(isMarkError,'0','1'), ' ', strMark(pMark:=pMarkSearch))); END_IF  
+
   // searched start, found start (normal start)
   IF isStartMark AND nMarkSelection = 1 THEN
     IF _pFbMarkDefinition^.nMarks = 1 THEN 
@@ -423,6 +429,8 @@ ELSIF bMarkStartDetected AND (nCurrentPos - nRisingPos) > (nRisingPos + F_MeterT
 END_IF;
 
 
+{warning 'TODO: check if mark was missed and then analyze and send it without .bSet (missed (intermediate)mark)'}
+
 // -- mark evaluation
 IF bMarkStartDetected AND bMarkEndDetected THEN
   // mark finished
@@ -515,8 +523,10 @@ IF pMark^.nId = 1 THEN
   getMarkDistanceEffective := pMark^.fPosX;
 ELSE
   pFirstMark := _pFbMarkDefinition^.getMark(nIdx:=1);
-  // real distance between this mark and start mark + fPosX of start mark
-  getMarkDistanceEffective := pFirstMark^.fPosX + F_SubPixelToMeter(lPosSubPx:=pMark^.sState.nPosXReal - pFirstMark^.sState.nPosXReal, fResSubPx:=_fResolution);
+  IF pFirstMark <> 0 THEN
+    // real distance between this mark and start mark + fPosX of start mark
+    getMarkDistanceEffective := pFirstMark^.fPosX + F_SubPixelToMeter(lPosSubPx:=pMark^.sState.nPosXReal - pFirstMark^.sState.nPosXReal, fResSubPx:=_fResolution);
+  END_IF
 END_IF]]></ST>
       </Implementation>
     </Method>
@@ -642,10 +652,13 @@ _bStartTrig := TRUE;
 
 // (force) terminate a sheet
 IF bSheetActive THEN 
+  IF _bVerbose THEN LogInfo(F_Concat2('Terminate sheet with new Start Mark', '')); END_IF
   sMarkBackup := pMark^;   // push 
   SheetStop(nNewX0:=_nX0);
   pMark^:= sMarkBackup;    // pop
 END_IF
+
+IF _bVerbose THEN LogInfo(F_Concat2('SheetStart at X0=', TO_STRING(_nX0))); END_IF
 
 // save (start) mark
 _pFbMarkDefinition^.saveMark(pMark:=pMark);
@@ -670,6 +683,7 @@ VAR
 END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[// - terminate
+IF _bVerbose THEN LogInfo(F_Concat2('SheetStop()', '')); END_IF
 
 fSLen := _fSubstrateLength;  // (default) original length
 
@@ -684,15 +698,15 @@ IF nNewX0 <> 0 AND nDetectedX0 <> 0 THEN
 ELSIF nNewX0 = 0 AND _pFbMarkDefinition^.nMarksDetected > 1 THEN
   // calculate based on last detected mark (a strech factor)
   pLastMark:= _pFbMarkDefinition^.getMark(nIdx:=0);     // get last available mark
-  fD := getMarkDistanceEffective(pMark:=pLastMark);
-  fSLen := (pLastMark^.fPosX/SEL(fD<>0, pLastMark^.fPosX, fD)) * _fSubstrateLength;
+  fD := getMarkDistanceEffective(pMark:=pLastMark); 
+  fSLen := (pLastMark^.fPosX/SEL(fD<>0, pLastMark^.fPosX, fD)) * _fSubstrateLength; // estimate real length with last mark
 END_IF
 _fSubstrateLengthEffective := fSLen;
 
 
-// set sheet border point
+// set a (virtual) sheet border point (if activated)
 pBorderMark := _pFbMarkDefinition^.getMark(nIdx:=-1);
-IF pBorderMark <> 0 THEN
+IF bR_CreateBorderMark AND pBorderMark <> 0 THEN
   pBorderMark^.sState.bSet      := TRUE;
   pBorderMark^.fPosX            := _fSubstrateLength;
   pBorderMark^.fPosY            := 0;
@@ -770,13 +784,41 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
+    <Method Name="strMark" Id="{9991af82-16a1-4066-93e3-9e61b53193d7}">
+      <Declaration><![CDATA[METHOD strMark : T_MaxString
+VAR_INPUT
+  pMark : POINTER TO ST_MarkDefinition;
+END_VAR
+VAR_INST
+  fbStrFormat : FB_FormatString;
+END_VAR
+VAR
+  IdFormatted : STRING;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[fbStrFormat(sFormat:='%.2d', arg1:=F_DINT(pMark^.nId), sOut=>IdFormatted);
+strMark := F_Concat6(
+  F_Concat2('Id:',   IdFormatted),
+  F_Concat2(' Set:', SEL(pMark^.sState.bSet,'0','1')),
+  F_Concat2(' posX:', LREAL_TO_FMTSTR( pMark^.fPosX, 4, TRUE )),
+  F_Concat2(' posY:', LREAL_TO_FMTSTR( pMark^.fPosY, 4, TRUE )),
+  F_Concat2(' dx:', LREAL_TO_FMTSTR( pMark^.sState.dx, 4, TRUE )),
+  F_Concat2(' dy:', LREAL_TO_FMTSTR( pMark^.sState.dy, 4, TRUE )),
+);]]></ST>
+      </Implementation>
+    </Method>
     <LineIds Name="FB_MarkDetection">
-      <LineId Id="10360" Count="23" />
+      <LineId Id="10360" Count="5" />
+      <LineId Id="10934" Count="0" />
+      <LineId Id="10366" Count="17" />
       <LineId Id="10757" Count="0" />
       <LineId Id="10384" Count="13" />
       <LineId Id="10758" Count="0" />
       <LineId Id="10398" Count="0" />
+      <LineId Id="10846" Count="0" />
       <LineId Id="10542" Count="0" />
+      <LineId Id="10845" Count="0" />
       <LineId Id="10564" Count="0" />
       <LineId Id="10403" Count="0" />
       <LineId Id="10405" Count="3" />
@@ -874,6 +916,7 @@ END_IF
       <LineId Id="110" Count="0" />
       <LineId Id="283" Count="0" />
       <LineId Id="19" Count="0" />
+      <LineId Id="316" Count="1" />
       <LineId Id="156" Count="1" />
       <LineId Id="104" Count="0" />
       <LineId Id="71" Count="1" />
@@ -926,8 +969,10 @@ END_IF
       <LineId Id="15" Count="0" />
       <LineId Id="12" Count="0" />
       <LineId Id="19" Count="0" />
+      <LineId Id="31" Count="0" />
       <LineId Id="21" Count="0" />
       <LineId Id="20" Count="0" />
+      <LineId Id="32" Count="0" />
       <LineId Id="13" Count="0" />
     </LineIds>
     <LineIds Name="FB_MarkDetection.Init">
@@ -979,12 +1024,15 @@ END_IF
     <LineIds Name="FB_MarkDetection.SheetStart">
       <LineId Id="22" Count="0" />
       <LineId Id="21" Count="0" />
-      <LineId Id="35" Count="0" />
+      <LineId Id="45" Count="0" />
       <LineId Id="16" Count="1" />
+      <LineId Id="48" Count="0" />
       <LineId Id="27" Count="0" />
       <LineId Id="25" Count="0" />
       <LineId Id="28" Count="0" />
       <LineId Id="26" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="55" Count="0" />
       <LineId Id="15" Count="0" />
       <LineId Id="8" Count="1" />
       <LineId Id="37" Count="0" />
@@ -996,6 +1044,7 @@ END_IF
     <LineIds Name="FB_MarkDetection.SheetStop">
       <LineId Id="54" Count="0" />
       <LineId Id="88" Count="0" />
+      <LineId Id="121" Count="0" />
       <LineId Id="55" Count="0" />
       <LineId Id="89" Count="0" />
       <LineId Id="56" Count="0" />
@@ -1058,6 +1107,16 @@ END_IF
       <LineId Id="102" Count="0" />
       <LineId Id="70" Count="0" />
       <LineId Id="42" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MarkDetection.strMark">
+      <LineId Id="25" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="14" Count="1" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="8" Count="0" />
     </LineIds>
   </POU>
 </TcPlcObject>

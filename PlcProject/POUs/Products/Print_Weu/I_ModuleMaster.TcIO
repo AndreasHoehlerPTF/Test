@@ -15,6 +15,12 @@
         <Declaration><![CDATA[]]></Declaration>
       </Get>
     </Property>
+    <Property Name="iWorkerParams" Id="{cc4433ce-8bb0-46c5-95cf-03c1ed47d928}">
+      <Declaration><![CDATA[PROPERTY iWorkerParams : I_WorkerParams]]></Declaration>
+      <Get Name="Get" Id="{5f148fd5-01b6-4e14-8264-9160ab0e758c}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
     <Method Name="registerPuStatusClient" Id="{38ae4bfc-b4e7-49e2-b782-96ab06eea7b9}">
       <Declaration><![CDATA[(*
   Register for PU StatusClient

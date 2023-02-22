@@ -5,7 +5,7 @@
   This fb is the master controller of modules.
   Like an interface handler/provider for Module to Main communiation
 *)
-FUNCTION_BLOCK FB_ModuleMaster EXTENDS T_NamedBase IMPLEMENTS I_ModuleMaster, I_HardwarePool, I_DeformationHandler
+FUNCTION_BLOCK FB_ModuleMaster EXTENDS T_NamedBase IMPLEMENTS I_ModuleMaster, I_DeformationHandler, I_WorkerParams
 VAR_OUTPUT
   fMasterSpeed    : LREAL;    // master speed [m/s]
   nMasterPosition : DINT;     // master position [SubPx]
@@ -23,7 +23,7 @@ VAR
   // print modules
   _sModules : ARRAY[1..nC_MaxModules] OF POINTER TO FB_PrintModule_Base;  // all registered print modules
   _nModules : UDINT;          // number of registered print modules
-  
+  // - active module
   _pMasterModule : POINTER TO FB_PrintModule_Base;  // current selected master module
   _iMasterPos : I_PrintPosition; // current master position interface
   _iMasterStartPosDetect : I_StartPosDetect;
@@ -51,20 +51,21 @@ IF _iMasterStartPosDetect <> 0 AND_THEN _iMasterStartPosDetect.bStartTrig AND _i
   iNewCt := fBCTManagerMain.CreateCT();
   IF iNewCt <> 0 THEN 
     LogLvl(Lvl:=E_LogSeverity.Debug, Msg:=F_Concat2('CreateCT: ', TO_STRING(iNewCt.pCT^.iId)));
-    // setup new CT
-    iNewCt.bProductPresent := TRUE;
-    iNewCt.SetPosX0(nPosDomain:=E_PosDomain.master_pos, nXO:= _iMasterStartPosDetect.nStartPositionX0); 
-    iNewCt.SetPosX0(nPosDomain:=E_PosDomain.pos_px,     nXO:= _iMasterStartPosDetect.nStartPositionX0 / FC_LREAL_TO_DINT(_iMasterPos.fSubPxResolution));
-    // Production Manger
-    _pProdMngr^.CT_Create(sCT := iNewCt); 
-    _pProdMngr^.CT_Produce(sCT := iNewCt);   // produce this CT
-    // Prepare deformation CT
     pCT := fBCTManagerMain.GetContainerInstance(iCT:=iNewCt);
     IF pCT <> 0 THEN
+      pCT^.LogLevel := LogLevel;            // apply module masters logLevel to CTs
+
+      // setup new CT
+      iNewCt.bProductPresent := TRUE;
+      iNewCt.SetPosX0(nPosDomain:=E_PosDomain.master_pos, nXO:= _iMasterStartPosDetect.nStartPositionX0); 
+      iNewCt.SetPosX0(nPosDomain:=E_PosDomain.pos_px,     nXO:= _iMasterStartPosDetect.nStartPositionX0 / FC_LREAL_TO_DINT(_iMasterPos.fSubPxResolution));
+      // Production Manger
+      _pProdMngr^.CT_Create(sCT := iNewCt); 
+      _pProdMngr^.CT_Produce(sCT := iNewCt);   // produce this CT
+      // Prepare deformation CT
       pCT^.StartScript(iDeformationHandler:=THIS^); // we do not have a script worker, just start it here
 		END_IF
   END_IF
-  
 END_IF
 
 
@@ -74,8 +75,8 @@ fBCTManagerMain();
 ]]></ST>
     </Implementation>
     <Folder Name="I_DeformationHandler" Id="{c94b1ff5-fcac-4924-8128-07b634aaa60a}" />
-    <Folder Name="I_HardwarePool" Id="{f7cf7209-17a6-41b9-9db7-2cb856085d44}" />
     <Folder Name="I_ModuleMaster" Id="{96598412-2f6b-42bc-90f9-92e56d561add}" />
+    <Folder Name="I_WorkerParams" Id="{31316b66-f820-49c8-a66a-6e53da4e3dec}" />
     <Method Name="DeleteCachedCt" Id="{bef7d381-99e2-4e39-ac2f-d6de948273d6}" FolderPath="I_DeformationHandler\">
       <Declaration><![CDATA[METHOD DeleteCachedCt : BOOL
 VAR_INPUT
@@ -88,6 +89,24 @@ END_VAR
 // nothing to do or later TODO: DeleteCT in CTM?]]></ST>
       </Implementation>
     </Method>
+    <Property Name="fDetectToRefPos" Id="{cb6c876d-1f5c-42e9-be16-3d4f3672f183}" FolderPath="I_WorkerParams\">
+      <Declaration><![CDATA[(*
+  Distance (Offset) from Master-Trigger to Master Reference Position.
+  NOTE: This is normally the distance between the first (MASTER) StartPosDetection to first print Module (Printing Unit) 
+*)
+PROPERTY fDetectToRefPos : LREAL
+]]></Declaration>
+      <Get Name="Get" Id="{500509ce-0980-4371-971e-f3001eb43290}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[IF _pMasterModule = 0 THEN RETURN; END_IF
+
+fDetectToRefPos := _pMasterModule^.fDetectToPm;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
     <Property Name="iHardwarePool" Id="{a847ca78-a2f3-4e9b-8e9d-71d00c55cae8}" FolderPath="I_ModuleMaster\">
       <Declaration><![CDATA[PROPERTY iHardwarePool : I_HardwarePool
 ]]></Declaration>
@@ -132,14 +151,25 @@ fBCTManagerMain.Init();
 bInit := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Property Name="pCTM" Id="{ffdf477c-49ac-4403-a291-c9c5f531816c}">
-      <Declaration><![CDATA[PROPERTY pCTM : POINTER TO FB_CTManagerDefGrid]]></Declaration>
+    <Property Name="iWorkerParams" Id="{88e56e98-0c0b-49af-a0d1-a38d52309a14}" FolderPath="I_ModuleMaster\">
+      <Declaration><![CDATA[PROPERTY iWorkerParams : I_WorkerParams]]></Declaration>
+      <Get Name="Get" Id="{1d612bd0-3334-4f34-9bde-21f6289660a1}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[iWorkerParams := THIS^;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="pCTManager" Id="{ffdf477c-49ac-4403-a291-c9c5f531816c}" FolderPath="I_WorkerParams\">
+      <Declaration><![CDATA[PROPERTY pCTManager : POINTER TO FB_CTManagerDefGrid]]></Declaration>
       <Get Name="Get" Id="{104c4da0-a148-493a-8381-b440b23d8f75}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[pCTM := ADR(fBCTManagerMain);]]></ST>
+          <ST><![CDATA[pCTManager := ADR(fBCTManagerMain);]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -161,26 +191,6 @@ _sModules[_nModules] := pModule;
 IF _nModules = 1 THEN setMasterModule(pModule:=pModule); END_IF  
 
 registerModule := TRUE;]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="registerPc" Id="{5d9de9ad-1299-41df-bd83-47f2b3d4a0f4}" FolderPath="I_HardwarePool\">
-      <Declaration><![CDATA[METHOD registerPc : BOOL
-VAR_INPUT
-	pNewPc	: POINTER TO CalmarCompPrint.FB_PC;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[_iHwPool.registerPc(pNewPc:=pNewPc);]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="registerPh" Id="{0f191415-4cf5-4595-8669-cd2ca33f11d7}" FolderPath="I_HardwarePool\">
-      <Declaration><![CDATA[METHOD registerPh : BOOL
-VAR_INPUT
-	pNewPh	: POINTER TO CalmarCompPrint.FB_PH;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[_iHwPool.registerPh(pNewPh:=pNewPh);]]></ST>
       </Implementation>
     </Method>
     <Method Name="registerPuStatusClient" Id="{e2476ae7-981b-4329-bb18-d3f85fad3146}" FolderPath="I_ModuleMaster\">
@@ -244,15 +254,13 @@ _pMasterModule := pModule;]]></ST>
       <LineId Id="202" Count="0" />
       <LineId Id="213" Count="0" />
       <LineId Id="217" Count="2" />
+      <LineId Id="271" Count="3" />
       <LineId Id="222" Count="4" />
       <LineId Id="229" Count="0" />
       <LineId Id="227" Count="0" />
       <LineId Id="230" Count="0" />
-      <LineId Id="232" Count="0" />
-      <LineId Id="231" Count="0" />
       <LineId Id="234" Count="1" />
       <LineId Id="215" Count="0" />
-      <LineId Id="211" Count="0" />
       <LineId Id="205" Count="0" />
       <LineId Id="201" Count="0" />
       <LineId Id="198" Count="0" />
@@ -261,6 +269,10 @@ _pMasterModule := pModule;]]></ST>
     </LineIds>
     <LineIds Name="FB_ModuleMaster.DeleteCachedCt">
       <LineId Id="11" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ModuleMaster.fDetectToRefPos.Get">
+      <LineId Id="5" Count="1" />
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_ModuleMaster.iHardwarePool.Get">
@@ -278,7 +290,10 @@ _pMasterModule := pModule;]]></ST>
       <LineId Id="19" Count="2" />
       <LineId Id="16" Count="0" />
     </LineIds>
-    <LineIds Name="FB_ModuleMaster.pCTM.Get">
+    <LineIds Name="FB_ModuleMaster.iWorkerParams.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ModuleMaster.pCTManager.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_ModuleMaster.registerModule">
@@ -286,12 +301,6 @@ _pMasterModule := pModule;]]></ST>
       <LineId Id="33" Count="0" />
       <LineId Id="26" Count="6" />
       <LineId Id="18" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_ModuleMaster.registerPc">
-      <LineId Id="7" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_ModuleMaster.registerPh">
-      <LineId Id="7" Count="0" />
     </LineIds>
     <LineIds Name="FB_ModuleMaster.registerPuStatusClient">
       <LineId Id="10" Count="0" />

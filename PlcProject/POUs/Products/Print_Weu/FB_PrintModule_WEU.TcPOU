@@ -43,11 +43,15 @@ fbView();
 // call module base
 SUPER^();
 
+// simulation
+SimUpdate();
+
 // machine interface outputs
 _pModuleMachineFeedback^.nPrintMarkPosBits := fbMarkDetection.nPrintMarkPosBits;
 _pModuleMachineFeedback^.bSpeedExeeded := checkSpeed(fSpeed:=fSpeed, fMaxSpeed => _pModuleMachineFeedback^.fMaxSpeed);
 ]]></ST>
     </Implementation>
+    <Folder Name="Simulation" Id="{05f0967a-1921-41d6-9063-2519e33a105e}" />
     <Method Name="checkSpeed" Id="{0a2a08db-f4e0-47b5-8c93-7e3e0d0ba7dd}">
       <Declaration><![CDATA[(*
   Checks if current speed is higher than max. speed.
@@ -125,8 +129,6 @@ VAR_INPUT
   iStartPos             : I_StartPosDetect;     // interface for start position detect
   pMachineInputs        : POINTER TO ST_ModuleMachineInterface_IN;
   pMachineOutputs       : POINTER TO ST_ModuleMachineInterface_OUT;
-  pCTManager            : POINTER TO FB_CTManagerDefGrid;       // used for internal worker (registerPosition, get
-  iParamMediator        : I_ParamMediator;
 END_VAR
 VAR
   nCtr : UDINT;
@@ -165,9 +167,7 @@ SUPER^.Init(
   iPosition         := fbPrintPosition,   // internal subm
   iStartPos         := fbMarkDetection,   // internal subm
   pMachineInputs    := pMachineInputs,
-  pMachineOutputs   := pMachineOutputs,
-  pCTManager        := pCTManager,
-  iParamMediator    := iParamMediator
+  pMachineOutputs   := pMachineOutputs
 );
 
 fbView.init(pModule:=THIS, pPositioning:=ADR(fbPrintPosition));
@@ -175,23 +175,56 @@ setLogLevels(lvl:=E_LogSeverity.Debug);]]></ST>
       </Implementation>
     </Method>
     <Method Name="setLogLevels" Id="{5091c51d-bf32-4546-a533-7a39a341c61f}">
-      <Declaration><![CDATA[METHOD PRIVATE setLogLevels
+      <Declaration><![CDATA[METHOD PROTECTED setLogLevels
 VAR_INPUT
   lvl : E_LogSeverity;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// set default logging levels
-// - base
-fbWorkerCamera.LogLevel := lvl;
-fbWorkerPrint[1].LogLevel := lvl;
-fbWorkerPrint[2].LogLevel := lvl;
+        <ST><![CDATA[// - base
+SUPER^.setLogLevels(lvl:=lvl);
 // - weu
 fbPrintPosition.LogLevel := lvl;
 fbMarkDefinition.LogLevel := lvl;
 fbMarkDetection.LogLevel := lvl;
 fbMarkCameraWeu.LogLevel := lvl;
 fbNoCamera.LogLevel := lvl;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SimUpdate" Id="{42a3144b-ca98-40e7-9819-aab64ee0cc36}" FolderPath="Simulation\">
+      <Declaration><![CDATA[METHOD PRIVATE SimUpdate
+VAR_INPUT
+END_VAR
+VAR_INST
+  rfTrig_SimEnable : RF_TRIG;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[rfTrig_SimEnable(CLK:=_bSimEnable);
+IF    rfTrig_SimEnable.RT THEN
+  // ev. enable
+  //fbWorkerCamera.bWorkerEnable := TRUE;
+  //fbWorkerDeformation.bWorkerEnable := TRUE;
+  //fbWorkerPrint[1].bWorkerEnable := TRUE;
+  //fbWorkerPrint[2].bWorkerEnable := TRUE;
+  
+  fbPrintPosition.bSimEnable  := TRUE;
+  //fbMarkDefinition
+  fbMarkDetection.bSimEnable := TRUE;
+  fbMarkCameraWeu.bSimulate := TRUE;
+
+ELSIF rfTrig_SimEnable.FT THEN
+  // ev. disable
+  fbPrintPosition.bSimEnable  := FALSE;
+  fbMarkDetection.bSimEnable := FALSE;
+  fbMarkCameraWeu.bSimulate := FALSE;
+
+ELSIF _bSimEnable THEN
+  // enabled
+  ;
+ELSE
+  ; // disabled
+END_IF
+]]></ST>
       </Implementation>
     </Method>
     <LineIds Name="FB_PrintModule_WEU">
@@ -208,6 +241,9 @@ fbNoCamera.LogLevel := lvl;]]></ST>
       <LineId Id="93" Count="0" />
       <LineId Id="95" Count="0" />
       <LineId Id="94" Count="0" />
+      <LineId Id="119" Count="0" />
+      <LineId Id="118" Count="0" />
+      <LineId Id="117" Count="0" />
       <LineId Id="80" Count="0" />
       <LineId Id="51" Count="2" />
       <LineId Id="19" Count="0" />
@@ -257,19 +293,36 @@ fbNoCamera.LogLevel := lvl;]]></ST>
       <LineId Id="37" Count="0" />
       <LineId Id="52" Count="1" />
       <LineId Id="56" Count="0" />
-      <LineId Id="40" Count="8" />
-      <LineId Id="29" Count="1" />
+      <LineId Id="40" Count="7" />
+      <LineId Id="30" Count="0" />
       <LineId Id="123" Count="0" />
       <LineId Id="122" Count="0" />
       <LineId Id="149" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule_WEU.setLogLevels">
-      <LineId Id="5" Count="0" />
-      <LineId Id="19" Count="0" />
-      <LineId Id="6" Count="0" />
-      <LineId Id="11" Count="1" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="12" Count="0" />
       <LineId Id="20" Count="0" />
       <LineId Id="13" Count="4" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_WEU.SimUpdate">
+      <LineId Id="12" Count="1" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="23" Count="3" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="27" Count="3" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="19" Count="1" />
+      <LineId Id="17" Count="1" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="7" Count="0" />
     </LineIds>
   </POU>
 </TcPlcObject>
