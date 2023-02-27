@@ -66,7 +66,7 @@
 				</Target>
 			</Licenses>
 			<Tasks>
-				<Task Id="2" Priority="20" CycleTime="20000" AmsPort="350" Watchdog="30" ExceedWarning="2" WatchdogStackCapacity="10">
+				<Task Id="2" Priority="20" CycleTime="20000" AmsPort="350" Watchdog="30" ExceedWarning="1">
 					<Name>PrgPrint</Name>
 				</Task>
 				<Task Id="3" Priority="21" CycleTime="50000" AmsPort="351">
@@ -83,7 +83,7 @@
 		<Plc>
 			<Project File="PlcProject.xti"/>
 			<Project Disabled="true" GUID="{D0E4D2E1-36F2-47AF-A080-6F211B803C3B}" Name="CalmarProdDmax" PrjFilePath="..\..\DPST-1005 Steinemann 4 Portrait 305.704\CalmarProdDmax\CalmarProdDmax.plcproj" TmcFilePath="..\..\DPST-1005 Steinemann 4 Portrait 305.704\CalmarProdDmax\CalmarProdDmax.tmc" ReloadTmc="true" AmsPort="852" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x08502040" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="..\..\DPST-1005 Steinemann 4 Portrait 305.704\CalmarProdDmax\CalmarProdDmax.tmc" TmcHash="{359A8DF7-50AD-F9F2-3F7B-3ACF9886CB0D}">
+				<Instance Id="#x08502040" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="..\..\DPST-1005 Steinemann 4 Portrait 305.704\CalmarProdDmax\CalmarProdDmax.tmc" TmcHash="{40034A1A-E1B6-CD6F-ADD5-1AFA8CB57BC0}">
 					<Name>CalmarProdDmax Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Contexts>

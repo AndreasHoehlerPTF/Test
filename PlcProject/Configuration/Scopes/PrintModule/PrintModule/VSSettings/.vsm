@@ -5,8 +5,8 @@
   <Children>
     <Node>
       <Title>Overview</Title>
-      <Expanded>True</Expanded>
-      <FileName>C:\Work\Projects\DPST-1026-WEU 2 Demo\WEU2\PlcProject\Configuration\Scopes\PrintModule\PrintModule\Overview.tcscopex</FileName>
+      <Expanded>False</Expanded>
+      <FileName>c:\Work\Projects\DPST-1026-WEU 2 Demo\WEU2\PlcProject\Configuration\Scopes\PrintModule\PrintModule\Overview.tcscopex</FileName>
       <Children>
         <Node>
           <Title>DataPool</Title>
@@ -609,7 +609,7 @@
             </Node>
             <Node>
               <Title>Worker_Position</Title>
-              <Expanded>False</Expanded>
+              <Expanded>True</Expanded>
               <FileName></FileName>
               <Children>
                 <Node>
@@ -688,7 +688,7 @@
     <Node>
       <Title>PerformanceSetup</Title>
       <Expanded>False</Expanded>
-      <FileName>C:\Work\Projects\DPST-1026-WEU 2 Demo\WEU2\PlcProject\Configuration\Scopes\PrintModule\PrintModule\PerformanceSetup.tcscopex</FileName>
+      <FileName>c:\Work\Projects\DPST-1026-WEU 2 Demo\WEU2\PlcProject\Configuration\Scopes\PrintModule\PrintModule\PerformanceSetup.tcscopex</FileName>
       <Children>
         <Node>
           <Title>DataPool</Title>
@@ -1684,7 +1684,7 @@
     <Node>
       <Title>PrintStart</Title>
       <Expanded>False</Expanded>
-      <FileName>C:\Work\Projects\DPST-1026-WEU 2 Demo\WEU2\PlcProject\Configuration\Scopes\PrintModule\PrintModule\PrintStart.tcscopex</FileName>
+      <FileName>c:\Work\Projects\DPST-1026-WEU 2 Demo\WEU2\PlcProject\Configuration\Scopes\PrintModule\PrintModule\PrintStart.tcscopex</FileName>
       <Children>
         <Node>
           <Title>DataPool</Title>
@@ -1771,6 +1771,236 @@
                 </Node>
                 <Node>
                   <Title>fbPrintModule[1].fbMarkDetection.bCamValid</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+              </Children>
+            </Node>
+          </Children>
+        </Node>
+        <Node>
+          <Title>Trigger</Title>
+          <Expanded>False</Expanded>
+          <FileName></FileName>
+          <Children />
+        </Node>
+      </Children>
+    </Node>
+    <Node>
+      <Title>WorkerPrint[1]</Title>
+      <Expanded>True</Expanded>
+      <FileName>c:\Work\Projects\DPST-1026-WEU 2 Demo\WEU2\PlcProject\Configuration\Scopes\PrintModule\PrintModule\WorkerPrint[1].tcscopex</FileName>
+      <Children>
+        <Node>
+          <Title>DataPool</Title>
+          <Expanded>False</Expanded>
+          <FileName></FileName>
+          <Children>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1]._fColumnsToPrecharge</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1]._fPrintStartOffset</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1]._fStartShiftFactor</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1]._fStartShiftOffset</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1]._fWorkerPosition</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1]._nTrackOffset</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1].fCtPosition</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1].fCurrentColumnPos</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1].fCurrentPreCharge</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1].fMasterSpeed</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1].fPosition</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1].fPrintStartOffset</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1].nChargedColumns</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+            <Node>
+              <Title>fbPrintModule[1].fbWorkerPrint[1].nPrintPos</Title>
+              <Expanded>False</Expanded>
+              <FileName></FileName>
+              <Children />
+            </Node>
+          </Children>
+        </Node>
+        <Node>
+          <Title>YT Chart</Title>
+          <Expanded>True</Expanded>
+          <FileName></FileName>
+          <Children>
+            <Node>
+              <Title>SubPx</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1]._nTrackOffset</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1]._fStartShiftOffset</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1]._fStartShiftFactor</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1].fCtPosition</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+              </Children>
+            </Node>
+            <Node>
+              <Title>m</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1]._fWorkerPosition</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1]._fPrintStartOffset</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1].fPosition</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1].fPrintStartOffset</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+              </Children>
+            </Node>
+            <Node>
+              <Title>other</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1].fCurrentColumnPos</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1].fCurrentPreCharge</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1].nChargedColumns</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1]._fColumnsToPrecharge</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+              </Children>
+            </Node>
+            <Node>
+              <Title>integral</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1].nPrintPos</Title>
+                  <Expanded>False</Expanded>
+                  <FileName></FileName>
+                  <Children />
+                </Node>
+              </Children>
+            </Node>
+            <Node>
+              <Title>Speed</Title>
+              <Expanded>True</Expanded>
+              <FileName></FileName>
+              <Children>
+                <Node>
+                  <Title>fbPrintModule[1].fbWorkerPrint[1].fMasterSpeed</Title>
                   <Expanded>False</Expanded>
                   <FileName></FileName>
                   <Children />

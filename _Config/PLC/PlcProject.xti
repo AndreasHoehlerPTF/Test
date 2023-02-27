@@ -11,6 +11,17 @@
 			</ArrayInfo>
 		</DataType>
 		<DataType>
+			<Name GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT" AutoDeleteType="true">T_DCTIME64</Name>
+			<BitSize>64</BitSize>
+			<BaseType GUID="{18071995-0000-0000-0000-00000000000B}">ULINT</BaseType>
+			<Properties>
+				<Property>
+					<Name>TcDisplayTypeGUID</Name>
+					<Value>18071995-0000-0000-0000-000000000047</Value>
+				</Property>
+			</Properties>
+		</DataType>
+		<DataType>
 			<Name GUID="{49FFEDBA-C300-76B2-A202-54880EAE48FD}" Namespace="CalmarCompPrint" AutoDeleteType="true">ST_PcPdiInput</Name>
 			<BitSize>96</BitSize>
 			<SubItem>
@@ -50,17 +61,6 @@
 				<LBound>1</LBound>
 				<Elements>4</Elements>
 			</ArrayInfo>
-		</DataType>
-		<DataType>
-			<Name GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT" AutoDeleteType="true">T_DCTIME64</Name>
-			<BitSize>64</BitSize>
-			<BaseType GUID="{18071995-0000-0000-0000-00000000000B}">ULINT</BaseType>
-			<Properties>
-				<Property>
-					<Name>TcDisplayTypeGUID</Name>
-					<Value>18071995-0000-0000-0000-000000000047</Value>
-				</Property>
-			</Properties>
 		</DataType>
 		<DataType>
 			<Name GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint" AutoDeleteType="true">ST_PcPdiOutput</Name>
@@ -184,7 +184,7 @@
 		</DataType>
 	</DataTypes>
 	<Project GUID="{06E29AE1-7FD1-4F58-87FC-AD943F8BCC74}" Name="PlcProject" PrjFilePath="..\..\PlcProject\PlcProject.plcproj" TmcFilePath="..\..\PlcProject\PlcProject.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" CopyTmcToTarget="true" CopyTpyToTarget="false" ClearInvalidPersist="true">
-		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc" TmcHash="{FC8274F2-9653-AD87-8B31-43E766F52E6D}">
+		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc" TmcHash="{338D6503-80F6-4EF9-E258-E4726B2C3281}">
 			<Name>PlcProject Instance</Name>
 			<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 			<Vars VarGrpType="1">
@@ -193,6 +193,56 @@
 					<Name>PRG_PRINT.bI_EncoderWcState</Name>
 					<Comment><![CDATA[EL5101 encoder WcState]]></Comment>
 					<Type GUID="{3D778266-9CB6-A2BC-B908-FC747FC8D738}">ARRAY [1..2] OF BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbPrintModule[1].fbPrintPosition.IlEncoderPulse</Name>
+					<Comment><![CDATA[ Encoder counter intput]]></Comment>
+					<Type>UDINT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbPrintModule[1].fbPrintPosition.IbEncoderWcState</Name>
+					<Comment><![CDATA[ Encoder EL5101 WcState]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbPrintModule[1].fbMarkDetection.bIKp_StartSensor</Name>
+					<Comment><![CDATA[Sensor start trigger]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbPrintModule[1].fbMarkDetection.tIKp_TimeStampPos</Name>
+					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbPrintModule[1].fbMarkDetection.tIKn_TimeStampNeg</Name>
+					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbPrintModule[2].fbPrintPosition.IlEncoderPulse</Name>
+					<Comment><![CDATA[ Encoder counter intput]]></Comment>
+					<Type>UDINT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbPrintModule[2].fbPrintPosition.IbEncoderWcState</Name>
+					<Comment><![CDATA[ Encoder EL5101 WcState]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbPrintModule[2].fbMarkDetection.bIKp_StartSensor</Name>
+					<Comment><![CDATA[Sensor start trigger]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbPrintModule[2].fbMarkDetection.tIKp_TimeStampPos</Name>
+					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbPrintModule[2].fbMarkDetection.tIKn_TimeStampNeg</Name>
+					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
+					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[1].sI_PhHw</Name>
@@ -541,56 +591,6 @@
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.fbNeutralFibreDetermine.tIKn_TimeStampNeg02</Name>
-					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
-					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbPrintModule[1].fbPrintPosition.IlEncoderPulse</Name>
-					<Comment><![CDATA[ Encoder counter intput]]></Comment>
-					<Type>UDINT</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbPrintModule[1].fbPrintPosition.IbEncoderWcState</Name>
-					<Comment><![CDATA[ Encoder EL5101 WcState]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbPrintModule[1].fbMarkDetection.bIKp_StartSensor</Name>
-					<Comment><![CDATA[Sensor start trigger]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbPrintModule[1].fbMarkDetection.tIKp_TimeStampPos</Name>
-					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
-					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbPrintModule[1].fbMarkDetection.tIKn_TimeStampNeg</Name>
-					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
-					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbPrintModule[2].fbPrintPosition.IlEncoderPulse</Name>
-					<Comment><![CDATA[ Encoder counter intput]]></Comment>
-					<Type>UDINT</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbPrintModule[2].fbPrintPosition.IbEncoderWcState</Name>
-					<Comment><![CDATA[ Encoder EL5101 WcState]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbPrintModule[2].fbMarkDetection.bIKp_StartSensor</Name>
-					<Comment><![CDATA[Sensor start trigger]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbPrintModule[2].fbMarkDetection.tIKp_TimeStampPos</Name>
-					<Comment><![CDATA[TimeStamp Pos_Edge @EL1252]]></Comment>
-					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
-				</Var>
-				<Var>
-					<Name>PRG_PRINT.fbPrintModule[2].fbMarkDetection.tIKn_TimeStampNeg</Name>
 					<Comment><![CDATA[TimeStamp Neg_Edge @EL1252]]></Comment>
 					<Type GUID="{1A9F01DF-CEB6-1DB1-8004-58A2E47A173D}" Namespace="Tc2_EtherCAT">T_DCTIME64</Type>
 				</Var>
@@ -1817,17 +1817,17 @@
 					<Type>INT</Type>
 				</Var>
 				<Var>
+					<Name>PRG_INK.fb_MeniscusMencContr[1].iI_ActValue</Name>
+					<Comment><![CDATA[Actual value]]></Comment>
+					<Type>INT</Type>
+				</Var>
+				<Var>
 					<Name>PRG_INK.fb_MeniscusMencContr[2].iI_ActValue</Name>
 					<Comment><![CDATA[Actual value]]></Comment>
 					<Type>INT</Type>
 				</Var>
 				<Var>
 					<Name>PRG_INK.fb_MeniscusMencContr[3].iI_ActValue</Name>
-					<Comment><![CDATA[Actual value]]></Comment>
-					<Type>INT</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.fb_MeniscusMencContr[1].iI_ActValue</Name>
 					<Comment><![CDATA[Actual value]]></Comment>
 					<Type>INT</Type>
 				</Var>

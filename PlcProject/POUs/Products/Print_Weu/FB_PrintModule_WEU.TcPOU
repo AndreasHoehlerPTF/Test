@@ -118,8 +118,6 @@ VAR_INPUT
   pAdsPg                : ARRAY[1..GVL_WEU.nC_WorkerPrintPerPm] OF POINTER TO ST_ADS_PG;  // PG -> worker ads 
   
   // config print
-  fPrintResolution      : LREAL := 600;         // print(head) resolution in [dpi]
-  fSubPxResolution      : LREAL := 32;          // SubPixel resolution [SubPx], resolution factor (fI_PrintResolution*fI_SubPxResolution=>Output resolution)
   fCycleTime            : LREAL;                // task cycle time in [s]
   fPrintUnitWidth       : LREAL;                // PrintUnit width mechanical [m]
   nYShiftPcCenter       : UDINT;                // Y shift for centered image data in RAM [px]
@@ -127,6 +125,7 @@ VAR_INPUT
   iModuleMaster         : I_ModuleMaster;       // interface for module to master (main) communication
   iPosition             : I_PrintPosition;      // interface for print position
   iStartPos             : I_StartPosDetect;     // interface for start position detect
+  iSystemStatus         : I_SystemStatus;       // system status interface (for sleep, estop, ...), may shadow states from machine inputs
   pMachineInputs        : POINTER TO ST_ModuleMachineInterface_IN;
   pMachineOutputs       : POINTER TO ST_ModuleMachineInterface_OUT;
 END_VAR
@@ -134,18 +133,21 @@ VAR
   nCtr : UDINT;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[fbPrintPosition.Init(fPrintResolution:=fPrintResolution, fSubPxResolution:=fSubPxResolution, fTaskCycleTime:=fCycleTime);
+        <ST><![CDATA[IF iPosition = 0 THEN _iPrintPosition := fbPrintPosition;     // select internal print position if not given externally
+ELSE                  _iPrintPosition := iPosition; END_IF
+
+fbPrintPosition.Init(fPrintResolution:=_iPrintPosition.fPrintResolution, fSubPxResolution:=_iPrintPosition.fSubPxResolution, fTaskCycleTime:=fCycleTime);
 // -- Mark definition handler
 fbMarkDefinition.Init();
 // -- Sheet/Camera trigger & mark detection
-fbMarkDetection.Init(fPrintResolution:=fPrintResolution, fSubPxResolution:=fSubPxResolution, pFbMarkDefinition:=ADR(fbMarkDefinition));
+fbMarkDetection.Init(fPrintResolution:=_iPrintPosition.fPrintResolution, fSubPxResolution:=_iPrintPosition.fSubPxResolution, pFbMarkDefinition:=ADR(fbMarkDefinition));
 
 // -- Mark camera
 fbMarkCameraWeu.InitMarkCamera(nPrintUnitResolution:=nC_PrintResolution,nPrintUnitSubPx:=nC_SubPixelResolution, iCameraTrigger:=fbMarkDetection, iMarkDefinition:=fbMarkDefinition);
 fbMarkCameraWeu.sVisuName := 'VISU_MarkCamera_WEU';
 fbWorkerCamera.RegisterCamera(fbMarkCameraWeu);
 
-// -- Camera if Mark is not selected
+// -- Camera if mark is not selected
 fbNoCamera.Init(nPrintUnitResolution:=nC_PrintResolution, nPrintUnitSubPx:=nC_SubPixelResolution, iCameraTrigger:=fbMarkDetection, bUseCameraTrigger:=FALSE, bUseCameraTriggerFeedback:=FALSE);
 fbWorkerCamera.RegisterCamera(fbNoCamera);
 
@@ -157,8 +159,6 @@ SUPER^.Init(
   pAdsCam           := pAdsCam,
   pAdsPg            := pAdsPg,
   // config print
-  fPrintResolution  := fPrintResolution,
-  fSubPxResolution  := fSubPxResolution,
   fCycleTime        := fCycleTime,
   fPrintUnitWidth   := fPrintUnitWidth,
   nYShiftPcCenter   := nYShiftPcCenter,
@@ -166,6 +166,7 @@ SUPER^.Init(
   iModuleMaster     := iModuleMaster,     // internal subm
   iPosition         := fbPrintPosition,   // internal subm
   iStartPos         := fbMarkDetection,   // internal subm
+  iSystemStatus     := iSystemStatus, 
   pMachineInputs    := pMachineInputs,
   pMachineOutputs   := pMachineOutputs
 );
@@ -282,6 +283,8 @@ END_IF
       <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule_WEU.Init">
+      <LineId Id="202" Count="1" />
+      <LineId Id="201" Count="0" />
       <LineId Id="54" Count="0" />
       <LineId Id="59" Count="8" />
       <LineId Id="96" Count="0" />
@@ -291,9 +294,10 @@ END_IF
       <LineId Id="26" Count="0" />
       <LineId Id="31" Count="4" />
       <LineId Id="37" Count="0" />
-      <LineId Id="52" Count="1" />
       <LineId Id="56" Count="0" />
-      <LineId Id="40" Count="7" />
+      <LineId Id="40" Count="5" />
+      <LineId Id="175" Count="0" />
+      <LineId Id="46" Count="1" />
       <LineId Id="30" Count="0" />
       <LineId Id="123" Count="0" />
       <LineId Id="122" Count="0" />

@@ -107,6 +107,18 @@ fDetectToRefPos := _pMasterModule^.fDetectToPm;]]></ST>
         </Implementation>
       </Get>
     </Property>
+    <Property Name="fLastModuleOffset" Id="{5111f5b0-18ed-4603-99d1-ebaa433e9538}">
+      <Declaration><![CDATA[(*Distance from first to last print module*)
+PROPERTY fLastModuleOffset : LREAL]]></Declaration>
+      <Get Name="Get" Id="{46ac00e5-4526-4392-bf1b-eb8a77007770}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[fLastModuleOffset := 1;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
     <Property Name="iHardwarePool" Id="{a847ca78-a2f3-4e9b-8e9d-71d00c55cae8}" FolderPath="I_ModuleMaster\">
       <Declaration><![CDATA[PROPERTY iHardwarePool : I_HardwarePool
 ]]></Declaration>
@@ -273,6 +285,9 @@ _pMasterModule := pModule;]]></ST>
     </LineIds>
     <LineIds Name="FB_ModuleMaster.fDetectToRefPos.Get">
       <LineId Id="5" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ModuleMaster.fLastModuleOffset.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_ModuleMaster.iHardwarePool.Get">
