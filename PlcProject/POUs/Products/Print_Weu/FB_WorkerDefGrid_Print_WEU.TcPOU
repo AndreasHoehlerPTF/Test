@@ -51,9 +51,11 @@ VAR
   _nPosXDelta        : DINT;    // Shift value X0 -> XS
   _fPosY             : LREAL;   // Y shift for last attached CT
   _nPosDeltaToPrint  : DINT;    // delta pos in [SbuPx] from attach to print
-  _sCurrentImgDepth  : LREAL;   // current image length [m]
+  _sCurrentImgDepth  : LREAL;   // Job: current image length [m]
+  _bEndless          : BOOL;    // Job: endless
   _bPaStarted        : BOOL;
   _bPaStartRequested : BOOL;
+  _sJobDef           : BOOL;
   fBStartTimeout     : TON;
   rTrigHwSync        : R_TRIG;
   _bForceDefGridOff  : BOOL;    // force deformation grid stream to ph off (send 0)
@@ -186,29 +188,39 @@ IF SUPER^.Attach(iCT:=iCT) THEN
   _nPosDeltaToPrint := _nPosXS - iCT.GetPos(nPosDomain:=E_PosDomain.master_pos) - _nPosX0;
   checkGridTiming();
   
-  IF fbPa.printStart() THEN
-    _bPaStarted := FALSE;
-    _bPaStartRequested := TRUE;
-    Attach:=TRUE;
-    LogLvl(Lvl:=E_LogSeverity.Debug, F_Concat4('printStart: at XS:', TO_STRING(_nPosXS), ' ', _pAttachedCt^.print(0)));  // print container
-    IF GVL_Deformation.bC_UseGlobalGridShift THEN
-      LogLvl(Lvl:=E_LogSeverity.Debug, F_Concat4(
-                                          F_Concat3('> XS = X0(', TO_STRING(_pAttachedCt^.GetPosX0(nPosDomain:=E_PosDomain.master_pos)), ')'),
-                                          F_Concat3(' + shDx(', TO_STRING(_fDxGlobalShift), ')'),
-                                          F_Concat3(' + shStartOffs(', TO_STRING(F_MeterToSubPixel(_fPrintStartOffset,_fPrintResolution*_fSubPxResolution)), ')'),
-                                          F_Concat3(' - shDropComp(', TO_STRING(F_MeterToSubPixel(fbDropSpeedComp.fDropPlacementError,_fPrintResolution*_fSubPxResolution)), ')')
-                                       ));
+  IF NOT _bPaStarted THEN
+    IF NOT fbPa.printStart() THEN
+      LogError(Msg:='PA not ready to start at attach');
+      Release(iCT := iCT);
     ELSE
-      LogLvl(Lvl:=E_LogSeverity.Debug, F_Concat3(
-                                          F_Concat3('> XS = X0(', TO_STRING(_pAttachedCt^.GetPosX0(nPosDomain:=E_PosDomain.master_pos)), ')'),
-                                          F_Concat3(' + shStartOffs:', TO_STRING(F_MeterToSubPixel(_fPrintStartOffset,_fPrintResolution*_fSubPxResolution)), ')'),
-                                          F_Concat3( ' - shDropComp:', TO_STRING(F_MeterToSubPixel(fbDropSpeedComp.fDropPlacementError,_fPrintResolution*_fSubPxResolution)), ')')
-                                       ));
-		END_IF
-  ELSE  
-    LogError(Msg:='PA not ready to start at attach');
-    Release(iCT := iCT);
-	END_IF
+      _bPaStarted := FALSE;
+      _bPaStartRequested := TRUE;
+      Attach:=TRUE;
+    END_IF
+  ELSE
+    // update start postion if it was already started (endless)
+    {warning 'TODO: implement print restart in endless'}
+    //fbPa.restartPrint();
+    Attach:=TRUE;
+  END_IF
+  
+  // debug log
+  LogLvl(Lvl:=E_LogSeverity.Debug, F_Concat4('printStart: at XS:', TO_STRING(_nPosXS), ' ', _pAttachedCt^.print(0)));  // print container
+  IF GVL_Deformation.bC_UseGlobalGridShift THEN
+    LogLvl(Lvl:=E_LogSeverity.Debug, F_Concat4(
+                                        F_Concat3('> XS = X0(', TO_STRING(_pAttachedCt^.GetPosX0(nPosDomain:=E_PosDomain.master_pos)), ')'),
+                                        F_Concat3(' + shDx(', TO_STRING(_fDxGlobalShift), ')'),
+                                        F_Concat3(' + shStartOffs(', TO_STRING(F_MeterToSubPixel(_fPrintStartOffset,_fPrintResolution*_fSubPxResolution)), ')'),
+                                        F_Concat3(' - shDropComp(', TO_STRING(F_MeterToSubPixel(fbDropSpeedComp.fDropPlacementError,_fPrintResolution*_fSubPxResolution)), ')')
+                                     ));
+  ELSE
+    LogLvl(Lvl:=E_LogSeverity.Debug, F_Concat3(
+                                        F_Concat3('> XS = X0(', TO_STRING(_pAttachedCt^.GetPosX0(nPosDomain:=E_PosDomain.master_pos)), ')'),
+                                        F_Concat3(' + shStartOffs:', TO_STRING(F_MeterToSubPixel(_fPrintStartOffset,_fPrintResolution*_fSubPxResolution)), ')'),
+                                        F_Concat3( ' - shDropComp:', TO_STRING(F_MeterToSubPixel(fbDropSpeedComp.fDropPlacementError,_fPrintResolution*_fSubPxResolution)), ')')
+                                     ));
+  END_IF
+  
   
 ELSE
   // parent attach failed case
@@ -380,7 +392,7 @@ ELSIF pPoint^.dy <= -1*_fLimitCorrectionY THEN nExeedY := pPoint^.dy; pPoint^.dy
 END_IF
 IF bLimited THEN 
   LogLvl(Lvl:=E_LogSeverity.Warning, Msg:=F_Concat5( 'Point=',TO_STRING(pPoint^.index),
-                                                     F_Concat5(' c:r(',TO_STRING(pPoint^.col),'/',TO_STRING(pPoint^.row), ') '),
+                                                     F_Concat5(' c/r(',TO_STRING(pPoint^.col),'/',TO_STRING(pPoint^.row), ') '),
                                                      F_Concat4('dx:', TO_STRING(nExeedX), ' dy:', TO_STRING(nExeedY)),
                                                      ' correction exceeded limit')); 
 END_IF
@@ -617,6 +629,7 @@ IF NOT bWorkerEnable THEN RETURN; END_IF  // only if enabled
 fbPa.jobStart();
 
 _sCurrentImgDepth := sJobDef.fImageDepth/1000;
+_bEndless := sJobDef.isEndless();
 
 // set correction ref points
 _pAdsCam^.sI_CorrectionPointIndication[1].posx := 0;
@@ -675,6 +688,21 @@ END_VAR
         <ST><![CDATA[//Attach head to print station
 IF iPH <> 0 THEN
   fbPs.registerCG(iNewPh:=iPH, iNewCG:=iNewCG);
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sim" Id="{60553fe4-14ee-48fc-82de-1d9573b5e2ec}">
+      <Declaration><![CDATA[METHOD PRIVATE sim
+VAR
+  v : LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF bSimPrinOk THEN 
+  // print done simulation
+  v := SEL(fMasterSpeed=0, fMasterSpeed, 0.00001);  // prevent division by 0
+  tSimPrintDone(IN:=_bPaStarted, PT:=TO_TIME(_sCurrentImgDepth/v*1000));
 END_IF
 ]]></ST>
       </Implementation>
@@ -749,7 +777,6 @@ IF _pAttachedCt <> 0 AND bWorkerEnable THEN // Work only with attached container
 
   // Grid update
   bDeformErr := _pAttachedCt^.getDeformationStatus(eDStep=>nDeformStep);
-  
   IF NOT bDeformErr AND nDeformStep >= E_DeformationStep.gridStarted AND NOT _bForceDefGridOff THEN 
     IF NOT gridUpdate(bEnableDeformation:=TRUE) THEN
       _pAttachedCt^.AbortDeformation(sReason:='deformation point update failed', Src:=_pEcSrc^);
@@ -771,6 +798,8 @@ IF _pAttachedCt <> 0 AND bWorkerEnable THEN // Work only with attached container
         fbPa.printStop();
         _pAttachedCt^.setError(ErrDef:=EC_Print.ecPaStartErr, Src:=_pEcSrc^);
         Release(_pAttachedCt^);
+      ELSE
+        ; // ignore start timeout in simulation
       END_IF
 		END_IF
   ELSIF _bPaStarted THEN
@@ -781,6 +810,8 @@ IF _pAttachedCt <> 0 AND bWorkerEnable THEN // Work only with attached container
     (*ELSIF fbpa.bError THEN
       _pAttachedCt^.setError(ErrDef:=EC_Print.ecPaPrintErr, Ident:=0);
       Release(_pAttachedCt^);*)
+    ELSE
+      ; // still printing
     END_IF 
 	END_IF
 END_IF  
@@ -796,8 +827,8 @@ END_IF
 // logging config
 fbPa.LogLevel := LogLevel;
 fB_PcAdapter.LogLevel := LogLevel;
-IF bSimPrinOk THEN tSimPrintDone(IN:=_bPaStarted, PT:=_sCurrentImgDepth/); END_IF
-]]></ST>
+
+sim();]]></ST>
       </Implementation>
     </Method>
     <LineIds Name="FB_WorkerDefGrid_Print_WEU">
@@ -864,21 +895,23 @@ IF bSimPrinOk THEN tSimPrintDone(IN:=_bPaStarted, PT:=_sCurrentImgDepth/); END_I
       <LineId Id="263" Count="3" />
       <LineId Id="29" Count="0" />
       <LineId Id="10" Count="0" />
+      <LineId Id="334" Count="0" />
+      <LineId Id="338" Count="1" />
+      <LineId Id="336" Count="0" />
       <LineId Id="74" Count="0" />
       <LineId Id="73" Count="0" />
       <LineId Id="24" Count="0" />
-      <LineId Id="121" Count="0" />
-      <LineId Id="238" Count="0" />
-      <LineId Id="316" Count="5" />
-      <LineId Id="239" Count="0" />
-      <LineId Id="323" Count="3" />
-      <LineId Id="322" Count="0" />
-      <LineId Id="241" Count="0" />
-      <LineId Id="20" Count="0" />
-      <LineId Id="25" Count="0" />
-      <LineId Id="72" Count="0" />
       <LineId Id="21" Count="0" />
       <LineId Id="174" Count="0" />
+      <LineId Id="344" Count="0" />
+      <LineId Id="364" Count="1" />
+      <LineId Id="346" Count="0" />
+      <LineId Id="343" Count="0" />
+      <LineId Id="340" Count="0" />
+      <LineId Id="348" Count="0" />
+      <LineId Id="350" Count="13" />
+      <LineId Id="349" Count="0" />
+      <LineId Id="341" Count="1" />
       <LineId Id="173" Count="0" />
       <LineId Id="172" Count="0" />
       <LineId Id="6" Count="0" />
@@ -1027,6 +1060,7 @@ IF bSimPrinOk THEN tSimPrintDone(IN:=_bPaStarted, PT:=_sCurrentImgDepth/); END_I
       <LineId Id="34" Count="0" />
       <LineId Id="105" Count="0" />
       <LineId Id="104" Count="0" />
+      <LineId Id="110" Count="0" />
       <LineId Id="94" Count="0" />
       <LineId Id="96" Count="7" />
       <LineId Id="93" Count="0" />
@@ -1048,6 +1082,13 @@ IF bSimPrinOk THEN tSimPrintDone(IN:=_bPaStarted, PT:=_sCurrentImgDepth/); END_I
       <LineId Id="8" Count="0" />
       <LineId Id="10" Count="2" />
       <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerDefGrid_Print_WEU.sim">
+      <LineId Id="5" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="6" Count="1" />
+      <LineId Id="9" Count="0" />
     </LineIds>
     <LineIds Name="FB_WorkerDefGrid_Print_WEU.updateWorkerPosition">
       <LineId Id="23" Count="0" />
@@ -1094,9 +1135,7 @@ IF bSimPrinOk THEN tSimPrintDone(IN:=_bPaStarted, PT:=_sCurrentImgDepth/); END_I
       <LineId Id="329" Count="0" />
       <LineId Id="325" Count="0" />
       <LineId Id="44" Count="0" />
-      <LineId Id="200" Count="0" />
-      <LineId Id="352" Count="0" />
-      <LineId Id="201" Count="0" />
+      <LineId Id="200" Count="1" />
       <LineId Id="41" Count="0" />
       <LineId Id="99" Count="0" />
       <LineId Id="98" Count="0" />
@@ -1112,6 +1151,7 @@ IF bSimPrinOk THEN tSimPrintDone(IN:=_bPaStarted, PT:=_sCurrentImgDepth/); END_I
       <LineId Id="160" Count="0" />
       <LineId Id="336" Count="0" />
       <LineId Id="180" Count="0" />
+      <LineId Id="390" Count="1" />
       <LineId Id="383" Count="0" />
       <LineId Id="154" Count="0" />
       <LineId Id="161" Count="0" />
@@ -1121,6 +1161,7 @@ IF bSimPrinOk THEN tSimPrintDone(IN:=_bPaStarted, PT:=_sCurrentImgDepth/); END_I
       <LineId Id="337" Count="0" />
       <LineId Id="339" Count="0" />
       <LineId Id="338" Count="0" />
+      <LineId Id="397" Count="1" />
       <LineId Id="163" Count="0" />
       <LineId Id="152" Count="0" />
       <LineId Id="55" Count="0" />

@@ -211,7 +211,7 @@ END_VAR]]></Declaration>
     // Send Mark (CamPoint) to CameraSink
     stCamPoint.x_ref := F_MeterToSubPixelReal(  fPosMeter:=pMark^.fPosX                                 (*[m]*)
                                               , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
-    stCamPoint.y_ref := F_MeterToSubPixelReal( fPosMeter:=pMark^.fPosX                                  (*[m]*)
+    stCamPoint.y_ref := F_MeterToSubPixelReal( fPosMeter:=pMark^.fPosY                                  (*[m]*)
                                               , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)
     stCamPoint.dx    := F_MeterToSubPixelReal( fPosMeter:=pMark^.sState.dx                              (*[m]*)
                                               , fResoSubPx:=UDINT_TO_LREAL(_nPrintUnitResolution));     (*Result should be in pixels*)

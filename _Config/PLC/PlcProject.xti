@@ -184,7 +184,7 @@
 		</DataType>
 	</DataTypes>
 	<Project GUID="{06E29AE1-7FD1-4F58-87FC-AD943F8BCC74}" Name="PlcProject" PrjFilePath="..\..\PlcProject\PlcProject.plcproj" TmcFilePath="..\..\PlcProject\PlcProject.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" CopyTmcToTarget="true" CopyTpyToTarget="false" ClearInvalidPersist="true">
-		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc" TmcHash="{338D6503-80F6-4EF9-E258-E4726B2C3281}">
+		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc" TmcHash="{CC3A51A1-3831-E841-3B5D-643058590CF2}">
 			<Name>PlcProject Instance</Name>
 			<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 			<Vars VarGrpType="1">
@@ -3087,26 +3087,6 @@
 			<Vars VarGrpType="1" ContextId="3" AreaNo="48">
 				<Name>PrgSystem Inputs</Name>
 				<Var>
-					<Name>PRG_INK.bI_Balance_BufferFull</Name>
-					<Comment><![CDATA[EL6021: Balance buffer full]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Balance_FramingError</Name>
-					<Comment><![CDATA[EL6021: Balance framing error]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Balance_OverRunError</Name>
-					<Comment><![CDATA[EL6021: Balance over run error]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Barcode_AckSend</Name>
-					<Comment><![CDATA[EL6001: Barcode scanner acknowledge send]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
 					<Name>PRG_MACHINE.bIKp_CabinetTemp_Ok</Name>
 					<Comment><![CDATA[monitoring input]]></Comment>
 					<Type>BOOL</Type>
@@ -3135,6 +3115,26 @@
 					<Name>PRG_MACHINE.InEAP_TargetSpeed</Name>
 					<Comment><![CDATA[Neutral fibre factor [m/min]]]></Comment>
 					<Type>DINT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Balance_BufferFull</Name>
+					<Comment><![CDATA[EL6021: Balance buffer full]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Balance_FramingError</Name>
+					<Comment><![CDATA[EL6021: Balance framing error]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Balance_OverRunError</Name>
+					<Comment><![CDATA[EL6021: Balance over run error]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Barcode_AckSend</Name>
+					<Comment><![CDATA[EL6001: Barcode scanner acknowledge send]]></Comment>
+					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.lIKp_EncPulse</Name>
