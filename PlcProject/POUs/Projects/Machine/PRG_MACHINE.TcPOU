@@ -169,6 +169,8 @@ VAR
   fb_CleaningPU                             : ARRAY[1..iCMa_NB_Cp] OF FB_CleaningMotorAxisPU;
   fb_CleaningValvePump                      : ARRAY[1..iCMa_NB_Cp] OF FB_Cleaning_ValvePump;
   fb_MotionInterlock                        : ARRAY[1..iCMa_NB_Cp] OF FB_MOTION_INTERLOCK;
+  bL_RefKnownAll                            : BOOL;
+  bL_AllInPosCappingClean                   : BOOL;
 
   (*Purge from machine*)
   fb_RFTrigPurgeBusy                        : ARRAY[1..iCMa_NB_Cp] OF RF_TRIG;
@@ -260,6 +262,7 @@ VAR
   lL_IO_SubstrateWidth                      : DINT;   (*Substrate width [µm]*)
   lL_IO_FormatLength                        : DINT;   (*Format length [µm]*)
   fb_TonSeparatorLevel                      : ARRAY[1..iCMa_NB_Cp] OF TON;
+  bL_SeparatorLevelReached                  : BOOL;
 
   bL_ProductionMode                         : ARRAY[1..iCPr_NB_PM] OF BOOL;   (*Production mode, not service mode*)
 
@@ -290,7 +293,8 @@ VAR
   sC_Config_M                               : ST_CONFIG_M;
 
   (*Separator pump for tank drainage*)
-  fb_TofSeparatorPump                       : ARRAY[1..iCMa_NB_Cp] OF TOF;
+  fb_TofSeparatorPumpNiveau                 : ARRAY[1..iCMa_NB_Cp] OF TOF;
+  fb_TofSeparatorPumpPurge                  : ARRAY[1..iCMa_NB_Cp] OF TOF;
 
   bL_ManualVacuumBin                        : ARRAY[1..iCMa_NB_Cp] OF BOOL := [FALSE,FALSE];
   fb_RTrigManualVacuumBin                   : ARRAY[1..iCMa_NB_Cp] OF R_TRIG;
@@ -371,6 +375,7 @@ END_VAR
 
 VAR PERSISTENT
   tR_TimeSeparatorPump                      : TIME := T#2M;   (*Separator pump for tank drainage*)
+  tR_TimeSeparatorPump2                     : TIME := T#20S;  (*Separator pump for tank drainage*)
 
   tR_CleanerActivationAfterChange           : TIME := T#30S;
   lR_CleanerActivationAfterChange           : DINT := 30;          (*[%]*)
@@ -401,8 +406,9 @@ RemVar();
 fbPowerControl();
 
 (*Exhaust system*)
-fb_ExhaustSystem[1](bI_PrintActive := bI_PrintActive);  (*PrintModule 1*)
-fb_ExhaustSystem[2](bI_PrintActive := bI_PrintActive);  (*PrintModule 2*)
+FOR iL_Counter := 1 TO iCPr_NB_PM DO
+  fb_ExhaustSystem[iL_Counter](bI_PrintActive := bI_PrintActive);
+END_FOR
 
 (*Call simulation*)
 Simulate();
@@ -412,8 +418,10 @@ Simulate();
 (* Infos from and to other tasks                                                                                     *)
 (*-------------------------------------------------------------------------------------------------------------------*)
 (*Ink infos are communicated via iMachineInk*)
+bL_SeparatorLevelReached := FALSE;
 FOR iL_Counter := 1 TO iCPr_NB_PM DO
   fb_TonSeparatorLevel[iL_Counter](IN := NOT bIKp_SeparatorNiveau_Ok[iL_Counter], PT := tR_TimeSeparatorLevelCheck);  (*ToDo*)
+  bL_SeparatorLevelReached := bL_SeparatorLevelReached OR fb_TonSeparatorLevel[iL_Counter].Q;
   iMachineInk[iL_Counter]                    := fb_InterfaceMachineInk[iL_Counter];
   iMachineInk[iL_Counter].pSeparatorNiveauOk := NOT fb_TonSeparatorLevel[iL_Counter].Q;
   iMachineInk[iL_Counter].pInCappingPos      :=     fb_CleaningCU[iL_Counter].pInPosCappingClean
@@ -482,7 +490,10 @@ sADS_Machine[1].bO_EmergencyStop := iSystemStatus.bEmergency;      (*Emergency s
 sADS_Machine[1].bO_MachineReady  := TRUE;                          (*Machine is switched on*)
 sADS_Machine[1].bO_PrinterReady  := ObPrinterReady;
 
-fB_Machine.bI_SafetyOk     := bL_SafetyOk[1] AND bL_SafetyOk[2];
+fB_Machine.bI_SafetyOk     := TRUE;
+FOR iL_Counter := 1 TO iCPr_NB_PM DO
+  fB_Machine.bI_SafetyOk   := fB_Machine.bI_SafetyOk AND bL_SafetyOk[iL_Counter];
+END_FOR
 fB_Machine.bI_MachineReady := NOT iSystemStatus.bEmergency AND (InEAP_OperatingMode >= cC_HOMING);
 
 
@@ -529,24 +540,20 @@ END_FOR
 
 
 (*outputs*)
+bL_RefKnownAll := TRUE;
+FOR iL_Counter := 1 TO iCPr_NB_PM DO
+  bL_RefKnownAll := bL_RefKnownAll AND fb_CleaningCU[iL_Counter].bL_RefKnown
+                                   AND fb_CleaningCH[iL_Counter].bL_RefKnown
+                                   AND fb_CleaningPU[iL_Counter].bL_RefKnown;
+END_FOR
+
 OnEAP_OperatingMode   := cC_INIT;         (*Operating mode*)
-IF     (   NOT fb_CleaningCU[1].bL_RefKnown
-        OR NOT fb_CleaningCU[2].bL_RefKnown
-        OR NOT fb_CleaningCH[1].bL_RefKnown
-        OR NOT fb_CleaningCH[2].bL_RefKnown
-        OR NOT fb_CleaningPU[1].bL_RefKnown
-        OR NOT fb_CleaningPU[2].bL_RefKnown)
+IF     NOT bL_RefKnownAll
    AND (InEAP_OperatingMode >= cC_HOMING)
 THEN
   OnEAP_OperatingMode := cC_HOMING;       (*Operating mode*)
 END_IF
-IF     fb_CleaningCU[1].bL_RefKnown
-   AND fb_CleaningCU[2].bL_RefKnown
-   AND fb_CleaningCH[1].bL_RefKnown
-   AND fb_CleaningCH[2].bL_RefKnown
-   AND fb_CleaningPU[1].bL_RefKnown
-   AND fb_CleaningPU[2].bL_RefKnown
-THEN
+IF bL_RefKnownAll THEN
   OnEAP_OperatingMode := cC_BASIC_HALT;   (*Operating mode*)
 END_IF
 FOR iL_Counter := 1 TO iCPr_NB_PM DO
@@ -570,8 +577,11 @@ FOR iL_Counter := 1 TO iCPr_NB_PM DO
   OnEAP_MasterSpeed     [iL_Counter] := sADS_CleanAxis[iCPr_MAP_Cp_PuAxis[iL_Counter]].sO_AxisPosition.fO_Val;
 END_FOR
 (*Axis drive must be completed before the info 'ShutdownReady' goes to the machine.*)
-fb_TonSleepToMachine( IN :=     fb_CleaningCU[1].pInPosCappingClean AND fb_CleaningCU[2].pInPosCappingClean         (*Cleaning position*)
-                            AND fb_CleaningPU[1].pInPosClean2       AND fb_CleaningPU[2].pInPosClean2
+bL_AllInPosCappingClean := TRUE;
+FOR iL_Counter := 1 TO iCPr_NB_PM DO
+  bL_AllInPosCappingClean := bL_AllInPosCappingClean AND fb_CleaningCU[iL_Counter].pInPosCappingClean AND fb_CleaningPU[iL_Counter].pInPosClean2;         (*Cleaning position*)
+END_FOR
+fb_TonSleepToMachine( IN := bL_AllInPosCappingClean         (*Cleaning position*)
                     , PT := T#1S);
 ObEAP_ShutdownReady  := fb_TonSleepToMachine.Q;
 ObEAP_StandbyReady   := sO_SystemCmd.bSleep AND ObEAP_ShutdownReady;
@@ -579,10 +589,10 @@ ObEAP_MismatchLength := bL_MismatchLength;
 OnEAP_MaxWebSpeed    := fbMachineComm.nMaxSpeedMpMin;
 ObEAP_WarnungActive  := sADS_Machine[1].bI_WarningMsgActive;
 ObEAP_ErrorActive    := sADS_Machine[1].bI_ErrorMsgActive;
-ObEAP_EStop          :=    bIKp_SafetyCoverOK[1]
-                        OR bIKp_SafetyCoverOK[2]
-                        OR bIKp_SafetyDoorsOK[1]
-                        OR bIKp_SafetyDoorsOK[2];
+ObEAP_EStop := FALSE; 
+FOR iL_Counter := 1 TO iCPr_NB_PM DO
+  ObEAP_EStop := ObEAP_EStop OR bIKp_SafetyCoverOK[iL_Counter] OR bIKp_SafetyDoorsOK[iL_Counter];
+END_FOR
 FOR iL_Counter := 1 TO nC_MOTRONIC_PANEL_LEDS DO
   ObPanelLEDs[iL_Counter] := IbEAP_PanelLEDs[iL_Counter];
 END_FOR
@@ -751,9 +761,14 @@ FOR iL_Counter := 1 TO iCMa_NB_Cp DO
 
 
   (*Separator pump for tank drainage*)
-  fb_TofSeparatorPump[iL_Counter]( IN := NOT iSystemStatus.bEmergency AND NOT bIKp_SeparatorNiveau_Ok[iL_Counter]
-                                 , PT := tR_TimeSeparatorPump);
-  bO_SeparatorPumpDrainage[iL_Counter] := fb_TofSeparatorPump[iL_Counter].Q OR (iMachineInk[iL_Counter].pPurgeBusy AND NOT PRG_INK.bO_TankRefuseLevelFull);
+  fb_TofSeparatorPumpNiveau[iL_Counter]( IN := NOT iSystemStatus.bEmergency AND NOT bIKp_SeparatorNiveau_Ok[iL_Counter]
+                                       , PT := tR_TimeSeparatorPump);
+  //while Purge (with off-delay)
+  fb_TofSeparatorPumpPurge [iL_Counter]( IN := iMachineInk[iL_Counter].pPurgeBusy AND NOT PRG_INK.bO_TankRefuseLevelFull
+                                       , PT := tR_TimeSeparatorPump2);
+  bO_SeparatorPumpDrainage[iL_Counter] :=    fb_TofSeparatorPumpNiveau[iL_Counter].Q
+                                          OR fb_TofSeparatorPumpPurge [iL_Counter].Q;
+
 END_FOR
 
 
@@ -1024,7 +1039,7 @@ fb_MachineMsg[1,14](bI_Status :=    NOT bIKp_CircuitBreakerM1_Ok
 fb_MachineMsg[1,15](bI_Status := FALSE);
 fb_MachineMsg[1,16](bI_Status := FALSE);
 fb_MachineMsg[1,17](bI_Status := FALSE);    //NOT bIKp_CabinetTemp_Ok);
-fb_MachineMsg[1,18](bI_Status := NOT iMachineInk[1].pSeparatorNiveauOk OR NOT iMachineInk[2].pSeparatorNiveauOk);
+fb_MachineMsg[1,18](bI_Status := FALSE);
 fb_MachineMsg[1,19](bI_Status := FALSE);
 fb_MachineMsg[1,20](bI_Status := FALSE);
 fb_MachineMsg[1,21](bI_Status := FALSE);  (*bO_CleanAborted*)
@@ -1037,7 +1052,7 @@ fb_MachineMsg[1,27](bI_Status := FALSE);
 fb_MachineMsg[1,28](bI_Status := FALSE);
 fb_MachineMsg[1,29](bI_Status := FALSE);
 fb_MachineMsg[1,30](bI_Status := FALSE);
-fb_MachineMsg[1,31](bI_Status := fb_TonSeparatorLevel[1].Q OR fb_TonSeparatorLevel[2].Q);
+fb_MachineMsg[1,31](bI_Status := bL_SeparatorLevelReached);
 
 fb_MsgQueueMachine[1]();
 
@@ -1050,11 +1065,11 @@ IF fb_MsgQueueMachine[1].bO_ReceiptMessage THEN
   bI_RecipeValuesLoadedInk     := FALSE;
   bI_RecipeValuesLoadedPrint   := FALSE;
 
-  iMachineInk[1].pCleanerAirBubbleDetected := FALSE;
-  iMachineInk[2].pCleanerAirBubbleDetected := FALSE;
+  FOR iL_Counter := 1 TO iCPr_NB_PM DO
+    iMachineInk[iL_Counter].pCleanerAirBubbleDetected := FALSE;
 
-  fb_ExhaustSystem[1].mAckError();
-  fb_ExhaustSystem[2].mAckError();
+    fb_ExhaustSystem[iL_Counter].mAckError();
+  END_FOR
   
   fbPowerControl.ackError();
 END_IF
@@ -1405,69 +1420,7 @@ fbMachineComm.bSimEnable := bSimulation;]]></ST>
       </Implementation>
     </Method>
     <LineIds Name="PRG_MACHINE">
-      <LineId Id="83840" Count="4" />
-      <LineId Id="83846" Count="5" />
-      <LineId Id="83854" Count="13" />
-      <LineId Id="89645" Count="0" />
-      <LineId Id="83869" Count="9" />
-      <LineId Id="85877" Count="2" />
-      <LineId Id="83879" Count="0" />
-      <LineId Id="85880" Count="0" />
-      <LineId Id="83883" Count="2" />
-      <LineId Id="88468" Count="0" />
-      <LineId Id="83887" Count="3" />
-      <LineId Id="83893" Count="8" />
-      <LineId Id="86318" Count="0" />
-      <LineId Id="83904" Count="1" />
-      <LineId Id="83931" Count="3" />
-      <LineId Id="88855" Count="0" />
-      <LineId Id="87986" Count="1" />
-      <LineId Id="88087" Count="0" />
-      <LineId Id="88854" Count="0" />
-      <LineId Id="83935" Count="0" />
-      <LineId Id="88079" Count="1" />
-      <LineId Id="83936" Count="0" />
-      <LineId Id="83939" Count="0" />
-      <LineId Id="88076" Count="1" />
-      <LineId Id="83942" Count="0" />
-      <LineId Id="88081" Count="0" />
-      <LineId Id="88850" Count="3" />
-      <LineId Id="83975" Count="0" />
-      <LineId Id="88856" Count="1" />
-      <LineId Id="83989" Count="54" />
-      <LineId Id="84045" Count="0" />
-      <LineId Id="87213" Count="0" />
-      <LineId Id="87216" Count="0" />
-      <LineId Id="87215" Count="0" />
-      <LineId Id="84047" Count="0" />
-      <LineId Id="84049" Count="33" />
-      <LineId Id="85868" Count="4" />
-      <LineId Id="84993" Count="0" />
-      <LineId Id="87210" Count="1" />
-      <LineId Id="84083" Count="14" />
-      <LineId Id="85873" Count="2" />
-      <LineId Id="84098" Count="100" />
-      <LineId Id="84201" Count="5" />
-      <LineId Id="89646" Count="1" />
-      <LineId Id="84209" Count="32" />
-      <LineId Id="84245" Count="4" />
-      <LineId Id="84251" Count="9" />
-      <LineId Id="85424" Count="0" />
-      <LineId Id="84262" Count="8" />
-      <LineId Id="85876" Count="0" />
-      <LineId Id="84272" Count="48" />
-      <LineId Id="86320" Count="2" />
-      <LineId Id="86325" Count="4" />
-      <LineId Id="86324" Count="0" />
-      <LineId Id="86766" Count="2" />
-      <LineId Id="86773" Count="0" />
-      <LineId Id="84321" Count="171" />
-      <LineId Id="89265" Count="0" />
-      <LineId Id="89263" Count="1" />
-      <LineId Id="84493" Count="2" />
-      <LineId Id="84498" Count="60" />
-      <LineId Id="87600" Count="1" />
-      <LineId Id="84559" Count="5" />
+      <LineId Id="90025" Count="692" />
       <LineId Id="75881" Count="0" />
     </LineIds>
     <LineIds Name="PRG_MACHINE.Init">
