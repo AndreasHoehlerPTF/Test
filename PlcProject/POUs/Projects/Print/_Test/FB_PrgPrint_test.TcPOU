@@ -8,6 +8,9 @@
   - Else it provides some informations & triggers for external code where this FB has no access to 
 *)
 FUNCTION_BLOCK FB_PrgPrint_test EXTENDS FB_BasePrint
+VAR_OUTPUT
+  bO_Power24V_ON  AT%Q* : BOOL;
+END_VAR
 VAR
   // config
   _pAdsPu : POINTER TO ST_ADS_PU;
@@ -41,10 +44,7 @@ VAR
   bRunning              : BOOL;             (*[status]  simulation runnign*)
   bStart, bStop         : BOOL;             (*[cmd]     start/stop print simulation sequence*)
   bRunMachine           : BOOL;             (*[cmd]     start machine feeder & belt*)
-  
-  // settings
-  eCameraDevice         : E_CameraDevice := E_CameraDevice.Scanner;    (*Camera device*)
-  eCameraMode           : E_CameraMode := E_CameraMode.Auto;           (*Camera mode*)
+
   (*-------------------------------------*)
 
 END_VAR
@@ -53,6 +53,8 @@ VAR PERSISTENT
   _bEnAutoStartPrinting  : BOOL;   // automatically load a job and start printing a test pattern job
   _bEnVerboseMode        : BOOL;
   _bForceHwReady         : BOOL;
+  eCameraDevice         : E_CameraDevice := E_CameraDevice.PrintMark;    (*Camera device*)
+  eCameraMode           : E_CameraMode := E_CameraMode.Auto;           (*Camera mode*)
   sJobConfig            : ST_JobSettings := (*[cfg]     test job settings*)
   ( // default job
     aI_JobId := '123456780-1111-1111-1111-999999999999',
@@ -63,7 +65,7 @@ VAR PERSISTENT
     lI_ProductionImageCount := 1,
     lI_MaintenanceImageCount := 0,
     lI_NumberOfCopies := 0,
-    lI_PrintMode := 16#830200,      // bit set: 9,17,23 + endless
+    lI_PrintMode := 16#832200,      // bit set: 9,17,23 (13=endless)
     lI_PrePostBlankDepth := 12361,  // 292px in [um]
     lI_SubPixelResolution := 32,
     lI_ResolutionX := 600,
@@ -307,6 +309,7 @@ VAR_INPUT
 END_VAR
 VAR_INST
   bBusy : BOOL;
+  tLoadTimeout : TIME;
   tExecute : TON := (PT:=T#20S);
 END_VAR]]></Declaration>
       <Implementation>
@@ -316,7 +319,9 @@ END_VAR]]></Declaration>
   RETURN;
 END_IF
 
-tExecute(IN:=bLoad, PT:=SEL(_bForceHwReady, T#40S, T#4S));
+tLoadTimeout := TO_TIME((sJobConfig.lI_ImageWidth/1000)*(sJobConfig.lI_ImageDepth/1000));             // (w[mm] * d[mm])/1000 = [s] 
+
+tExecute(IN:=bLoad, PT:=SEL(_bForceHwReady, tLoadTimeout, T#4S));
 IF NOT bBusy THEN
   // - load job
   fb_JobManagement.LoadJob(aI_AmsNetId_Io:=sC_AMSNETID_IO, pI_JobSettings:=ADR(sJobConfig));
@@ -399,29 +404,36 @@ CASE nState OF
     nState := 1;
 	END_IF
 
-1: (*--- Started ---*)
+1: (*--- enter module simulations ---*)
+  _bSimPrgPrint         := TRUE;
+  _bSimPrgMachine       := TRUE;
+  _bSimPrgInk           := TRUE;
+  //_bEnVerboseMode       := TRUE;
+  bO_Power24V_ON        := TRUE;
+  nState := 10;
+  
+
+10: (*--- Started ---*)
   IF bStart OR nNumDevices > 0 THEN
-    nState := 10;
+    nState := 11;
     nExtPcSelector := nNumDevices;
   END_IF
 
 (*======> Load initial job*)
-10: (*start load default job and wait until not busy*)
+11: (*start load default job and wait until not busy*)
+  IF bHwReady OR _bForceHwReady THEN
+    nState := 12;
+  END_IF
+  
+12: (*start load default job and wait until not busy*)
   IF NOT LoadTestJob(bLoad:=TRUE) THEN 
     nNumDevices := nNumDevices - 1;
     IF nNumDevices > 0 THEN
-      nState := 1;
+      nState := 10;
     ELSE
-      nState := 20;
+      nState := 30;
     END_IF
   END_IF
-
-20: (*--- enter module simulations ---*)
-  _bSimPrgPrint         := TRUE;
-  _bSimPrgMachine       := TRUE;
-  _bSimPrgInk           := TRUE;
-  _bEnVerboseMode       := TRUE;
-  nState := 30;
 
 (*=======> command PRG_PRINT*)
 30: (*--- write job settings ---*)
@@ -446,8 +458,8 @@ CASE nState OF
 
 60: (*--- Wait for job started ---*)
   IF tWaitJobStart.Q THEN
-    bRunMachine := TRUE;            // start machine  
     tWaitJobStart(IN:=FALSE);
+    bRunMachine     := TRUE;            // start machine
     nState := 99;
 	END_IF
 
@@ -519,6 +531,7 @@ CASE nState OF
   _bSimPrgMachine       := FALSE;
   _bSimPrgInk           := FALSE;
   _bEnVerboseMode       := FALSE;
+  bO_Power24V_ON        := FALSE;
   nState := 99;
 
 98: (*Error*)
@@ -547,13 +560,10 @@ _pAdsPU^.sI_JobSettings := sJobConfig;  // set internal job settings to ads
 
 //_pAdsSubstrate^.sI_SizeX.fI_Val := TO_REAL(sJobConfig.lI_ImageDepth);
 //_pAdsSubstrate^.sI_SizeY.fI_Val := TO_REAL(sJobConfig.lI_ImageWidth);
-_pAdsCamera^.eI_CameraDevice := eCameraDevice; // set camera selection
-_pAdsCamera^.eI_CameraMode := eCameraMode;
-
 
 // - setup Camera 
-_pAdsCamera^.eI_CameraDevice := E_CameraDevice.PrintMark;
-_pAdsCamera^.eI_CameraMode   := E_CameraMode.Auto;
+_pAdsCamera^.eI_CameraDevice := eCameraDevice;
+_pAdsCamera^.eI_CameraMode   := eCameraMode;
 //_pAdsCamera^.eI_CameraDevice := eCameraDevice; // set camera selection
 //_pAdsCamera^.eI_CameraMode := eCameraMode;
 
@@ -631,6 +641,8 @@ WriteJobSettings := FALSE;]]></ST>
       <LineId Id="188" Count="0" />
       <LineId Id="181" Count="1" />
       <LineId Id="178" Count="0" />
+      <LineId Id="202" Count="0" />
+      <LineId Id="201" Count="0" />
       <LineId Id="186" Count="1" />
       <LineId Id="153" Count="11" />
       <LineId Id="35" Count="0" />
@@ -652,10 +664,16 @@ WriteJobSettings := FALSE;]]></ST>
     <LineIds Name="FB_PrgPrint_test.TestStartSequence">
       <LineId Id="343" Count="8" />
       <LineId Id="415" Count="0" />
-      <LineId Id="352" Count="20" />
-      <LineId Id="423" Count="0" />
-      <LineId Id="425" Count="4" />
-      <LineId Id="373" Count="0" />
+      <LineId Id="352" Count="3" />
+      <LineId Id="462" Count="6" />
+      <LineId Id="461" Count="0" />
+      <LineId Id="460" Count="0" />
+      <LineId Id="356" Count="7" />
+      <LineId Id="455" Count="1" />
+      <LineId Id="459" Count="0" />
+      <LineId Id="458" Count="0" />
+      <LineId Id="454" Count="0" />
+      <LineId Id="364" Count="8" />
       <LineId Id="424" Count="0" />
       <LineId Id="374" Count="9" />
       <LineId Id="413" Count="0" />
@@ -666,8 +684,8 @@ WriteJobSettings := FALSE;]]></ST>
       <LineId Id="432" Count="0" />
       <LineId Id="418" Count="0" />
       <LineId Id="434" Count="0" />
+      <LineId Id="452" Count="0" />
       <LineId Id="439" Count="0" />
-      <LineId Id="436" Count="0" />
       <LineId Id="438" Count="0" />
       <LineId Id="437" Count="0" />
       <LineId Id="433" Count="0" />
@@ -686,6 +704,7 @@ WriteJobSettings := FALSE;]]></ST>
       <LineId Id="356" Count="0" />
       <LineId Id="411" Count="0" />
       <LineId Id="413" Count="4" />
+      <LineId Id="430" Count="0" />
       <LineId Id="412" Count="0" />
       <LineId Id="375" Count="4" />
       <LineId Id="381" Count="0" />
@@ -699,8 +718,7 @@ WriteJobSettings := FALSE;]]></ST>
       <LineId Id="52" Count="0" />
       <LineId Id="22" Count="0" />
       <LineId Id="24" Count="0" />
-      <LineId Id="14" Count="1" />
-      <LineId Id="31" Count="1" />
+      <LineId Id="32" Count="0" />
       <LineId Id="34" Count="2" />
       <LineId Id="43" Count="0" />
       <LineId Id="42" Count="0" />

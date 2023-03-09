@@ -21,7 +21,7 @@ VAR_GLOBAL CONSTANT
   iC_VERSION_PRODUCT            : INT      := 010000;
 
   sC_AMSNETID_LOCALHOST         : STRING   := '';                   (* AMS_NET_ID of Localhost *)
-  sC_AMSNETID_IO                : STRING   := '172.21.10.11.2.1';   (* AMS_NET_ID of IO *)
+  sC_AMSNETID_IO                : STRING   := '172.17.2.140.3.1'; //'172.21.10.11.2.1';   (* AMS_NET_ID of IO *)
 
   aC_WifagDataPath              : STRING[255] := 'C:\ProgramData\WifagPolytype\';     (*Path of Wifag ProgramData*)
   aC_PlcSubPath                 : STRING[255] := 'PrintUnitPlc\02_Plc\';              (*Sub path to 02_PLC*)

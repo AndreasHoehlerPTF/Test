@@ -41,6 +41,10 @@ VAR
   sAdsPrintUnit                             : ARRAY [1..iCPr_NB_PU] OF ST_ADS_PU;
   sL_BLK_PU                                 : ARRAY [1..iCPr_NB_PU] OF ST_MAP_BLK;
   sPuSettings                               : ST_PuSettings;                            // FB_PU configuration
+  
+  (*{attribute 'TcLinkTo' := '
+    [1].fbPrintPosition.IlEncoderPulse := TIIB[RiGen5_v2]^Input^dsfsdfsa;
+  '}*)
   fbPrintModule                             : ARRAY [1..iCPr_NB_PM] OF FB_PrintModule_WEU;
   sAdsPrintModule                           : ARRAY [1..iCPr_NB_PM] OF ST_ADS_PM;           (*PM -  Print Module *)
   sL_BLK_PM                                 : ARRAY [1..iCPr_NB_PM] OF ST_MAP_BLK;
@@ -474,7 +478,7 @@ fbOd.init(aAmsNetId:=sC_AMSNETID_LOCALHOST, aFilePath:=F_Concat3(aC_PlcConfigPat
 (* -- PU PrintUnit*)
 FOR nCtr := 1 TO TO_UDINT(iCPr_NB_PU) DO
 	(*-- ADS --*)
-  setupAdsPu(pAds:=ADR(sAdsPrintUnit[nCtr]));
+  setupAdsPu(pAds:=ADR(sAdsPrintUnit[nCtr]), nIdx:=nCtr);
   setupAdsSa(pAds:=ADR(sAdsSheetAlignment[nCtr]));
   
 	(*-- FB --*)
@@ -1006,6 +1010,7 @@ END_VAR
         <ST><![CDATA[(*Configure logging*)
 LogPrSetup.LogLevel                  := ePrint_LogLevel;
 FB_PU[ePr_PU_UNIT_1].LogLevel        := ePrint_LogLevel;
+fbPm.LogLevel                        := ePrint_LogLevel;
 fbModuleMaster.LogLevel              := ePrint_LogLevel;]]></ST>
       </Implementation>
     </Method>
@@ -1080,7 +1085,7 @@ pAds^.sI_VoltageScale.bC_Exist    := TRUE;
 pAds^.sI_VoltageScale.aC_Unit     := '%';
 pAds^.sI_VoltageScale.fC_Min      := 90;
 pAds^.sI_VoltageScale.fC_Max      := 110;
-pAds^.cO_HeadIndex                := cCPr_MAP_PH_PC_INDEX[nCtr];]]></ST>
+pAds^.cO_HeadIndex                := cCPr_MAP_PH_PC_INDEX[nIdx];]]></ST>
       </Implementation>
     </Method>
     <Method Name="setupAdsPm" Id="{606d63d6-e007-4b24-aa3f-3111b08f8d0e}" FolderPath="AdsSetup\">
@@ -1108,10 +1113,11 @@ pAds^.sI_GeneralShiftY.lC_Max     := sC_Config_P.lL_PU_GENERALSHIFT_Y_SET_MAX;
       <Declaration><![CDATA[METHOD PRIVATE setupAdsPu
 VAR_INPUT
   pAds : POINTER TO ST_ADS_PU;
+  nIdx : UDINT;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[pAds^.aO_Name 										     := sC_Config_P.aC_PU_NAME[nCtr];;
+        <ST><![CDATA[pAds^.aO_Name 										     := sC_Config_P.aC_PU_NAME[nIdx];
 pAds^.sI_ShiftJobX.bC_Exist            := FALSE;
 pAds^.sI_ShiftJobX.aC_Unit             := sC_Config_P.aC_PU_SHIFTPOS_X_UNIT;
 pAds^.sI_ShiftJobX.lC_Min              := sC_Config_P.lL_PU_SHIFTPOS_X_SET_MIN;
@@ -1487,6 +1493,7 @@ END_IF]]></ST>
     </LineIds>
     <LineIds Name="PRG_PRINT.setLoggingLevels">
       <LineId Id="6" Count="2" />
+      <LineId Id="16" Count="0" />
       <LineId Id="12" Count="0" />
     </LineIds>
     <LineIds Name="PRG_PRINT.setupAdsPc">

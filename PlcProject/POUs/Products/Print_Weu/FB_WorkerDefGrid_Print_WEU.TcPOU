@@ -7,12 +7,10 @@ VAR_INPUT
   fMasterSpeed          : LREAL;  // Speed [m/s]
   bHardwareSync         : BOOL;   // hw sync signal (chenerates a triger internally)
   bHardwareHold         : BOOL;   // hw hold signal
-  fPrintStartOffset     : LREAL;  // Offset from Module reference (configurative PU/PM/PG/PA ADS offset)
+  fPrintStartOffset     : LREAL;  // X-Shift StartOffset from Module reference (configurative PU/PM/PG/PA ADS offset) [m]
   fPrintYOffset         : LREAL;  // Y-Shift
   // fine alignement live parameter
   fPUElevation          : LREAL;  // PU distance from substrate [m]
-  fPUPlate1_Temperature : LREAL;  // PU Plate1 temperature
-  fPUPlate2_Temperature : LREAL;  // PU Plate2 temperature
 END_VAR
 VAR
   // print
@@ -35,11 +33,13 @@ VAR
 
 
   // print corrections
-  // - PU Deformation/correction (4p, banana, ...)
-  fbFineAlignement   : FB_FineAlignement;
-  _pAdsCam           : POINTER TO ST_ADS_CAMERA;  // camera interface PUC
+  nPointCorrections  : UDINT;     // number of registered point correction handler
+  iPointCorrections  : ARRAY[1..nC_NUM_POINTCORRECTIONS] OF I_GridPointCorrection;  // point corrections
+  
   // - Time of flight correction of droplets
   fbDropSpeedComp    : FB_DropSpeedComp;
+  //
+  _pAdsCam           : POINTER TO ST_ADS_CAMERA;  // camera interface PUC
   // - global shifts (applied globally and not on every single point (calcualted based on all CT points))
   _fDxGlobalShift    : LREAL;
   _fDyGlobalShift    : LREAL;
@@ -59,7 +59,6 @@ VAR
   fBStartTimeout     : TON;
   rTrigHwSync        : R_TRIG;
   _bForceDefGridOff  : BOOL;    // force deformation grid stream to ph off (send 0)
-  _fPrintUnitWidth   : LREAL;   // print unit width [m]
   
   (*grid limit*)
   _fLimitCorrectionX : LREAL;     // correction limit in y (abs) [px]
@@ -67,10 +66,7 @@ VAR
     
   (*Messaging*)
   (*we could implement a message handler for ST_ADS_PG message interface*)
-  
-  (*Debug*)
-  bSimPrinOk : BOOL;
-  tSimPrintDone : TON;
+
 END_VAR
 
 VAR PERSISTENT
@@ -85,6 +81,7 @@ VAR CONSTANT
   fC_GRIDPOINT_STREAM_TIME : LREAL := 0.0025;     // time to stream one point [s]
   fC_START_SHIFT_FACTOR    : LREAL := -2.4E-2;
   fC_START_SHIFT_OFFSET    : LREAL := -1.0E-2;
+  nC_NUM_POINTCORRECTIONS  : UDINT := 5;
 END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[(*
@@ -181,14 +178,15 @@ IF SUPER^.Attach(iCT:=iCT) THEN
 
   // check
   IF _nPosXS < nPrintPos THEN
-    LogWarning(Msg:='Print start position < Encoder position');
+    LogWarning(Msg:=F_Concat4('Print start position:', TO_STRING(_nPosXS) ,' < Encoder position:', TO_STRING(nPrintPos)));
 	END_IF
   
   // save current distance to print position
   _nPosDeltaToPrint := _nPosXS - iCT.GetPos(nPosDomain:=E_PosDomain.master_pos) - _nPosX0;
   checkGridTiming();
   
-  IF NOT _bPaStarted THEN
+  
+  IF NOT fbPa.bPrinting THEN   // fB_PcAdapter.bAllPrinting
     IF NOT fbPa.printStart() THEN
       LogError(Msg:='PA not ready to start at attach');
       Release(iCT := iCT);
@@ -404,7 +402,9 @@ correctionLimit := bLimited;]]></ST>
 VAR_INPUT
   pPoint : POINTER TO ST_DeformationPointAccurate;
 END_VAR
-]]></Declaration>
+VAR
+  i : UDINT;
+END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[
 // here apply all PU specific corrections
@@ -423,7 +423,9 @@ END_IF
 
 // PU Deformation correction
 IF GVL_Deformation.bC_UsePUDeformation THEN
-  fbFineAlignement.updateCorrection(pPoint:=pPoint);
+  FOR i:=1 TO nPointCorrections DO
+    iPointCorrections[i].updateCorrection(pPoint:=pPoint);
+  END_FOR
 END_IF
 ]]></ST>
       </Implementation>
@@ -514,9 +516,9 @@ END_IF
 
 //Check for next correction update 
 IF fCurrentColumnPos + _fColumnsToPrecharge > nChargedColumns AND nChargedColumns <= sDefGridSettings.nGridSizeX THEN
+  fCurrentPreCharge := fCurrentColumnPos + _fColumnsToPrecharge;
   IF bEnableDeformation THEN 
     // sync deformation points
-    fCurrentPreCharge := fCurrentColumnPos + _fColumnsToPrecharge;
     WHILE FLOOR(fCurrentPreCharge) > nChargedColumns AND nChargedColumns <= sDefGridSettings.nGridSizeX DO
       nAvailPoints := _pAttachedCt^.nAvailableGridPoints;
       IF nAvailPoints >= sDefGridSettings.nGridSizeY * (nChargedColumns+1) THEN // Complete column available?
@@ -559,7 +561,7 @@ IF fCurrentColumnPos + _fColumnsToPrecharge > nChargedColumns AND nChargedColumn
     END_WHILE
   ELSE
     // send points with no deformation
-      FOR nRow := 0 TO sDefGridSettings.nGridSizeY - 1 DO
+    FOR nRow := 0 TO sDefGridSettings.nGridSizeY - 1 DO
         MEMSET(destAddr:=ADR(sPoint), fillByte:=0, n:=SIZEOF(sPoint));
         sPoint.col := TO_DINT(nChargedColumns);
         sPoint.row := TO_DINT(nRow);
@@ -570,40 +572,35 @@ IF fCurrentColumnPos + _fColumnsToPrecharge > nChargedColumns AND nChargedColumn
         END_IF
     END_FOR
     nChargedColumns := nChargedColumns + 1;
-	END_IF
-END_IF]]></ST>
+  END_IF
+END_IF
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="InitWorkerPrint" Id="{725b4782-e9a9-4287-9bbe-5c631e47969c}">
       <Declaration><![CDATA[METHOD InitWorkerPrint : BOOL
 VAR_INPUT
   pAdsPg                : POINTER TO ST_ADS_PG;       // pg ads reference (worker prints ads)
-  pAdsIfCam             : POINTER TO ST_ADS_CAMERA;   // provide camera access
   iDefGridParamMediator : I_ParamMediator;            // for deformation settings
-  fPrintUnitWidth       : LREAL;                      // print unit width [m]
   fLimitCorrectionX     : LREAL;                      // correction limit in y (abs) [px]
   fLimitCorrectionY     : LREAL;                      // correction limit in y (abs) [px]
 END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF NOT bInitialized            THEN LogError('Base Worker not initialized! call init() before'); RETURN; END_IF
-IF pAdsIfCam = 0 OR pAdspg = 0 THEN LogError('InitWorkerPrint: invalid parameter proviced'); RETURN; END_IF
+IF pAdspg = 0 THEN LogError('InitWorkerPrint: invalid parameter proviced'); RETURN; END_IF
 IF iDefGridParamMediator = 0   THEN bInitialized := FALSE; LogError('Invalid parameter, no valid param mediator'); RETURN; END_IF
 
 // Worker specific init
 _pAdsPg := pAdsPg;
-_pAdsCam := pAdsIfCam;
 _iParamMediator := iDefGridParamMediator;
 
-_fPrintUnitWidth   := fPrintUnitWidth;
 _fLimitCorrectionX := ABS(fLimitCorrectionX);
 _fLimitCorrectionY := ABS(fLimitCorrectionY);
 
 // Print Aggregate
 fbPa.bSyncAfterDone := FALSE;
 fbPa.init(iPcAdapter := fB_PcAdapter, iPsInterface := fbPs);
-
-fbFineAlignement.init(pAdsCam := _pAdsCam, fPxReso := _fPrintResolution, fPuWidth := fPrintUnitWidth);
 ]]></ST>
       </Implementation>
     </Method>
@@ -631,16 +628,6 @@ fbPa.jobStart();
 _sCurrentImgDepth := sJobDef.fImageDepth/1000;
 _bEndless := sJobDef.isEndless();
 
-// set correction ref points
-_pAdsCam^.sI_CorrectionPointIndication[1].posx := 0;
-_pAdsCam^.sI_CorrectionPointIndication[1].posy := LREAL_TO_REAL(((_fPrintUnitWidth * 1000) - sJobDef.fImageWidth) / 2);
-_pAdsCam^.sI_CorrectionPointIndication[2].posx := LREAL_TO_REAL(sJobDef.fImageDepth);
-_pAdsCam^.sI_CorrectionPointIndication[2].posy := LREAL_TO_REAL(((_fPrintUnitWidth * 1000) - sJobDef.fImageWidth) / 2);
-_pAdsCam^.sI_CorrectionPointIndication[3].posx := 0;
-_pAdsCam^.sI_CorrectionPointIndication[3].posy := LREAL_TO_REAL((((_fPrintUnitWidth * 1000) - sJobDef.fImageWidth) / 2) + sJobDef.fImageWidth);
-_pAdsCam^.sI_CorrectionPointIndication[4].posx := LREAL_TO_REAL(sJobDef.fImageDepth);
-_pAdsCam^.sI_CorrectionPointIndication[4].posy := LREAL_TO_REAL((((_fPrintUnitWidth * 1000) - sJobDef.fImageWidth) / 2) + sJobDef.fImageWidth);
-
 _bJobActive := TRUE;
 ]]></ST>
       </Implementation>
@@ -653,7 +640,9 @@ END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[fbPa.jobStop();
-_bJobActive := FALSE;]]></ST>
+_bJobActive := FALSE;
+_bPaStarted := FALSE;
+_bPaStartRequested := FALSE;]]></ST>
       </Implementation>
     </Method>
     <Method Name="mProduced" Id="{09c64151-c707-4a94-bc62-7cee61472f96}" FolderPath="I_PrintStatusClient\">
@@ -665,6 +654,22 @@ END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="RegisterGridCorrection" Id="{d479508c-6130-4d9d-9335-d417617a9a10}">
+      <Declaration><![CDATA[METHOD RegisterGridCorrection : BOOL
+VAR_INPUT
+  iGridCorrection : I_GridPointCorrection;
+END_VAR
+VAR
+  i : UDINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF iGridCorrection = 0 THEN LogError('registerGridCorrection: ivalid interface, ignore'); RETURN; END_IF
+IF nPointCorrections >= nC_NUM_POINTCORRECTIONS THEN LogError('registerGridCorrection: too many corrections registred, ignore'); RETURN; END_IF
+
+nPointCorrections := nPointCorrections + 1;
+iPointCorrections[nPointCorrections] := iGridCorrection;]]></ST>
       </Implementation>
     </Method>
     <Method Name="registerPc" Id="{4776f3c2-c3e1-4f90-b8f6-3a06b4691e15}">
@@ -694,17 +699,9 @@ END_IF
     </Method>
     <Method Name="sim" Id="{60553fe4-14ee-48fc-82de-1d9573b5e2ec}">
       <Declaration><![CDATA[METHOD PRIVATE sim
-VAR
-  v : LREAL;
-END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF bSimPrinOk THEN 
-  // print done simulation
-  v := SEL(fMasterSpeed=0, fMasterSpeed, 0.00001);  // prevent division by 0
-  tSimPrintDone(IN:=_bPaStarted, PT:=TO_TIME(_sCurrentImgDepth/v*1000));
-END_IF
-]]></ST>
+        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="updateWorkerPosition" Id="{5207464a-bb68-4cfe-bdd9-989eb1679161}">
@@ -718,11 +715,11 @@ IF _pAttachedCt = 0 THEN RETURN; END_IF
 
 //Start offset update
 IF _fPrintStartOffset <> (fPrintStartOffset + _iWorkerParams.fDetectToRefPos) THEN //Worker position changed
-  _fPrintStartOffset :=fPrintStartOffset + _iWorkerParams.fDetectToRefPos;
+  _fPrintStartOffset := fPrintStartOffset + _iWorkerParams.fDetectToRefPos;
 END_IF
 
 //Worker position update
-IF _fWorkerPosition <> (_fPrintStartOffset + (_fStartShiftOffset + _fStartShiftFactor * fMasterSpeed)) THEN //Worker position changed (camera settings change)
+IF _fWorkerPosition <> (_fPrintStartOffset + (_fStartShiftOffset + _fStartShiftFactor * fMasterSpeed)) THEN   // Worker position changed (camera settings change)
   // WorkerPosition = PrintStart offset - pre-start offset
   fPosition := _fPrintStartOffset + (_fStartShiftOffset + _fStartShiftFactor * fMasterSpeed);
 END_IF
@@ -744,13 +741,6 @@ updateWorkerPosition();  // calculate and set worker position
 
 SUPER^.work();
 
-(*PU correction*)
-IF GVL_Deformation.bC_UsePUDeformation THEN
-  fbFineAlignement.fT_PL1 := fPUPlate1_Temperature;
-  fbFineAlignement.fT_PL2 := fPUPlate2_Temperature;
-  fbFineAlignement();
-END_IF
-
 (*Print correction*)
 fbDropSpeedComp(fMasterSpeed:=fMasterSpeed, fDropTravelDistance:=fPUElevation);
 
@@ -761,8 +751,8 @@ fB_PcAdapter();
 
 (*Call print aggregate*)
 rTrigHwSync(CLK:=bHardwareSync); 
-IF rTrigHwSync.Q THEN fbPa.sync(); END_IF   // external sync
-fbPa.bHold := bHardwareHold;              // external hw hold
+IF rTrigHwSync.Q THEN fbPa.sync(); END_IF   // external sync cmd
+fbPa.bHold := bHardwareHold;                // external hw hold, NOTE: this stop the current print iPC.stop()
 fbPa();
 
 fBStartTimeout(IN:=_bPaStartRequested, PT := T#60MS);
@@ -780,10 +770,14 @@ IF _pAttachedCt <> 0 AND bWorkerEnable THEN // Work only with attached container
   IF NOT bDeformErr AND nDeformStep >= E_DeformationStep.gridStarted AND NOT _bForceDefGridOff THEN 
     IF NOT gridUpdate(bEnableDeformation:=TRUE) THEN
       _pAttachedCt^.AbortDeformation(sReason:='deformation point update failed', Src:=_pEcSrc^);
+      //Release(iCT:=_pAttachedCt^);
     END_IF
   ELSE
     // not started or error already --> erase deformation points and send no correction points
-    gridUpdate(bEnableDeformation:=FALSE);
+    IF NOT gridUpdate(bEnableDeformation:=FALSE) THEN
+      _pAttachedCt^.AbortDeformation(sReason:='deformation point update failed', Src:=_pEcSrc^);
+      //Release(iCT:=_pAttachedCt^);
+    END_IF
   END_IF
 
   // PA control
@@ -794,24 +788,25 @@ IF _pAttachedCt <> 0 AND bWorkerEnable THEN // Work only with attached container
     ELSIF fBStartTimeout.Q THEN //Stop print at timeout to make ready for next container
       _bPaStarted := FALSE;
       _bPaStartRequested := FALSE;
-      IF NOT bSimPrinOk THEN
-        fbPa.printStop();
-        _pAttachedCt^.setError(ErrDef:=EC_Print.ecPaStartErr, Src:=_pEcSrc^);
-        Release(_pAttachedCt^);
-      ELSE
-        ; // ignore start timeout in simulation
-      END_IF
+      fbPa.printStop();
+      _pAttachedCt^.setError(ErrDef:=EC_Print.ecPaStartErr, Src:=_pEcSrc^);
+      Release(_pAttachedCt^);
 		END_IF
   ELSIF _bPaStarted THEN
     //Release container when all points have been processed
-    IF fbPa.bDone OR fbPa.bStop OR tSimPrintDone.Q THEN
+    IF fbPa.bDone OR fbPa.bStop THEN
       _bPaStarted := FALSE;
       Release(_pAttachedCt^);
     (*ELSIF fbpa.bError THEN
       _pAttachedCt^.setError(ErrDef:=EC_Print.ecPaPrintErr, Ident:=0);
       Release(_pAttachedCt^);*)
     ELSE
-      ; // still printing
+      // still printing (endless or not yet done)
+      IF _bEndless AND nChargedColumns >= sDefGridSettings.nGridSizeX THEN
+        // in endless release if grid was streamed
+        {warning 'TODO: send real PrintLength _pAttachedCt^.bPrintLength'} 
+        Release(_pAttachedCt^);
+			END_IF
     END_IF 
 	END_IF
 END_IF  
@@ -894,6 +889,7 @@ sim();]]></ST>
       <LineId Id="58" Count="3" />
       <LineId Id="263" Count="3" />
       <LineId Id="29" Count="0" />
+      <LineId Id="369" Count="0" />
       <LineId Id="10" Count="0" />
       <LineId Id="334" Count="0" />
       <LineId Id="338" Count="1" />
@@ -984,8 +980,9 @@ sim();]]></ST>
       <LineId Id="19" Count="0" />
       <LineId Id="38" Count="0" />
       <LineId Id="22" Count="0" />
-      <LineId Id="25" Count="0" />
-      <LineId Id="29" Count="0" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="48" Count="1" />
       <LineId Id="15" Count="0" />
       <LineId Id="30" Count="0" />
     </LineIds>
@@ -1015,9 +1012,9 @@ sim();]]></ST>
       <LineId Id="235" Count="1" />
       <LineId Id="166" Count="0" />
       <LineId Id="249" Count="0" />
-      <LineId Id="167" Count="3" />
-      <LineId Id="250" Count="0" />
-      <LineId Id="171" Count="5" />
+      <LineId Id="167" Count="2" />
+      <LineId Id="332" Count="0" />
+      <LineId Id="170" Count="6" />
       <LineId Id="214" Count="0" />
       <LineId Id="177" Count="0" />
       <LineId Id="229" Count="0" />
@@ -1030,6 +1027,7 @@ sim();]]></ST>
       <LineId Id="216" Count="0" />
       <LineId Id="179" Count="34" />
       <LineId Id="5" Count="0" />
+      <LineId Id="315" Count="0" />
     </LineIds>
     <LineIds Name="FB_WorkerDefGrid_Print_WEU.InitWorkerPrint">
       <LineId Id="7" Count="0" />
@@ -1038,15 +1036,13 @@ sim();]]></ST>
       <LineId Id="45" Count="0" />
       <LineId Id="15" Count="0" />
       <LineId Id="57" Count="0" />
-      <LineId Id="80" Count="1" />
-      <LineId Id="10" Count="0" />
+      <LineId Id="81" Count="0" />
       <LineId Id="36" Count="0" />
       <LineId Id="20" Count="0" />
       <LineId Id="22" Count="0" />
       <LineId Id="79" Count="0" />
       <LineId Id="78" Count="0" />
-      <LineId Id="12" Count="2" />
-      <LineId Id="5" Count="0" />
+      <LineId Id="12" Count="1" />
       <LineId Id="48" Count="0" />
     </LineIds>
     <LineIds Name="FB_WorkerDefGrid_Print_WEU.mJobPause">
@@ -1061,9 +1057,6 @@ sim();]]></ST>
       <LineId Id="105" Count="0" />
       <LineId Id="104" Count="0" />
       <LineId Id="110" Count="0" />
-      <LineId Id="94" Count="0" />
-      <LineId Id="96" Count="7" />
-      <LineId Id="93" Count="0" />
       <LineId Id="35" Count="0" />
       <LineId Id="22" Count="0" />
       <LineId Id="81" Count="0" />
@@ -1071,9 +1064,17 @@ sim();]]></ST>
     <LineIds Name="FB_WorkerDefGrid_Print_WEU.mJobStop">
       <LineId Id="6" Count="0" />
       <LineId Id="11" Count="0" />
+      <LineId Id="16" Count="1" />
     </LineIds>
     <LineIds Name="FB_WorkerDefGrid_Print_WEU.mProduced">
       <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_WorkerDefGrid_Print_WEU.RegisterGridCorrection">
+      <LineId Id="5" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="22" Count="0" />
     </LineIds>
     <LineIds Name="FB_WorkerDefGrid_Print_WEU.registerPc">
       <LineId Id="5" Count="0" />
@@ -1084,10 +1085,6 @@ sim();]]></ST>
       <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="FB_WorkerDefGrid_Print_WEU.sim">
-      <LineId Id="5" Count="0" />
-      <LineId Id="8" Count="0" />
-      <LineId Id="15" Count="0" />
-      <LineId Id="6" Count="1" />
       <LineId Id="9" Count="0" />
     </LineIds>
     <LineIds Name="FB_WorkerDefGrid_Print_WEU.updateWorkerPosition">
@@ -1106,12 +1103,6 @@ sim();]]></ST>
       <LineId Id="381" Count="0" />
       <LineId Id="380" Count="0" />
       <LineId Id="19" Count="0" />
-      <LineId Id="308" Count="0" />
-      <LineId Id="307" Count="0" />
-      <LineId Id="305" Count="0" />
-      <LineId Id="318" Count="1" />
-      <LineId Id="311" Count="0" />
-      <LineId Id="267" Count="0" />
       <LineId Id="362" Count="0" />
       <LineId Id="360" Count="0" />
       <LineId Id="118" Count="0" />
@@ -1138,21 +1129,21 @@ sim();]]></ST>
       <LineId Id="200" Count="1" />
       <LineId Id="41" Count="0" />
       <LineId Id="99" Count="0" />
+      <LineId Id="407" Count="0" />
       <LineId Id="98" Count="0" />
-      <LineId Id="221" Count="2" />
+      <LineId Id="221" Count="1" />
+      <LineId Id="405" Count="1" />
+      <LineId Id="408" Count="0" />
+      <LineId Id="404" Count="0" />
       <LineId Id="149" Count="0" />
       <LineId Id="353" Count="0" />
       <LineId Id="268" Count="0" />
       <LineId Id="150" Count="1" />
       <LineId Id="156" Count="1" />
       <LineId Id="153" Count="0" />
-      <LineId Id="158" Count="1" />
-      <LineId Id="382" Count="0" />
-      <LineId Id="160" Count="0" />
+      <LineId Id="158" Count="2" />
       <LineId Id="336" Count="0" />
       <LineId Id="180" Count="0" />
-      <LineId Id="390" Count="1" />
-      <LineId Id="383" Count="0" />
       <LineId Id="154" Count="0" />
       <LineId Id="161" Count="0" />
       <LineId Id="164" Count="1" />
@@ -1161,7 +1152,11 @@ sim();]]></ST>
       <LineId Id="337" Count="0" />
       <LineId Id="339" Count="0" />
       <LineId Id="338" Count="0" />
-      <LineId Id="397" Count="1" />
+      <LineId Id="397" Count="0" />
+      <LineId Id="410" Count="0" />
+      <LineId Id="409" Count="0" />
+      <LineId Id="413" Count="1" />
+      <LineId Id="411" Count="1" />
       <LineId Id="163" Count="0" />
       <LineId Id="152" Count="0" />
       <LineId Id="55" Count="0" />

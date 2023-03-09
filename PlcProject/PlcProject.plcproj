@@ -212,7 +212,7 @@ Fribourg/Switzerland (2017)</Description>
     <Compile Include="POUs\Products\Print_Weu\FB_PrintModule_WEU.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\FB_PrintModule_View.TcPOU">
+    <Compile Include="POUs\Products\Print_Weu\FB_PrintModule_WEU_View.TcPOU">
       <SubType>Code</SubType>
       <ExcludeFromBuild>false</ExcludeFromBuild>
     </Compile>
@@ -312,15 +312,15 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
+    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_CT_Details.TcVIS">
+      <SubType>Code</SubType>
+      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
+    </Compile>
     <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_Hardware.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_ModuleMaster.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
-    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_PcMiniVertical.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -336,7 +336,7 @@ Fribourg/Switzerland (2017)</Description>
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
-    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_WorkerWeu_Print.TcVIS">
+    <Compile Include="POUs\Products\Print_Weu\_VISU_Templates\_VISU_WorkerPrint_WEU.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
@@ -503,10 +503,6 @@ Fribourg/Switzerland (2017)</Description>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>
     <Compile Include="VISUs\Projects\Machine\VISU_MACHINE.TcVIS">
-      <SubType>Code</SubType>
-      <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
-    </Compile>
-    <Compile Include="VISUs\Projects\Print\_VISU_CT_Details.TcVIS">
       <SubType>Code</SubType>
       <DependentUpon>VisualizationManager.TcVMO</DependentUpon>
     </Compile>

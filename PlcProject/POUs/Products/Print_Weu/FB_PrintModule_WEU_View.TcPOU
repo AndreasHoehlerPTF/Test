@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
-  <POU Name="FB_PrintModule_View" Id="{57a6df33-c5fc-4b78-b796-858abcecd4f4}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK FB_PrintModule_View
+  <POU Name="FB_PrintModule_WEU_View" Id="{57a6df33-c5fc-4b78-b796-858abcecd4f4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_PrintModule_WEU_View
 VAR
   // helper
   bInit   : BOOL;
@@ -13,15 +13,24 @@ VAR
   // view selections
   nSelWorkerPrint : UDINT := 1;
   bShowDropSpeedSetup : BOOL;
+  // hardware view
+  bShowPhDetail : BOOL;
+  nSelPhDetail : UDINT := 1;
+  bShowPcDetail : BOOL;
+  nSelPcDetail : UDINT := 1;
   
   // motion and position
   bShowPositionDetail : BOOL;
   bMovingInd : BOOL;
   fSpeed  : LREAL;
-  fbBlink : FB_BLINK;
+  fbBlink_Moving : FB_BLINK;
+  
+  fbBlink_Printing : FB_BLINK;
+  bBlinkPrint : BOOL;
+  bPrintInd : ARRAY[1..GVL_WEU.nC_WorkerPrintPerPm] OF BOOL;
   t : TIME;
   zPos_PM : UDINT;
-  
+  i : UDINT;
 END_VAR
 
 VAR CONSTANT
@@ -37,11 +46,21 @@ IF LrealIsNaN(x:=fSpeed) THEN
   fSpeed := 0;
 END_IF
 t := LREAL_TO_TIME(1000-fSpeed*900);
-fbBlink(bI_Enable:=SEL(fSpeed > 0, FALSE, TRUE), tI_Time:=t, bO_Out=>bMovingInd);
+fbBlink_Moving(bI_Enable:=SEL(fSpeed > 0, FALSE, TRUE), tI_Time:=t, bO_Out=>bMovingInd);
+
+t := T#400MS;
+fbBlink_Moving(bI_Enable:=TRUE, tI_Time:=t, bO_Out=>bBlinkPrint);
+FOR i:=1 TO GVL_WEU.nC_WorkerPrintPerPm DO
+  bPrintInd[i] := _pModule^.fbWorkerPrint[i].bPrinting AND bBlinkPrint;
+END_FOR
+
 
 // -- show pm module position
 zPos_PM := SEL(_pModule^._pModuleMachineState^.bUnitInPrintPosition, 0, 40);
-]]></ST>
+
+// -- show ph detail
+nSelPhDetail := LIMIT(1, nSelPhDetail, _pModule^._nPh);
+nSelPcDetail := LIMIT(1, nSelPcDetail, _pModule^._nPc);]]></ST>
     </Implementation>
     <Method Name="checkConfig" Id="{edfe75ad-63c4-4ec1-9d31-8e206962e7b0}">
       <Declaration><![CDATA[METHOD checkConfig : BOOL
@@ -76,20 +95,24 @@ _pPositioning := pPositioning;
 bInit := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_PrintModule_View">
-      <LineId Id="295" Count="0" />
-      <LineId Id="297" Count="0" />
-      <LineId Id="498" Count="6" />
-      <LineId Id="511" Count="0" />
-      <LineId Id="509" Count="1" />
-      <LineId Id="424" Count="0" />
+    <LineIds Name="FB_PrintModule_WEU_View">
+      <LineId Id="671" Count="8" />
+      <LineId Id="703" Count="0" />
+      <LineId Id="699" Count="0" />
+      <LineId Id="706" Count="0" />
+      <LineId Id="698" Count="0" />
+      <LineId Id="702" Count="0" />
+      <LineId Id="701" Count="0" />
+      <LineId Id="697" Count="0" />
+      <LineId Id="680" Count="5" />
+      <LineId Id="577" Count="0" />
     </LineIds>
-    <LineIds Name="FB_PrintModule_View.checkConfig">
+    <LineIds Name="FB_PrintModule_WEU_View.checkConfig">
       <LineId Id="26" Count="0" />
       <LineId Id="25" Count="0" />
       <LineId Id="5" Count="0" />
     </LineIds>
-    <LineIds Name="FB_PrintModule_View.init">
+    <LineIds Name="FB_PrintModule_WEU_View.init">
       <LineId Id="5" Count="0" />
       <LineId Id="22" Count="0" />
       <LineId Id="11" Count="1" />

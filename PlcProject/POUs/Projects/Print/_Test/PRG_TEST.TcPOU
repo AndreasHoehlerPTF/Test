@@ -18,13 +18,9 @@ VAR
 	bL_FirstRun           : BOOL := TRUE;
 
   (*Test CONFIGURATION*)
-
-
-  
-  (*Motion simulation*)
-  _fb_sim_el5101        : FB_EL5101_SIM;
-  bL_Sim_EL5101         : BOOL;   (*enable EL5001 io simulation*) 
-  
+  bLogRateKill : BOOL;
+  tLog : TON;
+  nLogCt : UDINT;
 END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[(* INIT First action init call*)
@@ -36,6 +32,12 @@ END_IF;
 (*** configure tests ****************************)
 (*--> un-comment the defines in GVL_TestCfg*)
 (************************************************)
+
+IF bLogRateKill THEN
+  tLog(IN:=NOT tLog.Q, PT:=T#10MS);
+  nLogCt := nLogCt + 1;
+  F_LogWarning(F_Concat2('LogKill ct: ', TO_STRING(nLogCt)));
+END_IF
 
 (*** Library testing ***)
 {IF defined (variable: GVL_TestCfg.do_LibTest)}
@@ -58,6 +60,9 @@ CalmarCompPrint.PRG_TEST();]]></ST>
     </Action>
     <LineIds Name="PRG_TEST">
       <LineId Id="243" Count="8" />
+      <LineId Id="291" Count="2" />
+      <LineId Id="297" Count="1" />
+      <LineId Id="294" Count="0" />
       <LineId Id="260" Count="5" />
       <LineId Id="2" Count="0" />
     </LineIds>

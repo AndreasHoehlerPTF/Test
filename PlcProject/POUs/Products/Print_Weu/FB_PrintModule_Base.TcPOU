@@ -23,9 +23,9 @@ VAR
   
   // - references
   _iModuleMaster          : I_ModuleMaster;       // master module (setting, position, global stuff, ...)
-  _iPrintPosition         : I_PrintPosition;      // module's position (0 if not used)
-  _iStartPos              : I_StartPosDetect;     // module's start position detect (0 if not used)
-  _iSystemStatus          : I_SystemStatus;       // 
+  _iPrintPosition         : I_PrintPosition;      // module's position
+  _iStartPos              : I_StartPosDetect;     // module's start position detect
+  _iSystemStatus          : I_SystemStatus;       // module's system status
   _pModuleMachineState    : POINTER TO ST_ModuleMachineInterface_IN;   // machine interface-print states
   _pModuleMachineFeedback : POINTER TO ST_ModuleMachineInterface_OUT;  // machine interface-print feedback
     
@@ -58,6 +58,7 @@ VAR
   bProductionSpeedReached : BOOL;
   fPuElevation            : LREAL;
   nPos_SubPx, nPos_Px     : DINT;
+  nPos_SubPx_mem          : DINT;
   fPos_um                 : LREAL;
   rT_SyncRequest          : R_TRIG;
   tSyncDelay              : TON;
@@ -95,19 +96,24 @@ IF rT_SyncRequest.Q THEN  // OR rT_JobActive.Q
   tSyncDelay(IN:=TRUE, PT:=T#2MS);   // a Sync delay to workaround a sync sent to CB while a Start or Prepare Command
 END_IF
 tSyncDelay(Q=>bHwSyncCmd); 
-IF tSyncDelay.Q THEN
+IF tSyncDelay.Q THEN 
   tSyncDelay(IN:=FALSE);
 END_IF
 
-// positioning 
-{warning 'TODO: hide encoder signals while : NOT bReadForPrinting'}
-fSpeed := _iPrintPosition.getSpeed(fSpeedMpMin=>fSpeedMpMin);
-nPos_SubPx := _iPrintPosition.getPosition(nPosition_px=>nPos_Px, fPosition_um=>fPos_um);
+// positioning
+fSpeed     := _iPrintPosition.getSpeed(fSpeedMpMin=>fSpeedMpMin);
 bProductionSpeedReached := (fSpeedMpMin >= fC_ProductionSpeedMpMin_Level);
-// internal signals
-{warning 'TODO: set HardwareHold'}  // what happens when PM slows down e.g. notaus with endless printing (safety measure), maybe not needed with new Jm (stop after a repeat)
-bHardwareHold := NOT bProductionSpeedReached OR NOT _pModuleMachineState^.bPrintEnabled;    //before: machine stopped/NOT upper5MpMin, module enabled, driftControl OK
-fPuElevation := (_pAdsSa^.sI_HeadGap.fI_Val / 1000) + fC_HeadOffsetPlate - _pModuleMachineState^.fSubstrateThickness;
+// get position (hide encoder if not ready for printing or moving)
+nPos_SubPx := _iPrintPosition.getPosition(nPosition_px=>nPos_Px, fPosition_um=>fPos_um);
+
+// security measures (jetting when not really moving or not in position)
+nPos_SubPx := nPos_SubPx_mem := SEL(bReadyForPrinting AND _iPrintPosition.bMoving, nPos_SubPx_mem, nPos_SubPx);
+// what happens when PM slows down e.g. notaus with endless printing (safety measure), maybe not needed with new Jm (stop after a repeat)
+ // - enabled & > minimum speed
+ // - enabled & > production min speed
+bHardwareHold := NOT bProductionSpeedReached OR NOT _pModuleMachineState^.bPrintEnabled;  // Hw HOLD: 
+{warning '@HOA TODO what value is this, from where'}
+fPuElevation := LIMIT(0, (_pAdsSa^.sI_HeadGap.fI_Val / 1000) + fC_HeadOffsetPlate - _pModuleMachineState^.fSubstrateThickness, 1);
 
 // call hardware
 (* -- PC PrintController*)
@@ -132,36 +138,33 @@ END_FOR
 // - fill I_SubSystem correctly from all workers
 FOR nCtr := 1 TO GVL_WEU.nC_WorkerPrintPerPm DO
   fbWorkerPrint[nCtr].fPrintStartOffset :=  fPrintOffsetX[nCtr]
-                                  + (fbWorkerPrint[nCtr].fStartShiftOffset + fbWorkerPrint[nCtr].fStartShiftFactor * fSpeed)   // pre-start (attach position)
-                                  + _fDistToMasterPm;
+                                          + _fDistToMasterPm;
                                   //+ master detect offset,
   fbWorkerPrint[nCtr].bWorkerEnable := _pAdsPm^.bI_Enable AND _pModuleMachineState^.bEngaged AND _pModuleMachineState^.bPrintEnabled;
   fbWorkerPrint[nCtr](
-    nPrintPos           := nPos_SubPx,
+    nPrintPos             := nPos_SubPx,
     bHardwareSync         := bHwSyncCmd,
-    bHardwareHold         := bHardwareHold,
-    fPrintStartOffset     :=  fPrintOffsetX[nCtr],      // NOTE: dynamic corrections done in Worker (dropSpeedComp / global grid dx))
+    bHardwareHold         := FALSE, //bHardwareHold,
+    fPrintStartOffset     :=  fPrintOffsetX[nCtr],      // NOTE: dynamic corrections done in Worker (dropSpeedComp / global grid dx / other point corrections))
                             //+ module detect offset,   // modules detect distance or the Master if in simulation mode
                             {warning 'TODO: Vorzeichen von lateral offset & LateralOffser +/-?: Vorher war -'}
-                            {warning 'TODO: why not using PM Y-Shift for Manual PM offset? and why will we need an offset in um in PLC?'}
     fPrintYOffset         := LIMIT(
                             0,
-                              _nYShift_PcRamCenter
-                              + fPrintOffsetY[nCtr]      // calc with CB Shift, PU y-Shift, PG y-shift
-                              //in CT? + F_MeterToSubPixel(fbStartPosDetect.fLateralOffset, nC_PrintResolution)    // Y from mark detection
-                              + _pModuleMachineState^.fLateralRegister,    // lateral register from machine
-                              //+ Manual PM Offset (manaul lateral offset per pm (VISU) 
+                                _nYShift_PcRamCenter                      // y-offset for centered image in ph
+                                + fPrintOffsetY[nCtr]                     // calc with CB Shift, PU y-Shift, PG y-shift
+                                + _pModuleMachineState^.fLateralRegister  // lateral register from machine
+                                + _fPrintModuleAdjustY,                   // manual y shift from plc
                             2*_nYShift_PcRamCenter),
     fMasterSpeed          := fSpeed,
     fPUElevation          := fPuElevation,  // for internal dropSpeedCorrection
-    fPUPlate1_Temperature := 0, // for banana correction
-    fPUPlate2_Temperature := 0, // for banana correction
 //    bError                => ,
 //    nError                => ,
   );
 END_FOR
 
 
+// machine interface outputs
+_pModuleMachineFeedback^.bSpeedExeeded     := checkSpeed(fSpeed:=fSpeed, fMaxSpeed => _pModuleMachineFeedback^.fMaxSpeed);
 
 // messaging
 Messaging();
@@ -206,6 +209,62 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
+    <Method Name="checkSpeed" Id="{aa3ea311-dcaa-43e5-82f9-d51da3dd8587}">
+      <Declaration><![CDATA[(*
+  Checks if current speed is higher than max. speed.
+  :return: TRUE if speed exeeds maximum
+*)
+METHOD PROTECTED checkSpeed : BOOL
+VAR_INPUT
+  fSpeed : LREAL;       // current speed
+END_VAR
+VAR_OUTPUT
+  fMaxSpeed : LREAL;    // modules max. printing speed
+END_VAR
+VAR
+  f : LREAL;
+  i : UDINT;
+END_VAR
+VAR_INST
+  fbSpeedFilterMav : FB_FILTER_MAV;           // Moving average filter
+  fMaxSpeedTolerence : LREAL := 1.0/60;       // Allow max. speed to exeed limit + this tolerance 
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// disabled
+IF NOT _pAdsPm^.bI_Enable OR NOT _pModuleMachineState^.bEngaged THEN 
+  checkSpeed := FALSE;
+  fMaxSpeed := 0;
+  RETURN;
+END_IF 
+
+
+// filter current speed
+fbSpeedFilterMav(fI_Input := fSpeed, iI_NbInputs := 32);  (*max iI_NbInputs = 32!*)
+
+// find slowest max. speed
+f := 0;
+FOR i:=1 TO GVL_WEU.nC_WorkerPrintPerPm DO
+  IF fbWorkerPrint[i].bWorkerEnable THEN
+    IF fbWorkerPrint[i].fMaxSpeed = 0 THEN
+      ; // ignored speed
+    ELSIF f = 0 OR f > fbWorkerPrint[i].fMaxSpeed THEN 
+      f := fbWorkerPrint[i].fMaxSpeed;
+		END_IF
+	END_IF
+END_FOR
+
+fMaxSpeed := f;   // return max. possible speed
+
+// check if too fast
+IF f > 0 AND fbSpeedFilterMav.fO_OutputMav > f THEN 
+  checkSpeed := TRUE; // speed exceeded
+ELSE
+  checkSpeed := FALSE;
+END_IF
+
+]]></ST>
+      </Implementation>
+    </Method>
     <Property Name="fDetectToPm" Id="{2550cbab-a1bb-4141-85dc-871a4f09796d}" FolderPath="Position\">
       <Declaration><![CDATA[(*
   Distance between activated StartPosition detection and Pm, if one configured (fDetectToCameraOffset + fCameraToPrintOffset)
@@ -274,7 +333,7 @@ fbParamMediator.init(pCamWorker:=ADR(fbWorkerCamera), pDefWorker:=ADR(fbWorkerDe
 
 // -- Worker camera
 fbWorkerCamera.Init(iWorkerParams:=iModuleMaster.iWorkerParams, pMsgConfig:=ADR(sL_MsgConfig), fPrintResolution:=_iPrintPosition.fPrintResolution, fSubPxResolution:=_iPrintPosition.fSubPxResolution);
-fbWorkerCamera.InitWorkerCamera(pAdsIf:=pAdsCam, iDefGridParamMediator:=fbParamMediator);
+fbWorkerCamera.InitWorkerCamera(pAdsIf:=pAdsCam, iDefGridParamMediator:=fbParamMediator, fPrintUnitWidth:=fPrintUnitWidth);
 fbWorkerCamera.reg();
 iModuleMaster.registerPuStatusClient(sClient:=fbWorkerCamera);
 
@@ -286,7 +345,6 @@ iModuleMaster.registerPuStatusClient(sClient:=fbWorkerDeformation);
 
 // -- Worker print
 FOR nCtr := 1 TO GVL_WEU.nC_WorkerPrintPerPm DO
-  
   fbWorkerPrint[nCtr].Init(
     iWorkerParams:=iModuleMaster.iWorkerParams,
     fPrintResolution:=_iPrintPosition.fPrintResolution,
@@ -295,9 +353,7 @@ FOR nCtr := 1 TO GVL_WEU.nC_WorkerPrintPerPm DO
   );
   fbWorkerPrint[nCtr].InitWorkerPrint(
     pAdsPg:=pAdsPg[nCtr],
-    pAdsIfCam:=pAdsCam,
     iDefGridParamMediator:=fbParamMediator,
-    fPrintUnitWidth:=fPrintUnitWidth,
     fLimitCorrectionX:=1000,
     fLimitCorrectionY:=nYShiftPcCenter-1
   );
@@ -441,6 +497,7 @@ IF NOT bFound THEN    // add if unknown
   _pPh[_nPh] := pPh;
   _nPhToPc_Mapping[_nPh] := pMapDef^.nPc;
   _nPhToPcCh_Mapping[_nPh] := pMapDef^.nPcCh;
+  _nPhToWorker_Mapping[_nPh] := pMapDef^.nPg;
 ELSE
   LogWarning(F_Concat3('FB_PH=', pPh^.sName, ', already registered, ignore'));
 END_IF
@@ -515,7 +572,19 @@ END_FOR
       <LineId Id="3739" Count="1" />
       <LineId Id="3599" Count="1" />
       <LineId Id="3658" Count="0" />
-      <LineId Id="3601" Count="18" />
+      <LineId Id="3601" Count="4" />
+      <LineId Id="4017" Count="0" />
+      <LineId Id="3607" Count="2" />
+      <LineId Id="3611" Count="0" />
+      <LineId Id="4005" Count="2" />
+      <LineId Id="4011" Count="0" />
+      <LineId Id="4010" Count="0" />
+      <LineId Id="3612" Count="0" />
+      <LineId Id="4008" Count="0" />
+      <LineId Id="3997" Count="1" />
+      <LineId Id="3616" Count="0" />
+      <LineId Id="3999" Count="0" />
+      <LineId Id="3617" Count="2" />
       <LineId Id="3901" Count="1" />
       <LineId Id="3908" Count="0" />
       <LineId Id="3903" Count="3" />
@@ -525,7 +594,16 @@ END_FOR
       <LineId Id="3918" Count="1" />
       <LineId Id="3910" Count="0" />
       <LineId Id="3900" Count="0" />
-      <LineId Id="3620" Count="37" />
+      <LineId Id="3620" Count="4" />
+      <LineId Id="4016" Count="0" />
+      <LineId Id="3627" Count="8" />
+      <LineId Id="3637" Count="3" />
+      <LineId Id="3642" Count="4" />
+      <LineId Id="3649" Count="4" />
+      <LineId Id="4013" Count="1" />
+      <LineId Id="4012" Count="0" />
+      <LineId Id="3654" Count="0" />
+      <LineId Id="3656" Count="1" />
       <LineId Id="770" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule_Base.bEngaged.Get">
@@ -536,6 +614,39 @@ END_FOR
     </LineIds>
     <LineIds Name="FB_PrintModule_Base.bSyncCmd.Get">
       <LineId Id="18" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PrintModule_Base.checkSpeed">
+      <LineId Id="30" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="37" Count="1" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="56" Count="1" />
+      <LineId Id="46" Count="0" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="FB_PrintModule_Base.fDetectToPm.Get">
       <LineId Id="2" Count="0" />
@@ -559,13 +670,14 @@ END_FOR
       <LineId Id="1399" Count="0" />
       <LineId Id="1398" Count="0" />
       <LineId Id="1393" Count="0" />
-      <LineId Id="1304" Count="4" />
+      <LineId Id="1304" Count="2" />
+      <LineId Id="1308" Count="0" />
       <LineId Id="1460" Count="0" />
       <LineId Id="1309" Count="1" />
       <LineId Id="1313" Count="1" />
-      <LineId Id="1316" Count="2" />
+      <LineId Id="1316" Count="1" />
       <LineId Id="1488" Count="0" />
-      <LineId Id="1319" Count="46" />
+      <LineId Id="1320" Count="45" />
       <LineId Id="1425" Count="2" />
       <LineId Id="1429" Count="1" />
       <LineId Id="1366" Count="1" />
@@ -587,6 +699,7 @@ END_FOR
       <LineId Id="214" Count="0" />
       <LineId Id="195" Count="10" />
       <LineId Id="216" Count="2" />
+      <LineId Id="232" Count="0" />
       <LineId Id="206" Count="2" />
       <LineId Id="212" Count="0" />
       <LineId Id="14" Count="0" />

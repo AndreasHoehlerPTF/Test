@@ -43,7 +43,7 @@ VAR
   _bUseCameraTrigger              : BOOL;           // (cam specific setting) Generate camera trigger output
   _bUseCameraTriggerFeedback      : BOOL;           // (cam specific setting) Evaluate camera triggered feedback
   _bCamManualTeachMode            : BOOL;           // cam in manual teach mode
-  _fSubstrateLength               : LREAL;          // Substrate length in [m]
+  _fSubstrateLength               : LREAL;          // Substrate length in [m] (should be repeat ength)
   _fTriggerDistance               : LREAL;          // Distance between Sensor and Trigger [m]
   _fTriggerLength                 : LREAL := 10;    // Length of trigger signal in ms, min. 3 bus cycles
   _iActiveCam                     : I_CameraTriggerDevice;  // active camera interface (set by Enable() on I_CameraTrigger)
