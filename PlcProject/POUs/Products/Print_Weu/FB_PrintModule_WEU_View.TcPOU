@@ -19,11 +19,14 @@ VAR
   bShowPcDetail : BOOL;
   nSelPcDetail : UDINT := 1;
   
-  // motion and position
+  // motion and position view
   bShowPositionDetail : BOOL;
   bMovingInd : BOOL;
   fSpeed  : LREAL;
   fbBlink_Moving : FB_BLINK;
+  
+  // debug view
+  bShowDebugAndSim : BOOL;
   
   fbBlink_Printing : FB_BLINK;
   bBlinkPrint : BOOL;

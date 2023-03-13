@@ -235,7 +235,7 @@ END_IF
 _rPcVisuSel       := _rPc[fBPcSelector.pSelect^];
 _rAdsPcVisuSel    := _rPc[fBPcSelector.pSelect^]^._pAds;
 _rPhVisuSel       := _rPh[fBPhSelector.pSelect^];
-_rAdsPhVisuSel    := _rPh[fBPcSelector.pSelect^]^._pAdsIf;
+_rAdsPhVisuSel    := _rPh[fBPhSelector.pSelect^]^._pAdsIf;
 ]]></ST>
       </Implementation>
     </Action>

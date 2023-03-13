@@ -466,7 +466,7 @@ IF fb_FTrigShutdownActive.Q THEN iSystemCmd.exitSleep('Machine'); END_IF
 IF bL_SleepVisu             THEN iSystemCmd.enterSleep('Visu'); bL_SleepVisu := FALSE; END_IF
 IF bL_WakeUpVisu            THEN iSystemCmd.exitSleep('Visu'); bL_WakeUpVisu := FALSE; END_IF
 IF fb_RTrigOpModeHoming.Q   THEN iSystemCmd.exitSleep('Homing'); END_IF 
-bAllowSleepFromMachine := ObEAP_ShutdownReady;
+bAllowSleepFromMachine := ObEAP_ShutdownReady;      // sleep canEx only if machine allows it
 
 // setup intermediate variable still used everywhere
 sO_SystemCmd.bEStop := iSystemStatus.bEmergency;

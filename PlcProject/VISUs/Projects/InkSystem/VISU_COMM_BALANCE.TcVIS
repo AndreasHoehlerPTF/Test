@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <Visu Name="VISU_COMM_BALANCE" Id="{1b036466-4acd-4626-93cf-2c7394fb09a3}">
     <XmlArchive>
       <Data>
@@ -2304,8 +2304,8 @@
           <o n="GeneratedLMMDescriptions" t="GeneratedLanguageModelEntriesData">
             <o n="GeneratedVisuFbDescription" t="GenericFbDescription">
               <d n="FbMethods" t="CaseInsensitiveHashtable_1" ckt="String" cvt="Guid">
-                <v>HasVisibilityAccess</v>
-                <v>0738d599-4288-404d-9f7a-e25b9d1d7948</v>
+                <v>GetUpdateRects</v>
+                <v>a6def487-8eeb-4bed-ab58-5b75cd1f792c</v>
                 <v>ContainsPoint</v>
                 <v>68df07a1-65ce-4de5-abf2-d94f2e9f3eb5</v>
                 <v>SetStaticState</v>
@@ -2314,8 +2314,6 @@
                 <v>c0426fb6-123a-4bb3-ab96-a8b24e2b8087</v>
                 <v>GetTooltip</v>
                 <v>868455a6-751e-444a-8dda-0da132c76f13</v>
-                <v>GetUpdateRects</v>
-                <v>a6def487-8eeb-4bed-ab58-5b75cd1f792c</v>
                 <v>GetNamespace</v>
                 <v>a2f36f41-2b6b-48d8-a450-b6f22b188282</v>
                 <v>GetTranslator</v>
@@ -2328,6 +2326,8 @@
                 <v>dd7db9ed-4c2a-4c14-be26-7af02e98de88</v>
                 <v>Paint</v>
                 <v>2b9bbdc2-d4cc-49cb-bf8e-9cfeb15666e6</v>
+                <v>HasVisibilityAccess</v>
+                <v>0738d599-4288-404d-9f7a-e25b9d1d7948</v>
                 <v>GetElementArray</v>
                 <v>1d770347-3d89-4c94-a8db-daae731e1b89</v>
                 <v>SetVisuFlagsInternal</v>
@@ -2378,10 +2378,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable_1" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>7dc4a2ee-56ee-4bb5-8496-4142d5708823</v>
-                <v>FB_Reinit</v>
-                <v>7db40567-26df-4531-a9a6-ce07418e3f44</v>
                 <v>FB_Exit</v>
                 <v>c53c6128-2cd5-4c0a-b8dc-f2dcc2450e6f</v>
+                <v>FB_Reinit</v>
+                <v>7db40567-26df-4531-a9a6-ce07418e3f44</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{849a89e6-944a-4222-a746-160d0e18ab21}</v>

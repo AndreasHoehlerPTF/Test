@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
+  <DUT Name="ST_ButtonFrameSel_Def" Id="{5ee0d69a-71e8-41c9-9081-0b356d4b20b5}">
+    <Declaration><![CDATA[TYPE ST_ButtonFrameSel_Def :
+STRUCT
+  sImgId       : STRING;           // image id (to show)
+  nFrameIdx    : UINT;             // frame index [0..x], index to select on click
+  pFrameSelect : POINTER TO UINT;  // pointer to frame selection variable (variable to write to change the selected frame)
+  sVisuName    : T_MaxString;      // visualisation name
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

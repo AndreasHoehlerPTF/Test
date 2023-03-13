@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.11">
   <Visu Name="VISU_PURGE" Id="{26cea0c8-0a15-4453-963c-beaa616d340a}">
     <XmlArchive>
       <Data>
@@ -28,7 +28,7 @@
                     </o>
                     <o>
                       <v n="Id">2422045748L</v>
-                      <v n="Value" t="Int16">1477</v>
+                      <v n="Value" t="Int16">1356</v>
                     </o>
                     <o>
                       <v n="Id">2134141914L</v>
@@ -378,12 +378,12 @@
                               <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
                                 <v>Visible</v>
                                 <v>False</v>
-                                <v>DefaultArraySize</v>
-                                <v>5</v>
-                                <v>VisibleChildren</v>
-                                <v>True</v>
                                 <v>ieccodeconversion_array</v>
                                 <v></v>
+                                <v>VisibleChildren</v>
+                                <v>True</v>
+                                <v>DefaultArraySize</v>
+                                <v>5</v>
                                 <v>''NORMAL__COMMENT</v>
                                 <v> We hide this node to prevent having two References nodes
  Nevertheless we want to make sure that the children are displayed</v>
@@ -439,8 +439,8 @@
                         <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
                           <v n="AttrFlags">81920UL</v>
                           <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
-                            <v>DisplayFrameReferencesConfiguration</v>
-                            <v></v>
+                            <v>conditionalshow</v>
+                            <v>visu_elemdev</v>
                             <v>DescriptionTextId</v>
                             <v>TL_ElementProperties.Desc_ReferencedVisus</v>
                             <v>SortFlag</v>
@@ -451,14 +451,14 @@
                             <v>Simple|Standard</v>
                             <v>DynamicArray</v>
                             <v></v>
-                            <v>conditionalshow</v>
-                            <v>visu_elemdev</v>
+                            <v>DisplayFrameReferencesConfiguration</v>
+                            <v></v>
                             <v>FrameReferences</v>
                             <v></v>
-                            <v>DisplayTextId</v>
-                            <v>TL_ElementProperties.References</v>
                             <v>Storable</v>
                             <v>True</v>
+                            <v>DisplayTextId</v>
+                            <v>TL_ElementProperties.References</v>
                           </d>
                           <v n="ConvDone">true</v>
                         </o>
@@ -4158,12 +4158,12 @@
                               <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
                                 <v>Visible</v>
                                 <v>False</v>
-                                <v>DefaultArraySize</v>
-                                <v>5</v>
-                                <v>VisibleChildren</v>
-                                <v>True</v>
                                 <v>ieccodeconversion_array</v>
                                 <v></v>
+                                <v>VisibleChildren</v>
+                                <v>True</v>
+                                <v>DefaultArraySize</v>
+                                <v>5</v>
                                 <v>''NORMAL__COMMENT</v>
                                 <v> We hide this node to prevent having two References nodes
  Nevertheless we want to make sure that the children are displayed</v>
@@ -4219,8 +4219,8 @@
                         <o n="TypeNodeAttributes" t="TypeNodeAttributes2">
                           <v n="AttrFlags">81920UL</v>
                           <d n="TypeNodeAttributesData" t="CaseInsensitiveHashtable" ckt="String" cvt="String">
-                            <v>DisplayFrameReferencesConfiguration</v>
-                            <v></v>
+                            <v>conditionalshow</v>
+                            <v>visu_elemdev</v>
                             <v>DescriptionTextId</v>
                             <v>TL_ElementProperties.Desc_ReferencedVisus</v>
                             <v>SortFlag</v>
@@ -4231,14 +4231,14 @@
                             <v>Simple|Standard</v>
                             <v>DynamicArray</v>
                             <v></v>
-                            <v>conditionalshow</v>
-                            <v>visu_elemdev</v>
+                            <v>DisplayFrameReferencesConfiguration</v>
+                            <v></v>
                             <v>FrameReferences</v>
                             <v></v>
-                            <v>DisplayTextId</v>
-                            <v>TL_ElementProperties.References</v>
                             <v>Storable</v>
                             <v>True</v>
+                            <v>DisplayTextId</v>
+                            <v>TL_ElementProperties.References</v>
                           </d>
                           <v n="ConvDone">true</v>
                         </o>
@@ -5390,8 +5390,8 @@
                 <v>1aaf339d-030a-46c9-a2b1-387bfd78f9e4</v>
                 <v>ContainsPoint</v>
                 <v>6fe318b1-d849-4418-9d61-c0beb4ce04fe</v>
-                <v>SetStaticState</v>
-                <v>df94cd64-6c28-448c-810a-4811ff7d2a44</v>
+                <v>HasInputAccess</v>
+                <v>ed8b325f-d7b0-4706-965d-9146a2953ed1</v>
                 <v>HasInputAccessIntern</v>
                 <v>8481ddf8-a1c7-4f23-8e7f-974ef199e673</v>
                 <v>GetTooltip</v>
@@ -5408,8 +5408,6 @@
                 <v>3845f42a-1676-49ac-9525-b340427d8278</v>
                 <v>GetClientData</v>
                 <v>9eead38e-72be-43c0-bd6f-4affae461d33</v>
-                <v>Destruct</v>
-                <v>7c8fcc68-3487-4477-ba7f-f3514c0e1c71</v>
                 <v>Paint</v>
                 <v>53439096-fd06-4dea-aee0-e5f9cd5008ef</v>
                 <v>GetElementArray</v>
@@ -5424,12 +5422,14 @@
                 <v>599dff64-049e-4474-852a-f9d14445cae0</v>
                 <v>Initialize</v>
                 <v>2684681e-4f17-441d-9eca-9198b20f5d7b</v>
-                <v>HasInputAccess</v>
-                <v>ed8b325f-d7b0-4706-965d-9146a2953ed1</v>
                 <v>HasVisibilityAccessIntern</v>
                 <v>2e8a383a-a4c9-446c-86b3-408b2b6eba24</v>
                 <v>GetSurroundingRect</v>
                 <v>2597a243-5f4d-4cf9-ac13-941e953bceab</v>
+                <v>ElementInfo</v>
+                <v>c0b63411-594b-4f65-9d37-55b628069a10</v>
+                <v>SetStaticState</v>
+                <v>df94cd64-6c28-448c-810a-4811ff7d2a44</v>
                 <v>GetLocalUsergroup</v>
                 <v>27fa4fb2-5b72-4408-8337-b0a8fd62795b</v>
                 <v>GetName</v>
@@ -5446,8 +5446,8 @@
                 <v>7df43f50-8351-4a8e-8115-31498b3259b3</v>
                 <v>HandleInput</v>
                 <v>0f8bf527-6eca-41c1-a3a5-a518deea29f0</v>
-                <v>ElementInfo</v>
-                <v>c0b63411-594b-4f65-9d37-55b628069a10</v>
+                <v>Destruct</v>
+                <v>7c8fcc68-3487-4477-ba7f-f3514c0e1c71</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{26cea0c8-0a15-4453-963c-beaa616d340a}</v>
@@ -5460,10 +5460,10 @@
               <d n="FbMethods" t="CaseInsensitiveHashtable_1" ckt="String" cvt="Guid">
                 <v>FB_Init</v>
                 <v>2bd5dee6-4540-4254-80eb-a6e89d2f7c69</v>
-                <v>FB_Exit</v>
-                <v>f7441872-254d-4bf9-8bd4-d7be77400037</v>
                 <v>FB_Reinit</v>
                 <v>41a82ebc-e0ec-47c7-bc39-6f84fa3ecbd4</v>
+                <v>FB_Exit</v>
+                <v>f7441872-254d-4bf9-8bd4-d7be77400037</v>
               </d>
               <v n="FbName">"NotImportant"</v>
               <v n="FbGuid">{15ddbf31-3f66-437f-92ef-1284b3c26c11}</v>
@@ -5544,12 +5544,12 @@
             <d2 n="Size" ckt="Int32" cvt="VisualObjectSize">
               <v>0</v>
               <o>
-                <v n="Width">1477</v>
+                <v n="Width">1356</v>
                 <v n="Height">1334</v>
               </o>
               <v>1</v>
               <o>
-                <v n="Width">1477</v>
+                <v n="Width">1356</v>
                 <v n="Height">1334</v>
               </o>
             </d2>
@@ -5576,7 +5576,7 @@
         <Type n="Hashtable">System.Collections.Hashtable</Type>
         <Type n="HotkeyConfiguration">{6b108d46-58af-4e41-a3f4-174d8f160cc4}</Type>
         <Type n="InputBoxInputAction">{e8e7e747-f76f-4dee-ab1c-b9637e41ac26}</Type>
-        <Type n="InputBoxInputAction[]">_3S.CoDeSys.VisualElem.InputBoxInputAction[], VisualElem.plugin, Version=3.5.13.31, Culture=neutral, PublicKeyToken=null</Type>
+        <Type n="InputBoxInputAction[]">_3S.CoDeSys.VisualElem.InputBoxInputAction[], VisualElem.plugin, Version=3.5.13.32, Culture=neutral, PublicKeyToken=null</Type>
         <Type n="Int16">System.Int16</Type>
         <Type n="Int32">System.Int32</Type>
         <Type n="Int64">System.Int64</Type>

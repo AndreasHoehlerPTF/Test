@@ -19,10 +19,10 @@ VAR
   _bSpeedExeeded : BOOL;    // one module exceeded speed
   _bMachineMoving : BOOL;   // one module is moving
   
+  // view
+  nSelPm : UDINT := 1;     // selected pm in view
 END_VAR
-VAR PERSISTENT
-  bMarksInverted : BOOL;  //inverted marks in case of wrong mirrored prints
-END_VAR]]></Declaration>
+]]></Declaration>
     <Implementation>
       <ST><![CDATA[IF NOT bInit THEN Init(); RETURN; END_IF
 SUPER^();

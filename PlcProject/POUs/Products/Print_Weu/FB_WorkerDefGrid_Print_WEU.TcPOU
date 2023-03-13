@@ -9,7 +9,7 @@ VAR_INPUT
   bHardwareHold         : BOOL;   // hw hold signal
   fPrintStartOffset     : LREAL;  // X-Shift StartOffset from Module reference (configurative PU/PM/PG/PA ADS offset) [m]
   fPrintYOffset         : LREAL;  // Y-Shift
-  // fine alignement live parameter
+  // correction live parameter
   fPUElevation          : LREAL;  // PU distance from substrate [m]
 END_VAR
 VAR

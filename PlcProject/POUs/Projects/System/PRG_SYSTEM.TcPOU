@@ -20,15 +20,24 @@ VAR
   sC_Ads_Info                : ST_ADS_INFO;
   sC_Ads_System              : ST_ADS_SYSTEM;
   ISystemBase                : I_SystemBase;                // reference to system base
-
-  stProgramVersion           : ST_LibVersion;               // version information of project from TwinCAT dialog entry
-  aCurrentDateTime           : STRING;
   
   // Message control
   nMsgResetRequests          : UINT;
   fb_RTrigMsgResetRequest    : R_TRIG;
   
+  // Version
+  stProgramVersion           : ST_LibVersion;               // version information of project from TwinCAT dialog entry
+  aCurrentDateTime           : STRING;  
   
+  // View
+  nMainVisuFrameIndex        : UINT := 0;   // VISU_Main frame selection
+  sMainButtons               : ARRAY[0..4] OF ST_ButtonFrameSel_Def := [
+                                                (sImgId:='droplet_w',   nFrameIdx:=0, pFrameSelect:=ADR(nMainVisuFrameIndex), sVisuName:='InkSystem'),
+                                                (sImgId:='printer_w',   nFrameIdx:=1, pFrameSelect:=ADR(nMainVisuFrameIndex), sVisuName:='Print'),
+                                                (sImgId:='book_w',      nFrameIdx:=2, pFrameSelect:=ADR(nMainVisuFrameIndex), sVisuName:='Recipe'),
+                                                (sImgId:='gear_w',      nFrameIdx:=3, pFrameSelect:=ADR(nMainVisuFrameIndex), sVisuName:='Service'),
+                                                (sImgId:='lightning_w', nFrameIdx:=4, pFrameSelect:=ADR(nMainVisuFrameIndex), sVisuName:='Machine')
+                                              ];
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -57,7 +66,10 @@ PRG_SYSTEMBASE();
 PRG_MACHINE.updateSleepLock(); // must be called after SystemBase, to overwrite CanEx
 ]]></ST>
     </Implementation>
-    <Action Name="Init" Id="{04362747-00ea-4552-b3f9-e147026f4bfa}">
+    <Method Name="Init" Id="{c7acf598-9914-442c-a081-50b8b2079f10}">
+      <Declaration><![CDATA[METHOD Init
+
+]]></Declaration>
       <Implementation>
         <ST><![CDATA[(*--- init call only once*)
 IF bL_InitOK = TRUE THEN RETURN; END_IF
@@ -120,10 +132,11 @@ PRG_SYSTEMBASE.SetVersion(aI_Name:='PlcProject', stProgramVersion);
   PRG_SYSTEMBASE.SetVersion(aI_Name:='CalmarProdDmax', stLibVersion_CalmarProdDmax);
 {END_IF}
 
+
 (*--- done*)
 bL_InitOK := TRUE;]]></ST>
       </Implementation>
-    </Action>
+    </Method>
     <LineIds Name="PRG_SYSTEM">
       <LineId Id="1028" Count="0" />
       <LineId Id="1322" Count="0" />
@@ -148,21 +161,11 @@ bL_InitOK := TRUE;]]></ST>
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="PRG_SYSTEM.Init">
-      <LineId Id="931" Count="17" />
-      <LineId Id="986" Count="0" />
-      <LineId Id="952" Count="4" />
-      <LineId Id="987" Count="2" />
-      <LineId Id="957" Count="7" />
-      <LineId Id="968" Count="3" />
-      <LineId Id="991" Count="1" />
-      <LineId Id="990" Count="0" />
-      <LineId Id="972" Count="11" />
-      <LineId Id="994" Count="1" />
-      <LineId Id="993" Count="0" />
-      <LineId Id="997" Count="1" />
-      <LineId Id="996" Count="0" />
-      <LineId Id="984" Count="1" />
-      <LineId Id="1" Count="0" />
+      <LineId Id="6" Count="59" />
+      <LineId Id="106" Count="0" />
+      <LineId Id="105" Count="0" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="5" Count="0" />
     </LineIds>
   </POU>
 </TcPlcObject>

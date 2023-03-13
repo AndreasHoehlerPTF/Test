@@ -154,8 +154,8 @@ VAR
   
   
   (*View*)
+  // - VISU_SERVICE
   nServiceVisuFrameIndex                    : UINT := 0;   // VISU_SERVICE frame selection
-  nSelectPmView                             : UDINT := 1;  // visu pm selection
   fbPrintOverview                           : FB_PrintOverview;
   
   (*Debug & Insight*)
@@ -863,6 +863,12 @@ IF bL_InitRemVar THEN
       aI_RecipePath           := CONCAT(aC_PlcConfigPath, aC_PlcRecipeSubPath),
       aI_RecipeDefinitionName := sC_Ads_Info.aType  (*is set in Mapping*)
     );
+    FOR lCtr := 1 TO iCPr_NB_PM DO
+      PRG_SYSTEMBASE.fbRecipeAutoMngmt.register(
+        aI_RecipePath           := CONCAT(aC_PlcConfigPath, aC_PlcRecipeSubPath),
+        aI_RecipeDefinitionName := F_Concat2('PRG_PRINT_PM', TO_STRING(lCtr))
+      );
+    END_FOR    
   END_IF
 
   (*load initial values if pattern was invalid*)
@@ -1482,7 +1488,11 @@ END_IF]]></ST>
       <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="PRG_PRINT.RemVar">
-      <LineId Id="6" Count="22" />
+      <LineId Id="6" Count="10" />
+      <LineId Id="185" Count="0" />
+      <LineId Id="177" Count="3" />
+      <LineId Id="176" Count="0" />
+      <LineId Id="17" Count="11" />
       <LineId Id="32" Count="42" />
       <LineId Id="79" Count="3" />
       <LineId Id="84" Count="1" />

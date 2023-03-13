@@ -31,6 +31,10 @@ VAR
   // helper
   iNewCt : I_CT;
   pCT : POINTER TO FB_ContainerDefGrid;
+  
+  // view
+  nViewPmSel : UDINT := 1;  // visu pm selection
+  
 END_VAR
 VAR CONSTANT
   nC_MaxModules : UDINT := 8;
@@ -72,6 +76,10 @@ END_IF
 fBCTManagerMain.nPositions[E_PosDomain.master_pos] := nMasterPosition;
 fBCTManagerMain.nPositions[E_PosDomain.pos_px]     := nMasterPosition/TO_DINT(nC_SubPixelResolution);
 fBCTManagerMain();
+
+// view
+nViewPmSel := TO_UDINT(LIMIT(1, TO_DINT(nViewPmSel), iCPr_NB_PM));  // limit visu selection
+
 ]]></ST>
     </Implementation>
     <Folder Name="I_DeformationHandler" Id="{c94b1ff5-fcac-4924-8128-07b634aaa60a}" />
@@ -277,6 +285,10 @@ _pMasterModule := pModule;]]></ST>
       <LineId Id="201" Count="0" />
       <LineId Id="198" Count="0" />
       <LineId Id="166" Count="2" />
+      <LineId Id="313" Count="0" />
+      <LineId Id="312" Count="0" />
+      <LineId Id="315" Count="0" />
+      <LineId Id="314" Count="0" />
       <LineId Id="9" Count="0" />
     </LineIds>
     <LineIds Name="FB_ModuleMaster.DeleteCachedCt">

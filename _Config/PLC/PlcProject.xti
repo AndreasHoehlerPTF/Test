@@ -63,8 +63,8 @@
 			</ArrayInfo>
 		</DataType>
 		<DataType>
-			<Name GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint" AutoDeleteType="true">ST_PcPdiOutput</Name>
-			<BitSize>160</BitSize>
+			<Name GUID="{894D5EC2-79AC-0057-FED5-D4FB722C97D0}" Namespace="CalmarCompPrint" AutoDeleteType="true">ST_PcPdiOutput</Name>
+			<BitSize>128</BitSize>
 			<SubItem>
 				<Name>nPulseRef</Name>
 				<Type GUID="{18071995-0000-0000-0000-000000000009}">DINT</Type>
@@ -82,23 +82,16 @@
 			<SubItem>
 				<Name>nXshift</Name>
 				<Type GUID="{18071995-0000-0000-0000-000000000009}">DINT</Type>
-				<Comment><![CDATA[ global x-shift position]]></Comment>
+				<Comment><![CDATA[ global x-shift position (read at start)]]></Comment>
 				<BitSize>32</BitSize>
 				<BitOffs>64</BitOffs>
 			</SubItem>
 			<SubItem>
 				<Name>nYshift</Name>
 				<Type GUID="{18071995-0000-0000-0000-000000000009}">DINT</Type>
-				<Comment><![CDATA[ global y-shift position]]></Comment>
+				<Comment><![CDATA[ global y-shift position (read at prepare)]]></Comment>
 				<BitSize>32</BitSize>
 				<BitOffs>96</BitOffs>
-			</SubItem>
-			<SubItem>
-				<Name>nImageXshift</Name>
-				<Type GUID="{18071995-0000-0000-0000-000000000009}">DINT</Type>
-				<Comment><![CDATA[ image x-shift position]]></Comment>
-				<BitSize>32</BitSize>
-				<BitOffs>128</BitOffs>
 			</SubItem>
 		</DataType>
 		<DataType>
@@ -184,7 +177,7 @@
 		</DataType>
 	</DataTypes>
 	<Project GUID="{06E29AE1-7FD1-4F58-87FC-AD943F8BCC74}" Name="PlcProject" PrjFilePath="..\..\PlcProject\PlcProject.plcproj" TmcFilePath="..\..\PlcProject\PlcProject.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" CopyTmcToTarget="true" CopyTpyToTarget="false" ClearInvalidPersist="true">
-		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc" TmcHash="{CC3A51A1-3831-E841-3B5D-643058590CF2}">
+		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="PlcProject\PlcProject.tmc" TmcHash="{7E8B9608-EFA9-048B-B263-FA2D068C0B60}">
 			<Name>PlcProject Instance</Name>
 			<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 			<Vars VarGrpType="1">
@@ -600,42 +593,42 @@
 				<Var>
 					<Name>PRG_PRINT.FB_PC[1].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{894D5EC2-79AC-0057-FED5-D4FB722C97D0}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[2].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{894D5EC2-79AC-0057-FED5-D4FB722C97D0}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[3].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{894D5EC2-79AC-0057-FED5-D4FB722C97D0}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[4].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{894D5EC2-79AC-0057-FED5-D4FB722C97D0}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[5].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{894D5EC2-79AC-0057-FED5-D4FB722C97D0}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[6].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{894D5EC2-79AC-0057-FED5-D4FB722C97D0}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[7].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{894D5EC2-79AC-0057-FED5-D4FB722C97D0}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PC[8].sO_PhHw</Name>
 					<Comment><![CDATA[Output to printhead]]></Comment>
-					<Type GUID="{3AD7CF39-34A2-4FC8-B5A4-33613B7A6B2F}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
+					<Type GUID="{894D5EC2-79AC-0057-FED5-D4FB722C97D0}" Namespace="CalmarCompPrint">ST_PcPdiOutput</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.FB_PH[1].nPhCommand</Name>
@@ -1000,6 +993,10 @@
 				<Var>
 					<Name>PRG_PRINT.fbWorkerVerify.bWateGateActive</Name>
 					<Comment><![CDATA[  wate gate activation pulse]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_PRINT.fbPrgPrintTest.bO_Power24V_ON</Name>
 					<Type>BOOL</Type>
 				</Var>
 			</Vars>
@@ -3087,6 +3084,26 @@
 			<Vars VarGrpType="1" ContextId="3" AreaNo="48">
 				<Name>PrgSystem Inputs</Name>
 				<Var>
+					<Name>PRG_INK.bI_Balance_BufferFull</Name>
+					<Comment><![CDATA[EL6021: Balance buffer full]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Balance_FramingError</Name>
+					<Comment><![CDATA[EL6021: Balance framing error]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Balance_OverRunError</Name>
+					<Comment><![CDATA[EL6021: Balance over run error]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_INK.bI_Barcode_AckSend</Name>
+					<Comment><![CDATA[EL6001: Barcode scanner acknowledge send]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
 					<Name>PRG_MACHINE.bIKp_CabinetTemp_Ok</Name>
 					<Comment><![CDATA[monitoring input]]></Comment>
 					<Type>BOOL</Type>
@@ -3115,26 +3132,6 @@
 					<Name>PRG_MACHINE.InEAP_TargetSpeed</Name>
 					<Comment><![CDATA[Neutral fibre factor [m/min]]]></Comment>
 					<Type>DINT</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Balance_BufferFull</Name>
-					<Comment><![CDATA[EL6021: Balance buffer full]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Balance_FramingError</Name>
-					<Comment><![CDATA[EL6021: Balance framing error]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Balance_OverRunError</Name>
-					<Comment><![CDATA[EL6021: Balance over run error]]></Comment>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_INK.bI_Barcode_AckSend</Name>
-					<Comment><![CDATA[EL6001: Barcode scanner acknowledge send]]></Comment>
-					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_PRINT.lIKp_EncPulse</Name>
